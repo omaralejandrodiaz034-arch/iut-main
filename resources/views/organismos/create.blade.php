@@ -21,23 +21,11 @@
                 @csrf
 
                 <div>
-                    <label for="codigo" class="block text-sm font-medium text-gray-700">Código</label>
-                    <input type="text" name="codigo" id="codigo" value="{{ old('codigo') }}" 
-                           class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                           required>
-                    @error('codigo')
-                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                    @enderror
+                    <x-form-input name="codigo" label="Código" :value="old('codigo')" required placeholder="Ej: ORG-001" help="Código único del organismo" />
                 </div>
 
                 <div>
-                    <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre</label>
-                    <input type="text" name="nombre" id="nombre" value="{{ old('nombre') }}" 
-                           class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                           required>
-                    @error('nombre')
-                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                    @enderror
+                    <x-form-input name="nombre" label="Nombre" :value="old('nombre')" required placeholder="Nombre del organismo" help="Nombre completo del organismo" />
                 </div>
 
                 <div class="flex gap-4">

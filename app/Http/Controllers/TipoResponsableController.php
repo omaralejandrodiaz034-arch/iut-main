@@ -76,6 +76,8 @@ class TipoResponsableController extends Controller
             abort(403, 'No tienes permisos para eliminar datos del sistema.');
         }
 
+        // Archivar tipo antes de eliminar
+        \App\Services\EliminadosService::archiveModel($tipoResponsable, auth()->id());
         $tipoResponsable->delete();
 
         return response()->json(null, 204);

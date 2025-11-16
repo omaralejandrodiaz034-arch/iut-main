@@ -1,0 +1,14 @@
+%%{init: {'theme':'default'}}%%
+%% Burndown (Sprint 1) - gráfico simplificado en forma de puntos por día
+flowchart LR
+    style A fill:#fff,stroke:#333,stroke-width:1px
+    D1[Dia 0\nPuntos: 40]
+    D2[Dia 2\nPuntos: 32]
+    D3[Dia 4\nPuntos: 26]
+    D4[Dia 6\nPuntos: 12]
+    D5[Dia 8\nPuntos: 5]
+    D6[Dia 10\nPuntos: 0]
+
+    D1 --> D2 --> D3 --> D4 --> D5 --> D6
+
+    %% Nota: Este diagrama es ilustrativo; para datos reales, actualizar los nodos con valores diarios.

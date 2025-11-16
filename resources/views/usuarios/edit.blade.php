@@ -22,14 +22,17 @@
             @method('PUT')
 
             <div>
-                <label for="cedula" class="block text-sm font-medium text-gray-700">Cédula</label>
-                <input type="text" name="cedula" id="cedula" value="{{ old('cedula', $usuario->cedula) }}" 
-                       class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                       maxlength="20">
+          <label for="cedula" class="block text-sm font-medium text-gray-700">Cédula</label>
+          <input type="text" name="cedula" id="cedula" value="{{ old('cedula', $usuario->cedula) }}" 
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              maxlength="20" @if(!auth()->user()->isAdmin()) readonly @endif>
                 @error('cedula')
                     <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                 @enderror
                 <p id="cedula-error" class="text-sm text-red-600 mt-1" style="display:none;"></p>
+                @if(!auth()->user()->isAdmin())
+                    <p class="text-sm text-gray-500 mt-1">Solo los administradores pueden modificar la cédula.</p>
+                @endif
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

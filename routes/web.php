@@ -11,6 +11,8 @@ use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\UnidadAdministradoraController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Usuario;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,11 +25,14 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    if (auth()->check()) {
+    if (Auth::check()) {
         // Si ya está autenticado, redirigir según rol
-        return auth()->user()->isAdmin()
-            ? redirect()->route('usuarios.index')
-            : redirect()->route('bienes.index');
+        $user = Auth::user();
+        if ($user instanceof Usuario && $user->isAdmin()) {
+            return redirect()->route('usuarios.index');
+        }
+
+        return redirect()->route('bienes.index');
     }
 
     // Si no está autenticado, mostrar login
@@ -60,6 +65,8 @@ Route::middleware(['auth', 'redirigir.rol'])->group(function () {
     Route::get('dependencias/{dependencia}/pdf', [DependenciaController::class, 'exportPdf'])->name('dependencias.pdf');
     Route::resource('historial-movimientos', HistorialMovimientoController::class);
     Route::resource('movimientos', MovimientoController::class);
+    // Restauración/visualización de eliminados se maneja desde MovimientoController (vista combinada)
+    Route::post('movimientos/eliminados/{eliminado}/restore', [MovimientoController::class, 'restoreEliminado'])->name('movimientos.eliminados.restore');
     Route::resource('organismos', OrganismoController::class);
     Route::get('organismos/{organismo}/pdf', [OrganismoController::class, 'exportPdf'])->name('organismos.pdf');
     Route::resource('reportes', ReporteController::class);

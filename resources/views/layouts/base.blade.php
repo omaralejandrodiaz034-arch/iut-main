@@ -9,7 +9,7 @@
 <body class="bg-gray-50">
     @include('layouts.head')
     
-    <main class="max-w-7xl mx-auto px-4 py-8">
+    <main class="max-w-screen-2xl mx-auto px-6 py-8">
         @yield('content')
     </main>
 </body>

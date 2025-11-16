@@ -1,0 +1,52 @@
+@startuml
+' Use-case diagram: Capacidades por rol
+left to right direction
+skinparam packageStyle rectangle
+
+actor Administrador as Admin
+actor Usuario as User
+actor Auditor as Auditor
+actor Invitado as Guest
+actor "Responsable (externo - API)" as RespAPI
+
+rectangle "Capacidades" {
+    (Gestionar Estructura: Organismos/Unidades/Dependencias)
+    (Gestionar Usuarios)
+    (Gestionar Bienes)
+    (Solicitar Movimiento)
+    (Aprobar Movimiento)
+    (Generar Reportes)
+    (Ver Auditoría)
+    (Consultar Bienes)
+}
+
+Admin --> (Gestionar Estructura: Organismos/Unidades/Dependencias)
+Admin --> (Gestionar Usuarios)
+Admin --> (Gestionar Bienes)
+Admin --> (Aprobar Movimiento)
+Admin --> (Generar Reportes)
+Admin --> (Ver Auditoría)
+
+RespAPI --> (Gestionar Bienes)
+RespAPI --> (Solicitar Movimiento)
+RespAPI --> (Consultar Bienes)
+
+User --> (Consultar Bienes)
+User --> (Solicitar Movimiento)
+
+Auditor --> (Ver Auditoría)
+Auditor --> (Generar Reportes)
+
+Guest --> (Consultar Bienes)
+
+note left
+  Observaciones:
+  - "Gestionar Bienes" incluye: registrar, editar, asignar
+    responsable, subir fotografía y dar de baja.
+  - El "Responsable" es un actor externo que accede por API.
+  - Usuarios internos del sistema: Administrador y Usuario (normal).
+  - Los permisos exactos se determinan por el rol y la
+    lógica de negocio en el servidor.
+end note
+
+@enduml

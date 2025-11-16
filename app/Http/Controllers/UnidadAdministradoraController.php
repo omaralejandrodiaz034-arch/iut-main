@@ -14,7 +14,7 @@ class UnidadAdministradoraController extends Controller
     /**
      * Listar todas las Unidades Administradoras.
      */
-        public function index(Request $request)
+    public function index(Request $request)
     {
         $search = $request->input('search');
 
@@ -25,7 +25,6 @@ class UnidadAdministradoraController extends Controller
 
         return view('unidades.index', compact('unidades', 'search'));
     }
-
 
     public function create()
     {
@@ -105,9 +104,9 @@ class UnidadAdministradoraController extends Controller
             'nombre' => ['sometimes', 'string', 'max:255'],
         ]);
 
-    $unidadAdministradora->update($validated);
+        $unidadAdministradora->update($validated);
 
-    return redirect()->route('unidades.index')->with('success', 'Unidad actualizada correctamente');
+        return redirect()->route('unidades.index')->with('success', 'Unidad actualizada correctamente');
     }
 
     /**
@@ -124,6 +123,8 @@ class UnidadAdministradoraController extends Controller
             abort(403, 'No tienes permisos para eliminar datos del sistema.');
         }
 
+        // Archivar unidad antes de eliminar
+        \App\Services\EliminadosService::archiveModel($unidadAdministradora, auth()->id());
         $unidadAdministradora->delete();
 
         return response()->json(null, 204);

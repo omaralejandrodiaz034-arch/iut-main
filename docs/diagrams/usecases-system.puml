@@ -1,0 +1,108 @@
+@startuml
+' Use-case diagram: Sistema de Gestión de Inventario de Bienes
+left to right direction
+skinparam packageStyle rectangle
+
+actor Administrador as Admin
+actor Usuario as User
+actor Auditor as Auditor
+actor Invitado as Guest
+actor "Responsable (externo - API)" as RespAPI
+
+rectangle "Sistema de Inventario (IUT)" {
+
+    (Iniciar sesión) as Login
+    (Cerrar sesión) as Logout
+
+    package "Gestión de Usuarios" {
+        (Crear Usuario)
+        (Editar Usuario)
+        (Eliminar/Desactivar Usuario)
+        (Asignar Roles)
+    }
+
+    package "Estructura Organizativa" {
+        (Gestionar Organismos)
+        (Gestionar Unidades Administradoras)
+        (Gestionar Dependencias)
+    }
+
+    package "Gestión de Bienes" {
+        (Registrar Bien)
+        (Editar Bien)
+        (Subir Fotografía)
+        (Asignar Responsable)
+        (Transferir Bien)
+        (Dar de Baja / Disponer Bien)
+        (Consultar Bienes)
+    }
+
+    package "Movimientos" {
+        (Solicitar Movimiento)
+        (Aprobar/Rechazar Movimiento)
+        (Registrar Movimiento)
+    }
+
+    package "Reportes y Auditoría" {
+        (Generar Reporte)
+        (Exportar PDF)
+        (Ver Auditoría / Logs)
+    }
+
+}
+
+' Relaciones actor - casos de uso
+Admin --> Login
+User --> Login
+Responsable --> Login
+Auditor --> Login
+Guest --> (Consultar Bienes)
+
+Admin --> (Gestionar Organismos)
+Admin --> (Gestionar Unidades Administradoras)
+Admin --> (Gestionar Dependencias)
+Admin --> (Crear Usuario)
+Admin --> (Editar Usuario)
+Admin --> (Eliminar/Desactivar Usuario)
+Admin --> (Asignar Roles)
+Admin --> (Registrar Bien)
+Admin --> (Editar Bien)
+Admin --> (Dar de Baja / Disponer Bien)
+Admin --> (Aprobar/Rechazar Movimiento)
+Admin --> (Generar Reporte)
+Admin --> (Ver Auditoría / Logs)
+
+RespAPI --> (Registrar Bien)
+' RespAPI (externo) realiza llamadas API para operaciones sobre bienes
+RespAPI --> (Solicitar Movimiento)
+RespAPI --> (Asignar Responsable)
+RespAPI --> (Consultar Bienes)
+
+User --> (Consultar Bienes)
+User --> (Solicitar Movimiento)
+
+Auditor --> (Ver Auditoría / Logs)
+Auditor --> (Generar Reporte)
+
+' Movimientos
+User --> (Solicitar Movimiento)
+(Registrar Movimiento) .> (Solicitar Movimiento) : include
+(Aprobar/Rechazar Movimiento) .> (Solicitar Movimiento) : include
+
+' Session
+Admin --> Logout
+User --> Logout
+Responsable --> Logout
+Auditor --> Logout
+
+note right of (Generar Reporte)
+  Reportes: inventario, movimientos, responsables,
+  auditoría y reportes en PDF.
+end note
+
+note left
+    Observación: En el sistema hay 2 usuarios internos: Administrador y Usuario (normal).
+    El "Responsable" NO es un usuario autenticado del panel; interactúa mediante una API externa.
+end note
+
+@enduml

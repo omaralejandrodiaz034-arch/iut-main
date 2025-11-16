@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Organismo;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class OrganismoController extends Controller
@@ -97,9 +97,9 @@ class OrganismoController extends Controller
             'nombre' => ['sometimes', 'string', 'max:255'],
         ]);
 
-    $organismo->update($validated);
+        $organismo->update($validated);
 
-    return redirect()->route('organismos.index')->with('success', 'Organismo actualizado correctamente');
+        return redirect()->route('organismos.index')->with('success', 'Organismo actualizado correctamente');
     }
 
     /**
@@ -116,6 +116,8 @@ class OrganismoController extends Controller
             abort(403, 'No tienes permisos para eliminar datos del sistema.');
         }
 
+        // Archivar organismo y luego eliminar
+        \App\Services\EliminadosService::archiveModel($organismo, auth()->id());
         $organismo->delete();
 
         return response()->json(null, 204);

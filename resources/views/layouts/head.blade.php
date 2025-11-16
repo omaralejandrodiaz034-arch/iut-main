@@ -13,7 +13,9 @@
                 <a href="{{ route('unidades.index') }}" class="px-3 py-2 rounded hover:bg-blue-500">Unidades</a>
                 <a href="{{ route('dependencias.index') }}" class="px-3 py-2 rounded hover:bg-blue-500">Dependencias</a>
                 <a href="{{ route('bienes.index') }}" class="px-3 py-2 rounded hover:bg-blue-500">Bienes</a>
+                <a href="{{ route('movimientos.index') }}" class="px-3 py-2 rounded hover:bg-blue-500">Movimientos</a>
                 <a href="{{ route('usuarios.index') }}" class="px-3 py-2 rounded hover:bg-blue-500">Usuarios</a>
+                {{-- Eliminados ahora se muestran dentro de Movimientos para administradores --}}
             </div>
 
             <!-- User and Logout -->

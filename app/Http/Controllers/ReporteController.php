@@ -67,6 +67,8 @@ class ReporteController extends Controller
      */
     public function destroy(Reporte $reporte)
     {
+        // Archivar reporte antes de eliminar
+        \App\Services\EliminadosService::archiveModel($reporte, auth()->id());
         $reporte->delete();
 
         return response()->json(null, 204);

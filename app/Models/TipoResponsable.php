@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\GeneratesMovimiento;
 
 class TipoResponsable extends Model
 {
-    protected $table = 'tipos_responsables';
+    use GeneratesMovimiento;
+
+    protected $table = 'tipos_responsable';
 
     public $timestamps = false;
 

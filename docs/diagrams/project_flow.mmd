@@ -1,0 +1,31 @@
+%%{init: {'theme':'default'}}%%
+%% Diagrama de Flujo - Operaciones principales y decisiones
+flowchart TD
+    Start([Inicio]) --> CheckAuth{¿Autenticado?}
+    CheckAuth -- No --> Login[/Mostrar formulario de login/]
+    Login --> Auth[Autenticar credenciales]
+    Auth -->|Falló| Login
+    Auth -->|Éxito| Dashboard[Dashboard]
+
+    Dashboard --> RoleCheck{¿Es Administrador?}
+    RoleCheck -- Sí --> AdminPanel[Panel Admin: Usuarios, Bienes, Organismos, Reportes]
+    RoleCheck -- No --> UserPanel[Panel Responsable: Mis bienes, Movimientos, Reportes]
+
+    AdminPanel --> ManageBienes[Registrar/Editar/Eliminar Bien]
+    ManageBienes --> ValidatePerm{¿Permisos válidos?}
+    ValidatePerm -- Sí --> SaveBien[Guardar en BD]
+    SaveBien --> LogMove[Registrar en Historial]
+    LogMove --> Success[Operación exitosa]
+    ValidatePerm -- No --> Deny[Mostrar error de permisos]
+
+    UserPanel --> RegistrarMovimiento[Registrar Movimiento]
+    RegistrarMovimiento --> UpdateBien[Actualizar ubicación/responsable]
+    UpdateBien --> LogMove
+    LogMove --> Success
+
+    AdminPanel --> ManageUsuarios[Registrar/Editar/Eliminar Usuario]
+    ManageUsuarios --> ValidateAdmin{¿Es administrador que crea?}
+    ValidateAdmin -- Sí --> SaveUser[Guardar usuario]
+    ValidateAdmin -- No --> Deny
+
+    Success --> End([Fin])

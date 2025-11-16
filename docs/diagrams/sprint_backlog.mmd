@@ -1,0 +1,23 @@
+%%{init: {'theme':'default'}}%%
+%% Sprint Backlog - Kanban simplificado para Sprint actual
+flowchart LR
+    subgraph ToDo [To Do]
+        T1[US-101: Registrar Bien - 5pts]
+        T2[US-201: Registrar Movimiento - 8pts]
+        T3[US-301: Crear Usuario - 3pts]
+    end
+
+    subgraph Doing [Doing]
+        D1[US-102: Editar Bien - 3pts]
+    end
+
+    subgraph Done [Done]
+        C1[US-401: Generar Reportes - 5pts]
+    end
+
+    ToDo --> Doing --> Done
+
+    %% Instrucciones:
+    classDef info fill:#eef,stroke:#333,stroke-width:1px;
+    NOTE([Mover tarjetas entre columnas durante el sprint; actualizar pts restantes]):::info
+    Done --- NOTE

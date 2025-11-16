@@ -52,9 +52,9 @@ class EjemploInventarioSeeder extends Seeder
 
         // 6. Crear Usuario Administrador (usamos rol dinámico)
         $rolAdmin = \App\Models\Rol::firstOrCreate([
-            'nombre' => 'Administrador'
+            'nombre' => 'Administrador',
         ], [
-            'permisos' => []
+            'permisos' => [],
         ]);
 
         $usuarioAdmin = Usuario::firstOrCreate(

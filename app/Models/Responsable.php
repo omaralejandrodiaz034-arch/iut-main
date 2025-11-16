@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\GeneratesMovimiento;
 
 class Responsable extends Model
 {
+    use GeneratesMovimiento;
+
     protected $table = 'responsables';
 
     public $timestamps = false;

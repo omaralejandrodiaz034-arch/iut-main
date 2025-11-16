@@ -84,6 +84,8 @@ class ResponsableController extends Controller
             abort(403, 'No tienes permisos para eliminar datos del sistema.');
         }
 
+        // Archivar responsable antes de eliminar
+        \App\Services\EliminadosService::archiveModel($responsable, auth()->id());
         $responsable->delete();
 
         return response()->json(null, 204);

@@ -22,11 +22,17 @@ use Illuminate\Support\Str;
 class MassiveInventorySeeder extends Seeder
 {
     private int $organismosTarget = 5;
+
     private int $unidadesTarget = 15;
+
     private int $dependenciasTarget = 50;
+
     private int $bienesTarget = 1200;
+
     private int $usuariosTarget = 520;
+
     private int $maxAdministradores = 10;
+
     private int $responsablesTarget = 70;
 
     public function run(): void
@@ -146,7 +152,7 @@ class MassiveInventorySeeder extends Seeder
                 'descripcion' => Str::title($faker->unique()->words(4, true)),
                 'precio' => $faker->randomFloat(2, 500, 150000),
                 'fotografia' => 'https://picsum.photos/seed/bien'.$i.'/640/480',
-                'ubicacion' => $faker->city() . ' - Área ' . $faker->numberBetween(100, 999),
+                'ubicacion' => $faker->city().' - Área '.$faker->numberBetween(100, 999),
                 'estado' => Arr::random($estadoValues),
                 'fecha_registro' => $fechaRegistro,
                 'created_at' => $fechaRegistro,
@@ -257,4 +263,3 @@ class MassiveInventorySeeder extends Seeder
         return sprintf('V-%02d.%03d.%03d', $prefijo, $medio, $ultimo);
     }
 }
-

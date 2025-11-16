@@ -27,55 +27,21 @@
             @csrf
 
             <div>
-                <label for="cedula" class="block text-sm font-medium text-gray-700">Cédula (Formato: V-XX.XXX.XXX)</label>
-                <input type="text" name="cedula" id="cedula" value="{{ old('cedula') }}"
-                       class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                       placeholder="V-12.345.678"
-                       maxlength="20"
-                       required>
-                <p class="text-xs text-gray-500 mt-1">Debe comenzar con V-, seguido de números separados por puntos</p>
-                @error('cedula')
-                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                @enderror
-                <p id="cedula-error" class="text-sm text-red-600 mt-1" style="display:none;"></p>
+                <x-form-input name="cedula" label="Cédula (Formato: V-XX.XXX.XXX)" :value="old('cedula')" placeholder="V-12.345.678" maxlength="20" required help="Debe comenzar con V-, seguido de números separados por puntos" />
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre</label>
-                    <input type="text" name="nombre" id="nombre" value="{{ old('nombre') }}"
-                           class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                           placeholder="Ej: Juan"
-                           required>
-                    <p id="nombre-error" class="text-sm text-red-600 mt-1" style="display:none;"></p>
-                    @error('nombre')
-                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                    @enderror
+                    <x-form-input name="nombre" label="Nombre" :value="old('nombre')" placeholder="Ej: Juan" required />
                 </div>
 
                 <div>
-                    <label for="apellido" class="block text-sm font-medium text-gray-700">Apellido</label>
-                    <input type="text" name="apellido" id="apellido" value="{{ old('apellido') }}"
-                           class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                           placeholder="Ej: Pérez"
-                           required>
-                    <p id="apellido-error" class="text-sm text-red-600 mt-1" style="display:none;"></p>
-                    @error('apellido')
-                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                    @enderror
+                    <x-form-input name="apellido" label="Apellido" :value="old('apellido')" placeholder="Ej: Pérez" required />
                 </div>
             </div>
 
             <div>
-                <label for="correo" class="block text-sm font-medium text-gray-700">Correo</label>
-                <input type="email" name="correo" id="correo" value="{{ old('correo') }}"
-                       class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                       placeholder="usuario@ejemplo.com"
-                       required>
-                <p id="correo-error" class="text-sm text-red-600 mt-1" style="display:none;"></p>
-                @error('correo')
-                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                @enderror
+                <x-form-input name="correo" label="Correo" type="email" :value="old('correo')" placeholder="usuario@ejemplo.com" required />
             </div>
 
             <!-- El rol se selecciona dinámicamente si el creador es admin; por defecto es Usuario Normal -->
@@ -84,15 +50,7 @@
             @endunless
 
             <div>
-                <label for="password" class="block text-sm font-medium text-gray-700">Contraseña (mínimo 8 caracteres)</label>
-                <input type="password" name="hash_password" id="password"
-                       class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                       placeholder="••••••••"
-                       required>
-                <p id="password-error" class="text-sm text-red-600 mt-1" style="display:none;"></p>
-                @error('hash_password')
-                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                @enderror
+                <x-form-input name="hash_password" label="Contraseña (mínimo 8 caracteres)" type="password" id="password" placeholder="••••••••" required />
             </div>
 
             @if(auth()->user()->isAdmin())

@@ -1,0 +1,28 @@
+%%{init: {'theme':'default'}}%%
+%% Diagrama de Casos de Uso - Sistema de Gestión de Inventario de Bienes
+usecaseDiagram
+
+actor Administrador as Admin
+actor Gerente as Ger
+actor Responsable as Resp
+actor Auditor as Aud
+
+Admin -- (Gestionar usuarios)
+Admin -- (Configurar organismos y unidades)
+Admin -- (Registrar/Editar/Eliminar bienes)
+Admin -- (Asignar bienes)
+Admin -- (Generar reportes maestros)
+
+Ger -- (Ver inventario)
+Ger -- (Generar reportes)
+
+Resp -- (Consultar bienes asignados)
+Resp -- (Registrar movimiento de bien)
+Resp -- (Reportar daño o incidencia)
+
+Aud -- (Consultar historial de movimientos)
+Aud -- (Exportar reportes para auditoría)
+
+(Generar reportes) <-- Admin
+(Generar reportes) <-- Ger
+(Consultar historial) <-- Aud

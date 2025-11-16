@@ -24,6 +24,11 @@ class CreateAdmin extends Command
         $correo = $this->option('correo') ?: $this->ask('Correo del administrador');
         $password = $this->option('password') ?: $this->secret('Contraseña del administrador');
 
+        // Normalizar cédula a formato V-XX.XXX.XXX para consistencia
+        $digits = preg_replace('/\D/', '', strtoupper($cedula));
+        $digits = substr($digits, 0, 8);
+        $cedula = 'V-'.substr($digits, 0, 2).'.'.substr($digits, 2, 3).'.'.substr($digits, 5, 3);
+
         // Validar que no exista un usuario con la misma cédula o correo
         if (Usuario::where('cedula', $cedula)->exists()) {
             $this->error("Ya existe un usuario con la cédula: {$cedula}");

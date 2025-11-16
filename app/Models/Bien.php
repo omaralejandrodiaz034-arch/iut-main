@@ -36,12 +36,11 @@ class Bien extends Model
         if ($term) {
             $query->where(function ($q) use ($term) {
                 $q->where('codigo', 'LIKE', "%{$term}%")
-                ->orWhere('descripcion', 'LIKE', "%{$term}%")
-                ->orWhere('ubicacion', 'LIKE', "%{$term}%");
+                    ->orWhere('descripcion', 'LIKE', "%{$term}%")
+                    ->orWhere('ubicacion', 'LIKE', "%{$term}%");
             });
         }
     }
-
 
     // Casts automáticos
     protected $casts = [
@@ -55,7 +54,6 @@ class Bien extends Model
     {
         return $this->belongsTo(Dependencia::class);
     }
-
 
     public function movimientos()
     {

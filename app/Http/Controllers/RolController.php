@@ -78,6 +78,8 @@ class RolController extends Controller
             abort(403, 'No tienes permisos para eliminar datos del sistema.');
         }
 
+        // Archivar rol antes de eliminar
+        \App\Services\EliminadosService::archiveModel($rol, auth()->id());
         $rol->delete();
 
         return response()->json(null, 204);

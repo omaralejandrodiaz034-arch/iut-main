@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use App\Traits\GeneratesMovimiento;
 
 /**
  * Eloquent model Usuario.
@@ -14,7 +15,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  */
 class Usuario extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, GeneratesMovimiento;
 
     /**
      * Tabla personalizada para el modelo de autenticación.

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\GeneratesMovimiento;
 
 /**
  * Eloquent model UnidadAdministradora.
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class UnidadAdministradora extends Model
 {
-    use HasFactory;
+    use HasFactory, GeneratesMovimiento;
 
     /**
      * Nombre de la tabla asociada.
@@ -28,17 +29,17 @@ class UnidadAdministradora extends Model
         'codigo',
         'nombre',
     ];
+
     // App\Models\UnidadAdministradora.php
     public function scopeSearch($query, $term)
     {
         if ($term) {
             $query->where(function ($q) use ($term) {
                 $q->where('codigo', 'LIKE', "%{$term}%")
-                ->orWhere('nombre', 'LIKE', "%{$term}%");
+                    ->orWhere('nombre', 'LIKE', "%{$term}%");
             });
         }
     }
-
 
     /**
      * Relación: Una Unidad Administradora pertenece a un Organismo.

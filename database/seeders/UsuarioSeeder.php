@@ -15,9 +15,9 @@ class UsuarioSeeder extends Seeder
     {
         // Nos aseguramos de que exista el rol 'Administrador' y usamos su id dinámicamente
         $rolAdmin = \App\Models\Rol::firstOrCreate([
-            'nombre' => 'Administrador'
+            'nombre' => 'Administrador',
         ], [
-            'permisos' => []
+            'permisos' => [],
         ]);
 
         $rolAdminId = $rolAdmin->id;

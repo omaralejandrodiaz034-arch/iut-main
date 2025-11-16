@@ -1,0 +1,45 @@
+@startuml
+' Use-case diagram: Ciclo de vida de un Bien
+left to right direction
+skinparam packageStyle rectangle
+
+actor Administrador as Admin
+actor Usuario as User
+actor "Responsable (externo - API)" as RespAPI
+
+rectangle "Ciclo de Vida del Bien" {
+    (Registrar Bien)
+    (Asignar Responsable)
+    (Usar / Actualizar Estado)
+    (Solicitar Transferencia)
+    (Aprobar Transferencia)
+    (Registrar Movimiento)
+    (Dar de Baja / Disponer)
+    (Generar Historial/Reporte)
+}
+
+Admin --> (Registrar Bien)
+Admin --> (Dar de Baja / Disponer)
+Admin --> (Asignar Responsable)
+Admin --> (Aprobar Transferencia)
+
+RespAPI --> (Registrar Bien)
+RespAPI --> (Asignar Responsable)
+RespAPI --> (Usar / Actualizar Estado)
+RespAPI --> (Solicitar Transferencia)
+
+User --> (Solicitar Transferencia)
+User --> (Usar / Actualizar Estado)
+
+(Registrar Movimiento) .> (Solicitar Transferencia) : include
+(Generar Historial/Reporte) .> (Registrar Movimiento) : include
+
+note right
+  Eventos comunes:
+  - Registro: código, descripción, foto, precio, ubicación, estado
+  - Transferencia: genera un movimiento y actualiza historial
+  - Baja: registra motivo y fecha; afecta inventario
+  Observación: El "Responsable" interactúa por API; no es usuario del panel.
+end note
+
+@enduml

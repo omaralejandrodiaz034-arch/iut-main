@@ -1,0 +1,22 @@
+%%{init: {'theme':'default'}}%%
+%% Diagrama de Componentes - arquitectura lógica del sistema
+flowchart TB
+    Browser[Usuario / Navegador]
+    Browser -->|HTTP/HTTPS| WebServer[Servidor Web (Nginx/Apache)]
+    WebServer -->|index.php -> Vite| ViteDev[Vite (assets / HMR)]
+    WebServer -->|requests| LaravelApp[Aplicación Laravel]
+
+    subgraph LaravelApp
+        Controllers[Controllers]
+        Models[Models / Eloquent]
+        Views[Blade Views]
+        Jobs[Queues / Jobs]
+        Services[Servicios (Reportes, PDF, Export)]
+    end
+
+    LaravelApp --> DB[(SQLite / MySQL)]
+    LaravelApp --> Storage[(Filesystem / S3)]
+    LaravelApp --> Queue[(Redis / Database Queue)]
+    Storage --> Backup[(Backups)]
+
+    note right of DB: Tablas principales: usuarios, bienes, movimientos, dependencias, organismos

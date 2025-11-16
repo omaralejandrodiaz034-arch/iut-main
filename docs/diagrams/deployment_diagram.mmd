@@ -1,0 +1,23 @@
+%%{init: {'theme':'default'}}%%
+%% Diagrama de Despliegue - propuesta de infraestructura
+flowchart TB
+    User[Usuarios]
+    User --> CDN[CDN (opcional) / Cache]
+    CDN --> LB[Load Balancer]
+    LB --> App1[App Server 1 (PHP-FPM)]
+    LB --> App2[App Server 2 (PHP-FPM)]
+
+    App1 --> DBServer[(Base de datos - MySQL/Postgres)]
+    App2 --> DBServer
+    App1 --> Storage[(Almacenamiento - S3/MinIO)]
+    App2 --> Storage
+    App1 --> Queue[(Workers - Redis, Supervisor)]
+
+    subgraph Backups
+        DBBackup[(Backups DB)]
+        FilesBackup[(Backups storage)]
+    end
+    DBServer --> DBBackup
+    Storage --> FilesBackup
+
+    note right of App1: Entorno producción: configurar env, SSL, backups regulares

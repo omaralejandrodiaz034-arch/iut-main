@@ -51,6 +51,11 @@ class UsuarioController extends Controller
         // Obtener el rol Administrador
         $rolAdmin = \App\Models\Rol::where('nombre', 'Administrador')->first();
 
+        // Normalizar cédula antes de validar para aceptar entradas con o sin 'V-' y/o puntos
+        if ($request->filled('cedula')) {
+            $request->merge(['cedula' => $this->normalizeCedula($request->input('cedula'))]);
+        }
+
         $validated = $request->validate(
             [
                 'rol_id' => ['required', 'exists:roles,id'],
@@ -158,6 +163,11 @@ class UsuarioController extends Controller
             return abort(403, 'No tienes permisos para actualizar usuarios.');
         }
 
+        // Normalizar cédula si se envía (permitir que el usuario escriba sin 'V-' o sin puntos)
+        if ($request->filled('cedula')) {
+            $request->merge(['cedula' => $this->normalizeCedula($request->input('cedula'))]);
+        }
+
         $validated = $request->validate([
             'rol_id' => ['sometimes', 'exists:roles,id'],
             'cedula' => [
@@ -174,6 +184,11 @@ class UsuarioController extends Controller
             'activo' => ['boolean'],
             'is_admin' => ['boolean'],
         ]);
+
+        // Sólo administradores pueden cambiar la cédula de un usuario ya creado
+        if (array_key_exists('cedula', $validated) && ! auth()->user()->isAdmin()) {
+            return abort(403, 'Solo administradores pueden modificar la cédula de un usuario.');
+        }
 
         // Solo administradores pueden asignar permisos de administrador
         if (isset($validated['is_admin']) && $validated['is_admin'] && ! auth()->user()->isAdmin()) {
@@ -196,7 +211,41 @@ class UsuarioController extends Controller
             return response()->json($usuario);
         }
 
-    return redirect()->route('usuarios.show', $usuario)->with('success', 'Usuario actualizado correctamente');
+        return redirect()->route('usuarios.show', $usuario)->with('success', 'Usuario actualizado correctamente');
+    }
+
+    /**
+     * Normaliza una cédula a formato V-XX.XXX.XXX.
+     * Acepta entradas con o sin 'V-' y con o sin puntos. Extrae dígitos y formatea.
+     */
+    private function normalizeCedula(?string $raw): string
+    {
+        if (empty($raw)) {
+            return '';
+        }
+
+        $s = strtoupper($raw);
+        // Extraer sólo dígitos
+        $digits = preg_replace('/\D/', '', $s);
+        // Limitar a 8 dígitos
+        $digits = substr($digits, 0, 8);
+
+        $part1 = substr($digits, 0, 2) ?: '';
+        $part2 = substr($digits, 2, 3) ?: '';
+        $part3 = substr($digits, 5, 3) ?: '';
+
+        $formatted = 'V-';
+        $formatted .= $part1;
+
+        if ($part2 !== '') {
+            $formatted .= '.'.$part2;
+        }
+
+        if ($part3 !== '') {
+            $formatted .= '.'.$part3;
+        }
+
+        return $formatted;
     }
 
     /**
@@ -209,6 +258,8 @@ class UsuarioController extends Controller
             return abort(403, 'No tienes permisos para eliminar este usuario. No puedes eliminar administradores ni a ti mismo.');
         }
 
+        // Archivar en eliminados antes de borrar permanentemente
+        \App\Services\EliminadosService::archiveModel($usuario, auth()->id());
         $usuario->delete();
 
         return response()->json(null, 204);

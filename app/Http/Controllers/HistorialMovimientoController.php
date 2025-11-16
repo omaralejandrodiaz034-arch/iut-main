@@ -65,6 +65,8 @@ class HistorialMovimientoController extends Controller
      */
     public function destroy(HistorialMovimiento $historialMovimiento)
     {
+        // Archivar historial antes de eliminar
+        \App\Services\EliminadosService::archiveModel($historialMovimiento, auth()->id());
         $historialMovimiento->delete();
 
         return response()->json(null, 204);

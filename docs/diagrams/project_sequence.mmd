@@ -1,0 +1,46 @@
+%%{init: {'theme':'default'}}%%
+%% Diagrama de Secuencia - Flujo completo del sistema
+sequenceDiagram
+    participant Usuario
+    participant Navegador as Cliente
+    participant AuthController
+    participant BienController
+    participant MovimientoController
+    participant HistorialMovimiento
+    participant ReporteController
+    participant DB
+
+    Usuario->>Navegador: Ingresa credenciales (correo, contraseña)
+    Navegador->>AuthController: POST /login
+    AuthController->>DB: SELECT usuario por correo
+    DB-->>AuthController: usuario (hash_password, rol, activo)
+    AuthController-->>Navegador: 200 OK (session)
+    Navegador-->>Usuario: Dashboard según rol
+
+    %% Crear un Bien (Admin)
+    Usuario->>BienController: POST /bienes (datos del bien)
+    BienController->>BienController: validar datos y permisos (isAdmin)
+    BienController->>DB: INSERT INTO bienes
+    DB-->>BienController: id del bien creado
+    BienController-->>Usuario: 201 Bien creado
+
+    %% Registrar Movimiento (Asignación)
+    Usuario->>MovimientoController: POST /movimientos (bien_id, nuevo_responsable)
+    MovimientoController->>DB: INSERT movimiento
+    DB-->>MovimientoController: movimiento creado
+    MovimientoController->>HistorialMovimiento: registrar entrada de historial
+    HistorialMovimiento->>DB: INSERT historial
+    DB-->>HistorialMovimiento: ok
+    MovimientoController-->>Usuario: 201 Movimiento registrado
+
+    %% Generar Reporte
+    Usuario->>ReporteController: GET /reportes?dependencia=X
+    ReporteController->>DB: SELECT bienes, movimientos WHERE dependencia = X
+    DB-->>ReporteController: resultados
+    ReporteController-->>Usuario: PDF/HTML con resumen
+
+    %% Auditoría: consulta historial
+    Auditor->>HistorialMovimiento: GET /historial-movimientos?bien_id=Y
+    HistorialMovimiento->>DB: SELECT * FROM historial WHERE bien_id = Y
+    DB-->>HistorialMovimiento: historial completo
+    HistorialMovimiento-->>Auditor: datos de historial

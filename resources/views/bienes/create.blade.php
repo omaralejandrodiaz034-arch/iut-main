@@ -35,36 +35,17 @@
 
                 <!-- Código -->
                 <div>
-                    <label for="codigo" class="block text-sm font-semibold text-gray-700 mb-2">Código</label>
-                    <input type="text" name="codigo" id="codigo" value="{{ old('codigo') }}"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                           placeholder="Ej: BN-001">
-                    @error('codigo')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                    <x-form-input name="codigo" label="Código" :value="old('codigo')" placeholder="Ej: BN-001" help="Código interno del bien" />
                 </div>
 
                 <!-- Descripción -->
                 <div>
-                    <label for="descripcion" class="block text-sm font-semibold text-gray-700 mb-2">Descripción</label>
-                    <textarea name="descripcion" id="descripcion" rows="3"
-                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                              placeholder="Describe el bien...">{{ old('descripcion') }}</textarea>
-                    @error('descripcion')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                    <x-form-input name="descripcion" label="Descripción" type="textarea" :value="old('descripcion')" placeholder="Describe el bien..." help="Información relevante sobre el bien (uso, estado, detalles)" />
                 </div>
 
                 <!-- Precio -->
                 <div>
-                    <label for="precio" class="block text-sm font-semibold text-gray-700 mb-2">Precio (Bs.)</label>
-                    <input type="number" name="precio" id="precio" value="{{ old('precio', '0.00') }}"
-                           step="0.01" min="0"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                           placeholder="0.00">
-                    @error('precio')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                    <x-form-input name="precio" label="Precio (Bs.)" type="number" :value="old('precio', '0.00')" placeholder="0.00" step="0.01" min="0" help="Precio aproximado del bien" />
                 </div>
 
                 <!-- Fotografía -->
@@ -81,13 +62,7 @@
 
                 <!-- Ubicación -->
                 <div>
-                    <label for="ubicacion" class="block text-sm font-semibold text-gray-700 mb-2">Ubicación</label>
-                    <input type="text" name="ubicacion" id="ubicacion" value="{{ old('ubicacion') }}"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                           placeholder="Oficina 101">
-                    @error('ubicacion')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                    <x-form-input name="ubicacion" label="Ubicación" :value="old('ubicacion')" placeholder="Oficina 101" help="Lugar físico donde se encuentra el bien" />
                 </div>
 
                 <!-- Estado -->
@@ -109,21 +84,7 @@
 
                 <!-- Fecha de registro -->
                 <div>
-                    <label for="fecha_registro" class="block text-sm font-semibold text-gray-700 mb-2">
-                        📅 Fecha de Registro
-                    </label>
-                    <div class="relative">
-                        <input type="date" name="fecha_registro" id="fecha_registro" value="{{ old('fecha_registro', now()->format('Y-m-d')) }}"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                               style="font-size: 16px;">
-                        <span class="absolute right-3 top-3 text-gray-400 pointer-events-none">
-                            📆
-                        </span>
-                    </div>
-                    @error('fecha_registro')
-                        <p class="text-red-600 text-sm mt-2">{{ $message }}</p>
-                    @enderror
-                    <p class="text-gray-500 text-xs mt-2">Selecciona la fecha en la que se registró el bien</p>
+                    <x-form-input name="fecha_registro" label="📅 Fecha de Registro" type="date" :value="old('fecha_registro', now()->format('Y-m-d'))" help="Selecciona la fecha en la que se registró el bien" />
                 </div>
 
                 <!-- Botones -->

@@ -26,7 +26,6 @@ class DependenciaController extends Controller
         return view('dependencias.index', compact('dependencias', 'search'));
     }
 
-
     /**
      * Guardar una nueva dependencia.
      */
@@ -141,6 +140,8 @@ class DependenciaController extends Controller
             abort(403, 'No tienes permisos para eliminar datos del sistema.');
         }
 
+        // Archivar dependencia antes de eliminar
+        \App\Services\EliminadosService::archiveModel($dependencia, auth()->id());
         $dependencia->delete();
 
         return response()->json(null, 204);

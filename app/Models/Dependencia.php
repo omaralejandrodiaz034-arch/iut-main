@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\GeneratesMovimiento;
 
 /**
  * Eloquent model Dependencia.
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Dependencia extends Model
 {
-    use HasFactory;
+    use HasFactory, GeneratesMovimiento;
 
     /**
      * Nombre de la tabla asociada.
@@ -29,16 +30,16 @@ class Dependencia extends Model
         'nombre',
         'responsable_id',
     ];
-        public function scopeSearch($query, $term)
+
+    public function scopeSearch($query, $term)
     {
         if ($term) {
             $query->where(function ($q) use ($term) {
                 $q->where('codigo', 'LIKE', "%{$term}%")
-                ->orWhere('nombre', 'LIKE', "%{$term}%");
+                    ->orWhere('nombre', 'LIKE', "%{$term}%");
             });
         }
     }
-
 
     /**
      * Relación: Una dependencia pertenece a una Unidad Administradora.

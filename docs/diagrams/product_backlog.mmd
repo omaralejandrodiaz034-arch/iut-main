@@ -1,0 +1,32 @@
+%%{init: {'theme':'default'}}%%
+%% Product Backlog (épicas y user stories) - Artefacto para Scrum
+flowchart TB
+    subgraph Epica1 [Gestión de Bienes]
+        US1[US-101: Registrar Bien (5 pts) - Alta prioridad]
+        US2[US-102: Editar Bien (3 pts) - Media]
+        US3[US-103: Eliminar Bien (2 pts) - Baja]
+    end
+
+    subgraph Epica2 [Movimientos y Historial]
+        US4[US-201: Registrar Movimiento (8 pts) - Alta]
+        US5[US-202: Ver Historial (3 pts) - Media]
+    end
+
+    subgraph Epica3 [Usuarios y Roles]
+        US6[US-301: Gestionar Usuarios (10 pts) - Alta]
+        US7[US-302: Roles y Permisos (5 pts) - Media]
+    end
+
+    subgraph Epica4 [Reportes y Auditoría]
+        US8[US-401: Generar Reportes (5 pts) - Alta]
+        US9[US-402: Exportar PDF (2 pts) - Media]
+    end
+
+    Epica1 --> Epica2
+    Epica2 --> Epica3
+    Epica3 --> Epica4
+
+    %% Notas:
+    classDef note fill:#f9f,stroke:#333,stroke-width:1px;
+    NOTE1([Prioridad: Alta > Media > Baja\nEstimar en puntos y refinar en grooming]):::note
+    Epica4 --- NOTE1
