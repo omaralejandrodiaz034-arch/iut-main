@@ -124,36 +124,48 @@ class BienController extends Controller
 
         return view('bienes.create', compact('dependencias'));
     }
+        /**
+     * Mostrar formulario de edición.
+     */
+
+
 
     /**
      * Guardar un nuevo bien.
      */
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'dependencia_id' => ['required', 'exists:dependencias,id'],
-            'codigo' => ['required', 'string', 'max:50', 'unique:bienes,codigo'],
-            'descripcion' => ['required', 'string', 'max:255'],
-            'precio' => ['required', 'numeric', 'min:0'],
-            'fotografia' => ['nullable', 'image', 'max:2048'],
-            'ubicacion' => ['nullable', 'string', 'max:255'],
-            'estado' => ['required', Rule::enum(EstadoBien::class)],
-            'fecha_registro' => ['required', 'date'],
-        ]);
+{
+    $validated = $request->validate([
+        'dependencia_id' => ['required', 'exists:dependencias,id'],
+        'codigo' => ['required', 'string', 'max:50', 'unique:bienes,codigo'],
+        'descripcion' => ['required', 'string', 'max:255'],
+        'precio' => ['required', 'numeric', 'min:0'],
+        'fotografia' => ['nullable', 'image', 'max:2048'],
+        'ubicacion' => ['nullable', 'string', 'max:255'],
+        'estado' => ['required', Rule::enum(EstadoBien::class)],
+        'fecha_registro' => ['required', 'date'],
+    ]);
 
-        if ($request->hasFile('fotografia')) {
-            $validated['fotografia'] = $request->file('fotografia')->store('bienes', 'public');
+    // Procesar fotografía si se subió
+    if ($request->hasFile('fotografia')) {
+        $foto = $this->procesarFotografia($request);
+        if ($foto) {
+            $validated['fotografia'] = $foto;
         }
-
-        // El responsable se obtiene dinámicamente a través de la dependencia; no lo almacenamos en la tabla bienes.
-        $bien = Bien::create($validated);
-
-        // Los movimientos se registran mediante el observer de Bien (app/Observers/BienObserver.php)
-
-        return redirect()
-            ->route('bienes.index')
-            ->with('success', 'Bien creado correctamente.');
     }
+
+    // Crear el bien con datos validados
+    $bien = Bien::create($validated);
+
+    // Registrar observación inicial para auditoría (ej. creación)
+    $bien->setAttribute('_observaciones', 'Registro inicial del bien en el sistema');
+
+    // El observer de Bien se encargará de registrar los movimientos
+    return redirect()
+        ->route('bienes.index')
+        ->with('success', 'Bien creado correctamente.');
+}
+
 
     /**
      * Mostrar un bien específico.
@@ -168,122 +180,146 @@ class BienController extends Controller
     /**
      * Descargar los detalles del bien en PDF.
      */
-    public function exportPdf(Bien $bien)
-    {
-        $bien->load(['dependencia.responsable', 'movimientos']);
+public function exportPdf(Bien $bien)
+{
+    // Cargar relaciones necesarias de forma segura
+    $bien->loadMissing([
+        'dependencia.responsable',
+        'movimientos.usuario',
+    ]);
 
-        $pdf = Pdf::loadView('bienes.pdf', [
-            'bien' => $bien,
-        ])->setPaper('letter');
+    // Ordenar movimientos cronológicamente (más recientes primero)
+    $movimientos = $bien->movimientos()
+        ->orderByDesc('fecha')
+        ->orderByDesc('created_at')
+        ->get();
 
-        $descriptionSlug = $bien->descripcion
-            ? Str::slug(Str::limit($bien->descripcion, 50, ''), '_')
-            : 'detalle';
+    // Variables adicionales
+    $dependencia         = $bien->dependencia;
+    $responsablePrimario = $bien->responsable_primario; // campo plano en la tabla bienes
 
-        $fileName = sprintf(
-            'bien_%s_%s.pdf',
-            Str::slug($bien->codigo, '_'),
-            $descriptionSlug
-        );
+    // Preparar datos para la vista
+    $viewData = [
+        'bien'               => $bien,
+        'dependencia'        => $dependencia,
+        'responsablePrimario'=> $responsablePrimario,
+        'movimientos'        => $movimientos,
+    ];
 
-        return $pdf->download($fileName);
+    // Renderizar PDF con plantilla institucional
+    $pdf = Pdf::loadView('bienes.pdf', $viewData)
+              ->setPaper('letter');
+
+    // Generar nombre de archivo limpio y semántico
+    $codigoSlug      = Str::slug($bien->codigo ?? 'sin_codigo', '_');
+    $descriptionSlug = $bien->descripcion
+        ? Str::slug(Str::limit($bien->descripcion, 50, ''), '_')
+        : 'detalle';
+
+    $fileName = sprintf('bien_%s_%s.pdf', $codigoSlug, $descriptionSlug);
+
+    // Descargar PDF
+    return $pdf->download($fileName);
+}
+    private function procesarFotografia(Request $request, ?Bien $bien = null): ?string
+{
+    if (! $request->hasFile('fotografia')) {
+        return null;
     }
 
-    /**
-     * Mostrar formulario de edición.
-     */
-    public function edit(Bien $bien)
-    {
-        // Para editar mostramos la lista de dependencias (si se necesita cambiar)
-        $dependencias = Dependencia::with('responsable')->get();
-
-        return view('bienes.edit', compact('bien', 'dependencias'));
+    if ($bien && $bien->fotografia && ! str_starts_with($bien->fotografia, 'http')) {
+        Storage::disk('public')->delete($bien->fotografia);
     }
+
+    return $request->file('fotografia')->store('bienes', 'public');
+}
+
 
     /**
      * Actualizar un bien.
      */
     public function update(Request $request, Bien $bien)
-    {
-        $validated = $request->validate([
-            'dependencia_id' => ['sometimes', 'exists:dependencias,id'],
-            'codigo' => [
-                'sometimes',
-                'string',
-                'max:50',
-                Rule::unique('bienes', 'codigo')->ignore($bien->getKey()),
-            ],
-            'descripcion' => ['sometimes', 'string', 'max:255'],
-            'precio' => ['sometimes', 'numeric', 'min:0'],
-            'fotografia' => ['nullable', 'image', 'max:2048'],
-            'ubicacion' => ['nullable', 'string', 'max:255'],
-            'estado' => ['sometimes', Rule::enum(EstadoBien::class)],
-            'fecha_registro' => ['sometimes', 'date'],
-        ]);
+{
+    $validated = $request->validate([
+        'dependencia_id' => ['sometimes', 'exists:dependencias,id'],
+        'codigo' => [
+            'sometimes',
+            'string',
+            'max:50',
+            Rule::unique('bienes', 'codigo')->ignore($bien->getKey()),
+        ],
+        'descripcion' => ['sometimes', 'string', 'max:255'],
+        'precio' => ['sometimes', 'numeric', 'min:0'],
+        'fotografia' => ['nullable', 'image', 'max:2048'],
+        'ubicacion' => ['nullable', 'string', 'max:255'],
+        'estado' => ['sometimes', Rule::enum(EstadoBien::class)],
+        'fecha_registro' => ['sometimes', 'date'],
+    ]);
 
-        if ($request->hasFile('fotografia')) {
-            if ($bien->fotografia && ! str_starts_with($bien->fotografia, 'http')) {
-                Storage::disk('public')->delete($bien->fotografia);
-            }
-
-            $validated['fotografia'] = $request->file('fotografia')->store('bienes', 'public');
+    // Procesar fotografía si se subió una nueva
+    if ($request->hasFile('fotografia')) {
+        $foto = $this->procesarFotografia($request, $bien);
+        if ($foto) {
+            $validated['fotografia'] = $foto;
         }
-
-        // Detectar cambios relevantes antes de actualizar
-        $originalDependencia = $bien->dependencia_id;
-        $originalEstado = $bien->estado;
-
-        // Actualizar el bien
-        $bien->update($validated);
-
-        // Si se cambió la dependencia, registrar movimiento de transferencia automáticamente
-        if (array_key_exists('dependencia_id', $validated) && $validated['dependencia_id'] != $originalDependencia) {
-            $oldDep = \App\Models\Dependencia::find($originalDependencia);
-            $newDep = \App\Models\Dependencia::find($validated['dependencia_id']);
-
-            $observ = sprintf('Transferencia de dependencia: %s -> %s', $oldDep?->nombre ?? 'N/A', $newDep?->nombre ?? 'N/A');
-
-            // El observer de Bien registrará el movimiento y el historial correspondiente.
-        }
-
-        // Si cambió el estado, registrar movimiento automático (ej. cambio de estado relevante)
-        if (array_key_exists('estado', $validated)) {
-            // Normalizar valores para comparar (el modelo puede castear a Enum)
-            $originalEstadoValue = $originalEstado instanceof \App\Enums\EstadoBien ? $originalEstado->value : ($originalEstado ?? null);
-
-            $newEstadoRaw = $validated['estado'];
-            $newEstadoValue = $newEstadoRaw instanceof \App\Enums\EstadoBien ? $newEstadoRaw->value : $newEstadoRaw;
-
-            if ($newEstadoValue != $originalEstadoValue) {
-                // Preparar representaciones legibles
-                $origLabel = null;
-                if ($originalEstado instanceof \App\Enums\EstadoBien) {
-                    $origLabel = $originalEstado->label();
-                } elseif ($originalEstadoValue) {
-                    $try = \App\Enums\EstadoBien::tryFrom($originalEstadoValue);
-                    $origLabel = $try?->label() ?? (string) $originalEstadoValue;
-                } else {
-                    $origLabel = 'N/A';
-                }
-
-                $newLabel = null;
-                if ($newEstadoRaw instanceof \App\Enums\EstadoBien) {
-                    $newLabel = $newEstadoRaw->label();
-                } else {
-                    $try2 = \App\Enums\EstadoBien::tryFrom($newEstadoValue);
-                    $newLabel = $try2?->label() ?? (string) $newEstadoValue;
-                }
-
-                $observ = sprintf('Cambio de estado: %s -> %s', $origLabel, $newLabel);
-
-                // El observer de Bien registrará el movimiento y el historial correspondiente.
-            }
-        }
-
-        return redirect()
-            ->route('bienes.index')
-            ->with('success', 'Bien actualizado correctamente.');
     }
+
+    // Capturar valores originales para detectar cambios relevantes
+    $originalDependencia = $bien->dependencia_id;
+    $originalEstado = $bien->estado;
+
+    // Actualizar el bien
+    $bien->update($validated);
+
+    // Registrar observaciones semánticas para el observer
+    $observaciones = [];
+
+    // Detectar transferencia de dependencia
+    if (array_key_exists('dependencia_id', $validated) && $validated['dependencia_id'] != $originalDependencia) {
+        $oldDep = \App\Models\Dependencia::find($originalDependencia);
+        $newDep = \App\Models\Dependencia::find($validated['dependencia_id']);
+
+        $observaciones[] = sprintf(
+            'Transferencia de dependencia: %s → %s',
+            $oldDep?->nombre ?? 'N/A',
+            $newDep?->nombre ?? 'N/A'
+        );
+    }
+
+
+    // Detectar cambio de estado
+    if (array_key_exists('estado', $validated)) {
+        $originalValue = $originalEstado instanceof EstadoBien ? $originalEstado->value : $originalEstado;
+        $nuevoValue = $validated['estado'] instanceof EstadoBien ? $validated['estado']->value : $validated['estado'];
+
+        if ($nuevoValue !== $originalValue) {
+            $labelOriginal = $originalEstado instanceof EstadoBien
+                ? $originalEstado->label()
+                : EstadoBien::tryFrom($originalValue)?->label() ?? (string) $originalValue;
+
+            $labelNuevo = $validated['estado'] instanceof EstadoBien
+                ? $validated['estado']->label()
+                : EstadoBien::tryFrom($nuevoValue)?->label() ?? (string) $nuevoValue;
+
+            $observaciones[] = sprintf('Cambio de estado: %s → %s', $labelOriginal, $labelNuevo);
+        }
+    }
+
+    // Pasar observaciones al observer (si usas un sistema de contexto temporal)
+    if (!empty($observaciones)) {
+        $bien->setAttribute('_observaciones', implode(' | ', $observaciones));
+    }
+
+    return redirect()
+        ->route('bienes.index')
+        ->with('success', 'Bien actualizado correctamente.');
+}
+
+    public function edit(Bien $bien)
+{
+    $dependencias = Dependencia::with('responsable')->get();
+    return view('bienes.edit', compact('bien', 'dependencias'));
+}
 
     /**
      * Eliminar un bien.

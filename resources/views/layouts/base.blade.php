@@ -8,9 +8,34 @@
 </head>
 <body class="bg-gray-50">
     @include('layouts.head')
-    
+
     <main class="max-w-screen-2xl mx-auto px-6 py-8">
         @yield('content')
     </main>
+
+    {{-- Script para filtros automáticos --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('filtrosForm');
+            if (!form) return;
+
+            const filtros = form.querySelectorAll('input, select');
+
+            filtros.forEach(filtro => {
+                filtro.addEventListener('change', () => {
+                    form.submit();
+                });
+
+                if (filtro.type === 'text') {
+                    let timeout;
+                    filtro.addEventListener('input', () => {
+                        clearTimeout(timeout);
+                        timeout = setTimeout(() => form.submit(), 400);
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>
+

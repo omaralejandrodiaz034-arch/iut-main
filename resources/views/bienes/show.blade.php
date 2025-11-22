@@ -20,6 +20,7 @@ use Illuminate\Support\Str;
     @endif
 
     <div class="bg-white shadow rounded-lg p-6 space-y-6">
+        <!-- Botón regresar -->
         <div>
             <a
                 href="{{ route('bienes.index') }}"
@@ -30,8 +31,11 @@ use Illuminate\Support\Str;
             </a>
         </div>
 
+        <!-- Encabezado -->
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h1 class="text-3xl font-bold text-gray-800 leading-tight">Bien: {{ $bien->codigo }} — {{ Str::limit($bien->descripcion, 80) }}</h1>
+            <h1 class="text-3xl font-bold text-gray-800 leading-tight">
+                Bien: {{ $bien->codigo }} — {{ Str::limit($bien->descripcion, 80) }}
+            </h1>
             <div class="flex flex-wrap gap-2 md:justify-end">
                 <a
                     href="{{ route('bienes.pdf', $bien) }}"
@@ -50,6 +54,7 @@ use Illuminate\Support\Str;
             </div>
         </div>
 
+        <!-- Información principal -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="border border-gray-200 rounded-lg p-4">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Información del Bien</h2>
@@ -109,7 +114,7 @@ use Illuminate\Support\Str;
                     </div>
 
                     <div>
-                        <p class="text-sm text-gray-600">Fecha de Registro</p>
+                        <p class="text-sm text-gray-600">Creado en el sistema</p>
                         <p class="text-base font-medium text-gray-800">{{ $bien->created_at?->format('d/m/Y H:i') }}</p>
                     </div>
                     <div>
@@ -120,6 +125,7 @@ use Illuminate\Support\Str;
             </div>
         </div>
 
+        <!-- Fotografía -->
         <div class="grid grid-cols-1 gap-6">
             <div class="border border-gray-200 rounded-lg p-4">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Fotografía</h2>
@@ -136,12 +142,9 @@ use Illuminate\Support\Str;
                 @endif
             </div>
         </div>
-
-        @if(session('success'))
-            <div class="p-4 bg-green-50 border border-green-200 rounded">
-                {{ session('success') }}
-            </div>
-        @endif
     </div>
 </div>
 @endsection
+
+
+

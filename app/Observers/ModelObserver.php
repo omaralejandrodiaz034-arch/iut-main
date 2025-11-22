@@ -41,9 +41,10 @@ class ModelObserver
      */
     public function created(Model $model): void
     {
-        $this->registrarMovimiento($model, 'Registro', sprintf(
-            'Registro de %s (id=%s)', class_basename($model), $model->id
-        ));
+        $observaciones = $model->getAttribute('_observaciones')
+            ?? sprintf('Registro de %s (id=%s)', class_basename($model), $model->id);
+
+        $this->registrarMovimiento($model, 'Registro', $observaciones);
     }
 
     /**
@@ -51,11 +52,26 @@ class ModelObserver
      */
     public function updated(Model $model): void
     {
+        // Si el controlador pasó observaciones explícitas, usarlas
+        if ($obs = $model->getAttribute('_observaciones')) {
+            $this->registrarMovimiento($model, 'Actualización', $obs);
+            return;
+        }
+
         $original = $model->getOriginal();
         $changes = collect($model->getChanges())->except(['updated_at']);
 
         $detalle = $changes->map(function ($nuevo, $campo) use ($original) {
             $viejo = $original[$campo] ?? 'N/A';
+
+            // Convertir enums a string legible
+            if ($viejo instanceof \BackedEnum) {
+                $viejo = method_exists($viejo, 'label') ? $viejo->label() : $viejo->value;
+            }
+            if ($nuevo instanceof \BackedEnum) {
+                $nuevo = method_exists($nuevo, 'label') ? $nuevo->label() : $nuevo->value;
+            }
+
             return "$campo: $viejo -> $nuevo";
         })->implode('; ');
 
@@ -67,9 +83,10 @@ class ModelObserver
      */
     public function deleting(Model $model): void
     {
-        $this->registrarMovimiento($model, 'Eliminación', sprintf(
-            'Eliminación de %s (id=%s)', class_basename($model), $model->id
-        ));
+        $observaciones = $model->getAttribute('_observaciones')
+            ?? sprintf('Eliminación de %s (id=%s)', class_basename($model), $model->id);
+
+        $this->registrarMovimiento($model, 'Eliminación', $observaciones);
     }
 
     /**
@@ -99,4 +116,3 @@ class ModelObserver
         }
     }
 }
-

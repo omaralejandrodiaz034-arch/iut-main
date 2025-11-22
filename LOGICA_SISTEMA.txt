@@ -7,11 +7,11 @@
    ────────────────────────────────────────────────────────────────────────
    - Entidad superior que agrupa todas las instituciones
    - Ejemplo: MINISTERIO DEL PODER POPULAR PARA LA EDUCACIÓN UNIVERSITARIA
-   
+
    Atributos:
    • Código: Identificador único del organismo
    • Nombre: Denominación de la institución
-   
+
    Relación: Un organismo tiene muchas Unidades Administradoras
 
 
@@ -19,12 +19,12 @@
    ────────────────────────────────────────────────────────────────────────
    - Subdivisions dentro de un organismo encargadas de administrar áreas específicas
    - Ejemplo: UPTOS "CLODOSBALDO RUSSIAN"
-   
+
    Atributos:
    • Código: Identificador único (1430)
    • Denominación: Nombre de la unidad (OFICINA DE ADMINISTRACIÓN)
    • Organismo: Relación con el organismo padre
-   
+
    Relación: Una unidad administradora tiene muchas Dependencias
 
 
@@ -32,12 +32,12 @@
    ────────────────────────────────────────────────────────────────────────
    - Departamentos o áreas dentro de una unidad administradora
    - Ejemplo: DEPENDENCIA USUARIA
-   
+
    Atributos:
    • Código: Identificador único (0)
    • Denominación: Nombre del departamento
    • Unidad Administradora: Relación con la unidad padre
-   
+
    Relación: Una dependencia tiene muchos Bienes y muchos Usuarios asignados
 
 
@@ -45,7 +45,7 @@
    ────────────────────────────────────────────────────────────────────────
    - Artículos o activos físicos que pertenecen a una dependencia
    - Son registrados, almacenados y rastreados por el sistema
-   
+
    Atributos:
    • Código: Identificador único del bien
    • Descripción: Detalles del artículo (ej: computadora, escritorio, etc.)
@@ -56,8 +56,8 @@
    • Fecha de Registro: Cuándo se incorporó al inventario
    • Estado: Activo, Inactivo, En Mantenimiento, etc.
    • Fotos: Evidencia visual del bien
-   
-   Relación: 
+
+   Relación:
    - Un bien pertenece a una Dependencia
    - Un bien es responsabilidad de un Usuario (Responsable)
    - Un bien puede tener muchos Movimientos
@@ -66,7 +66,7 @@
 5. USUARIOS
    ────────────────────────────────────────────────────────────────────────
    - Personal responsable de administrar los bienes y el sistema
-   
+
    Atributos:
    • Cédula: Identificación nacional
    • Nombre: Nombre completo
@@ -74,12 +74,11 @@
    • Contraseña: Acceso al sistema
    • Rol: Tipo de usuario (Administrador, Gerente, Responsable)
    • Activo: Estado del usuario en el sistema
-   
+
    Tipos de Usuarios:
    - Administrador: Gestión completa del sistema
-   - Gerente de Bienes: Supervisa inventarios
    - Usuario Responsable: Cuida bienes asignados
-   
+
    Relación:
    - Un usuario puede ser responsable de muchos Bienes
    - Un usuario genera movimientos de bienes

@@ -22,7 +22,8 @@
 
 {{-- Filtros --}}
 <div class="mb-6 bg-white shadow rounded-lg p-4 space-y-4">
-    <form action="{{ route('bienes.index') }}" method="GET" class="space-y-4">
+    <form action="{{ route('bienes.index') }}" method="GET" class="space-y-4" id="filtrosForm">
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="flex flex-col">
                 <label for="search" class="text-sm font-medium text-gray-700 mb-1">Búsqueda rápida</label>
@@ -30,16 +31,7 @@
                        placeholder="Código, descripción o ubicación"
                        class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-            <div class="flex flex-col">
-                <label for="codigo" class="text-sm font-medium text-gray-700 mb-1">Código</label>
-                <input type="text" name="codigo" id="codigo" value="{{ $filters['codigo'] ?? '' }}"
-                       class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div class="flex flex-col">
-                <label for="descripcion" class="text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                <input type="text" name="descripcion" id="descripcion" value="{{ $filters['descripcion'] ?? '' }}"
-                       class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
+
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -164,13 +156,22 @@
                 } elseif ($key === 'estado') {
                     $display = collect($value)->map(fn ($estado) => $estados[$estado] ?? $estado)->implode(', ');
                 }
+
+                // Generar nuevo query sin este filtro
+                $querySinFiltro = collect($filters)->forget($key)->toArray();
             @endphp
+
             <span class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700">
                 {{ $label }}: <span class="ml-1 font-medium">{{ $display }}</span>
+                <a href="{{ route('bienes.index', $querySinFiltro) }}"
+                   class="ml-2 text-indigo-500 hover:text-red-600 font-bold" title="Quitar filtro">
+                    ×
+                </a>
             </span>
         @endforeach
     </div>
 @endif
+
 
 {{-- Tabla --}}
 <div class="bg-white shadow-md rounded-lg overflow-hidden">
@@ -263,7 +264,28 @@
         {{ $bienes->links() }}
     </div>
 @endif
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('filtrosForm');
+        const filtros = form.querySelectorAll('input, select');
+
+        filtros.forEach(filtro => {
+            filtro.addEventListener('change', () => {
+                form.submit();
+            });
+
+            if (filtro.type === 'text') {
+                let timeout;
+                filtro.addEventListener('input', () => {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => form.submit(), 400);
+                });
+            }
+        });
+    });
+</script>
 @endsection
+
 
 
 

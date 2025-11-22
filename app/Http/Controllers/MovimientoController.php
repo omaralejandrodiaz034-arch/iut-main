@@ -7,6 +7,9 @@ use App\Models\Eliminado;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Usuario;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+
 
 class MovimientoController extends Controller
 {
@@ -174,5 +177,14 @@ class MovimientoController extends Controller
             $ok ? 'Registro restaurado correctamente.' : 'La restauración falló. Revisa los logs.'
         );
     }
+            public function pdf(Movimiento $movimiento)
+    {
+        $movimiento->load(['usuario', 'subject', 'bien', 'historialMovimientos']);
+
+        return Pdf::loadView('movimientos.pdf', compact('movimiento'))
+            ->download("movimiento_{$movimiento->id}.pdf");
+    }
+
 }
+
 

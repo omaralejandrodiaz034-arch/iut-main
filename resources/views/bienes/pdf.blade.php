@@ -66,7 +66,7 @@
 <body>
     <div class="header">
         <h1>Sistema de Gestión de Inventario de Bienes</h1>
-        <p class="small">Reporte de Bien</p>
+        <p class="small">Reporte institucional del bien</p>
     </div>
 
     <div class="section">
@@ -109,11 +109,11 @@
         <div class="section-title">Dependencia</div>
         <div class="field">
             <div class="field-label">Nombre</div>
-            <div class="field-value">{{ $bien->dependencia->nombre ?? '—' }}</div>
+            <div class="field-value">{{ $dependencia->nombre ?? '—' }}</div>
         </div>
         <div class="field">
             <div class="field-label">Responsable</div>
-            <div class="field-value">{{ $bien->dependencia->responsable->nombre_completo ?? 'Sin asignar' }}</div>
+            <div class="field-value">{{ $dependencia->responsable->nombre_completo ?? 'Sin asignar' }}</div>
         </div>
     </div>
 
@@ -121,24 +121,26 @@
         <div class="section-title">Movimientos registrados</div>
         <div class="field">
             <div class="field-label">Total</div>
-            <div class="field-value">{{ $bien->movimientos->count() }}</div>
+            <div class="field-value">{{ $movimientos->count() }}</div>
         </div>
 
-        @if ($bien->movimientos->isNotEmpty())
+        @if ($movimientos->isNotEmpty())
             <table>
                 <thead>
                     <tr>
                         <th>Fecha</th>
                         <th>Tipo</th>
-                        <th>Descripción</th>
+                        <th>Observaciones</th>
+                        <th>Usuario</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($bien->movimientos as $movimiento)
+                    @foreach ($movimientos as $movimiento)
                         <tr>
-                            <td>{{ optional($movimiento->created_at)->format('d/m/Y H:i') }}</td>
+                            <td>{{ optional($movimiento->fecha)->format('d/m/Y H:i') }}</td>
                             <td>{{ $movimiento->tipo }}</td>
-                            <td>{{ $movimiento->descripcion }}</td>
+                            <td>{{ $movimiento->observaciones }}</td>
+                            <td>{{ $movimiento->usuario?->nombre_completo ?? '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -152,7 +154,7 @@
         <div class="section-title">Fotografía</div>
         @if ($bien->fotografia)
             <img
-                src="{{ str_starts_with($bien->fotografia, 'http') ? $bien->fotografia : public_path('storage/'.$bien->fotografia) }}"
+                src="{{ str_starts_with($bien->fotografia, 'http') ? $bien->fotografia : asset('storage/'.$bien->fotografia) }}"
                 alt="Fotografía del bien {{ $bien->codigo }}"
                 style="max-width: 100%; height: auto; border-radius: 8px;"
             >
@@ -161,7 +163,13 @@
         @endif
     </div>
 
-    <p class="small">Generado el {{ now()->format('d/m/Y H:i') }}</p>
+    <p class="small">Generado el {{ now()->format('d/m/Y H:i') }} por {{ auth()->user()->name ?? 'Sistema' }}</p>
 </body>
 </html>
+
+
+
+
+
+
 

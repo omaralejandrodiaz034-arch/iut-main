@@ -65,6 +65,9 @@ Route::middleware(['auth', 'redirigir.rol'])->group(function () {
     Route::get('dependencias/{dependencia}/pdf', [DependenciaController::class, 'exportPdf'])->name('dependencias.pdf');
     Route::resource('historial-movimientos', HistorialMovimientoController::class);
     Route::resource('movimientos', MovimientoController::class);
+    // routes/web.php
+    Route::get('movimientos/{movimiento}/pdf', [MovimientoController::class, 'pdf'])->name('movimientos.pdf');
+
     // Restauración/visualización de eliminados se maneja desde MovimientoController (vista combinada)
     Route::post('movimientos/eliminados/{eliminado}/restore', [MovimientoController::class, 'restoreEliminado'])->name('movimientos.eliminados.restore');
     Route::resource('organismos', OrganismoController::class);
