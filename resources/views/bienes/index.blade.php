@@ -191,22 +191,68 @@
 <div class="bg-white shadow-md rounded-lg overflow-hidden">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
+            @php
+    $currentSort = request('sort', 'fecha_registro');
+    $currentDirection = request('direction', 'desc');
+
+                function sortLink($column, $label) {
+                    $direction = (request('sort') === $column && request('direction') === 'asc') ? 'desc' : 'asc';
+                    return route('bienes.index', array_merge(request()->query(), ['sort' => $column, 'direction' => $direction]));
+                }
+            @endphp
+
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        <a href="{{ sortLink('codigo', 'Código') }}" class="flex items-center gap-1">
+                            Código
+                            @if($currentSort === 'codigo')
+                                <span>{{ $currentDirection === 'asc' ? '▲' : '▼' }}</span>
+                            @endif
+                        </a>
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        <a href="{{ sortLink('descripcion', 'Descripción') }}" class="flex items-center gap-1">
+                            Descripción
+                            @if($currentSort === 'descripcion')
+                                <span>{{ $currentDirection === 'asc' ? '▲' : '▼' }}</span>
+                            @endif
+                        </a>
+                    </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organismo</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unidad</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dependencia</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Responsable</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        <a href="{{ sortLink('precio', 'Precio') }}" class="flex items-center gap-1">
+                            Precio
+                            @if($currentSort === 'precio')
+                                <span>{{ $currentDirection === 'asc' ? '▲' : '▼' }}</span>
+                            @endif
+                        </a>
+                    </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Foto</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        <a href="{{ sortLink('estado', 'Estado') }}" class="flex items-center gap-1">
+                            Estado
+                            @if($currentSort === 'estado')
+                                <span>{{ $currentDirection === 'asc' ? '▲' : '▼' }}</span>
+                            @endif
+                        </a>
+                    </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ubicación</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Registro</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        <a href="{{ sortLink('fecha_registro', 'Fecha Registro') }}" class="flex items-center gap-1">
+                            Fecha Registro
+                            @if($currentSort === 'fecha_registro')
+                                <span>{{ $currentDirection === 'asc' ? '▲' : '▼' }}</span>
+                            @endif
+                        </a>
+                    </th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
                 </tr>
             </thead>
+
             <tbody class="bg-white divide-y divide-gray-200">
                 @forelse($bienes as $bien)
                     <tr class="hover:bg-gray-50 transition">

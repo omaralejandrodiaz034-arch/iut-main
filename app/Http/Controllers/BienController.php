@@ -33,6 +33,11 @@ public function index(Request $request)
         'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde'],
         'descripcion' => ['nullable', 'string', 'max:255'],
         'codigo' => ['nullable', 'string', 'max:255'],
+        // 🔽 nuevos parámetros de ordenamiento
+        'sort' => ['nullable', 'string', Rule::in([
+            'codigo', 'descripcion', 'precio', 'fecha_registro', 'estado'
+        ])],
+        'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
     ]);
 
     $query = Bien::with([
@@ -79,8 +84,12 @@ public function index(Request $request)
         $query->whereHas('dependencia.unidadAdministradora.organismo', fn ($q) => $q->where('id', $organismoId));
     }
 
+    // ⚡️ Ordenamiento dinámico
+    $sort = $validated['sort'] ?? 'fecha_registro';
+    $direction = $validated['direction'] ?? 'desc';
+
     $bienes = $query
-        ->orderByDesc('fecha_registro')
+        ->orderBy($sort, $direction)
         ->paginate(10)
         ->appends($request->query());
 
@@ -120,6 +129,7 @@ public function index(Request $request)
         'estados' => $estados,
     ]);
 }
+
 
 
 
