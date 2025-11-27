@@ -32,7 +32,7 @@ class UsuarioSeeder extends Seeder
             'nombre' => 'Usuario',
             'apellido' => 'Responsable',
             'correo' => 'usuario@inventario.com',
-            'hash_password' => Hash::make('password'),
+            'hash_password' => Hash::make(value: 'password'),
             'activo' => true,
             'is_admin' => false,
         ]);
