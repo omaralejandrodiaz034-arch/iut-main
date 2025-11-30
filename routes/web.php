@@ -29,10 +29,10 @@ Route::get('/dashboard', function () {
         // Si ya está autenticado, redirigir según rol
         $user = Auth::user();
         if ($user instanceof Usuario && $user->isAdmin()) {
-            return redirect()->route('usuarios.index');
+            return redirect()->route('welcome');
         }
 
-        return redirect()->route('bienes.index');
+        return redirect()->route('welcome');
     }
 
     // Si no está autenticado, mostrar login

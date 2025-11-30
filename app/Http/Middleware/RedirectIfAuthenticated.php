@@ -24,10 +24,10 @@ class RedirectIfAuthenticated
 
                 // Redirigir según el rol del usuario
                 if ($user->isAdmin()) {
-                    return redirect()->route('usuarios.index');
+                    return redirect()->route('welcome');
                 }
 
-                return redirect()->route('bienes.index');
+                return redirect()->route('welcome');
             }
         }
 
