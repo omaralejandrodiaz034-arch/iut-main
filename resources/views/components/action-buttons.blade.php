@@ -68,6 +68,20 @@
     <x-heroicon-o-pencil-square class="w-4 h-4 mr-1"/> Editar
 </a>
 
+@php
+    $buttonText = $buttonText ?? 'Eliminar';
+@endphp
+
+@if($canDelete)
+    <form action="{{ $destroyUrl }}" method="POST" class="inline delete-form" data-can-delete="{{ auth()->user() && auth()->user()->canDeleteData() ? '1' : '0' }}" data-confirm="{{ e($confirm) }}" data-label="{{ e($label ?? '') }}">
+        @csrf
+        @method('DELETE')
+        <button type="submit" class="inline-flex items-center px-2 py-1 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100">
+            <x-heroicon-o-trash class="w-4 h-4 mr-1"/> {{ $buttonText }}
+        </button>
+    </form>
+@endif
+
 @once
     {{-- Modal para confirmación/el mensaje de no permiso (incluido una sola vez por página) con estilos y animación Tailwind --}}
     <div id="delete-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50 transition-opacity duration-200 ease-out">
