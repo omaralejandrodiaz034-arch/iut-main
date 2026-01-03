@@ -6,7 +6,7 @@
 <div class="max-w-2xl mx-auto">
     <div class="bg-white shadow rounded-lg p-6">
             <h1 class="text-2xl font-bold text-gray-800 mb-6">Crear Nuevo Organismo</h1>
-            
+
             @if ($errors->any())
                 <div class="mb-4 rounded-md bg-red-100 border border-red-300 p-4">
                     <ul class="text-sm text-red-800">
