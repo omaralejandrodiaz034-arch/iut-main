@@ -11,13 +11,40 @@ use Illuminate\Validation\Rule;
 class OrganismoController extends Controller
 {
     /**
-     * Listar todos los organismos.
+     * Listar todos los organismos con filtros.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $organismos = Organismo::paginate(10);
+        $validated = $request->validate([
+            'buscar' => ['nullable', 'string', 'max:255'],
+            'codigo' => ['nullable', 'string', 'max:50'],
+            'nombre' => ['nullable', 'string', 'max:255'],
+        ]);
 
-        return view('organismos.index', compact('organismos'));
+        $query = Organismo::query();
+
+        // Búsqueda general
+        if (!empty($validated['buscar'])) {
+            $buscar = $validated['buscar'];
+            $query->where(function ($q) use ($buscar) {
+                $q->where('codigo', 'like', "%{$buscar}%")
+                  ->orWhere('nombre', 'like', "%{$buscar}%");
+            });
+        }
+
+        // Filtro por código
+        if (!empty($validated['codigo'])) {
+            $query->where('codigo', 'like', '%' . $validated['codigo'] . '%');
+        }
+
+        // Filtro por nombre
+        if (!empty($validated['nombre'])) {
+            $query->where('nombre', 'like', '%' . $validated['nombre'] . '%');
+        }
+
+        $organismos = $query->orderBy('nombre')->paginate(10)->appends($request->query());
+
+        return view('organismos.index', compact('organismos', 'validated'));
     }
 
     /**
@@ -33,10 +60,19 @@ class OrganismoController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'codigo' => ['required', 'string', 'max:50', 'unique:organismos,codigo'],
-            'nombre' => ['required', 'string', 'max:255'],
-        ]);
+        $validated = $request->validate(
+            [
+                'codigo' => ['required', 'string', 'max:50', 'unique:organismos,codigo'],
+                'nombre' => ['required', 'string', 'max:255'],
+            ],
+            [
+                'codigo.required' => 'El código del organismo es requerido',
+                'codigo.unique' => 'Este código ya existe en el sistema',
+                'codigo.max' => 'El código no puede exceder 50 caracteres',
+                'nombre.required' => 'El nombre del organismo es requerido',
+                'nombre.max' => 'El nombre no puede exceder 255 caracteres',
+            ]
+        );
 
         $organismo = Organismo::create($validated);
 
@@ -87,15 +123,22 @@ class OrganismoController extends Controller
      */
     public function update(Request $request, Organismo $organismo)
     {
-        $validated = $request->validate([
-            'codigo' => [
-                'sometimes',
-                'string',
-                'max:50',
-                Rule::unique('organismos', 'codigo')->ignore($organismo->getKey()),
+        $validated = $request->validate(
+            [
+                'codigo' => [
+                    'sometimes',
+                    'string',
+                    'max:50',
+                    Rule::unique('organismos', 'codigo')->ignore($organismo->getKey()),
+                ],
+                'nombre' => ['sometimes', 'string', 'max:255'],
             ],
-            'nombre' => ['sometimes', 'string', 'max:255'],
-        ]);
+            [
+                'codigo.unique' => 'Este código ya existe en el sistema',
+                'codigo.max' => 'El código no puede exceder 50 caracteres',
+                'nombre.max' => 'El nombre no puede exceder 255 caracteres',
+            ]
+        );
 
         $organismo->update($validated);
 
@@ -107,6 +150,6 @@ class OrganismoController extends Controller
      */
     public function destroy(Organismo $organismo)
     {
-        return response()->json(['message' => 'No se pueden eliminar organismos.'], 403);
+        return response()->json(['message' => 'No está permitido eliminar organismos del sistema.'], 403);
     }
 }

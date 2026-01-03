@@ -44,6 +44,9 @@ class ModelObserver
         $observaciones = $model->getAttribute('_observaciones')
             ?? sprintf('Registro de %s (id=%s)', class_basename($model), $model->id);
 
+        // Log para depuración
+        logger()->info('Evento created en ModelObserver', ['model' => $model, 'observaciones' => $observaciones]);
+
         $this->registrarMovimiento($model, 'Registro', $observaciones);
     }
 
@@ -54,6 +57,9 @@ class ModelObserver
     {
         // Si el controlador pasó observaciones explícitas, usarlas
         if ($obs = $model->getAttribute('_observaciones')) {
+            // Log para depuración
+            logger()->info('Evento updated en ModelObserver con observaciones explícitas', ['model' => $model, 'observaciones' => $obs]);
+
             $this->registrarMovimiento($model, 'Actualización', $obs);
             return;
         }
@@ -74,6 +80,9 @@ class ModelObserver
 
             return "$campo: $viejo -> $nuevo";
         })->implode('; ');
+
+        // Log para depuración
+        logger()->info('Evento updated en ModelObserver con detalle de cambios', ['model' => $model, 'detalle' => $detalle]);
 
         $this->registrarMovimiento($model, 'Actualización', $detalle ?: 'Actualización');
     }

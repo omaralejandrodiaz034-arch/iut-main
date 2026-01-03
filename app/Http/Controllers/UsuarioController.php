@@ -12,17 +12,61 @@ use Illuminate\Validation\Rule;
 class UsuarioController extends Controller
 {
     /**
-     * Listar usuarios con opción de búsqueda por nombre.
+     * Listar usuarios con filtros avanzados (nombre, cédula, correo, rol).
      */
     public function index(Request $request)
     {
-        $usuarios = Usuario::with('rol')
-            ->when($request->filled('nombre'), function ($query) use ($request) {
-                $query->where('nombre', 'like', '%'.$request->nombre.'%');
-            })
-            ->paginate(10);
+        $validated = $request->validate([
+            'buscar' => ['nullable', 'string', 'max:255'],
+            'cedula' => ['nullable', 'string', 'max:20'],
+            'nombre' => ['nullable', 'string', 'max:255'],
+            'correo' => ['nullable', 'string', 'max:255'],
+            'rol_id' => ['nullable', 'integer', 'exists:roles,id'],
+            'activo' => ['nullable', 'boolean'],
+        ]);
 
-        return view('usuarios.index', compact('usuarios'));
+        $query = Usuario::with('rol');
+
+        // Búsqueda general
+        if (!empty($validated['buscar'])) {
+            $buscar = $validated['buscar'];
+            $query->where(function ($q) use ($buscar) {
+                $q->where('nombre', 'like', "%{$buscar}%")
+                  ->orWhere('apellido', 'like', "%{$buscar}%")
+                  ->orWhere('cedula', 'like', "%{$buscar}%")
+                  ->orWhere('correo', 'like', "%{$buscar}%");
+            });
+        }
+
+        // Filtro por cédula
+        if (!empty($validated['cedula'])) {
+            $query->where('cedula', 'like', '%' . $validated['cedula'] . '%');
+        }
+
+        // Filtro por nombre
+        if (!empty($validated['nombre'])) {
+            $query->where('nombre', 'like', '%' . $validated['nombre'] . '%');
+        }
+
+        // Filtro por correo
+        if (!empty($validated['correo'])) {
+            $query->where('correo', 'like', '%' . $validated['correo'] . '%');
+        }
+
+        // Filtro por rol
+        if (!empty($validated['rol_id'])) {
+            $query->where('rol_id', $validated['rol_id']);
+        }
+
+        // Filtro por estado activo/inactivo
+        if (isset($validated['activo'])) {
+            $query->where('activo', $validated['activo']);
+        }
+
+        $usuarios = $query->orderBy('nombre')->paginate(10)->appends($request->query());
+        $roles = \App\Models\Rol::orderBy('nombre')->get();
+
+        return view('usuarios.index', compact('usuarios', 'roles', 'validated'));
     }
 
     /**
@@ -68,10 +112,19 @@ class UsuarioController extends Controller
                 'is_admin' => ['boolean'],
             ],
             [
+                'rol_id.required' => 'El rol es requerido',
+                'cedula.required' => 'La cédula es requerida',
                 'cedula.regex' => 'La cédula debe tener el formato V-XX.XXX.XXX',
                 'cedula.unique' => 'Esta cédula ya está registrada',
-                'correo.unique' => 'Este correo ya está registrado',
+                'nombre.required' => 'El nombre es requerido',
+                'nombre.max' => 'El nombre no puede exceder 150 caracteres',
                 'apellido.required' => 'El apellido es requerido',
+                'apellido.max' => 'El apellido no puede exceder 150 caracteres',
+                'correo.required' => 'El correo es requerido',
+                'correo.email' => 'Debe proporcionar un correo válido',
+                'correo.unique' => 'Este correo ya está registrado',
+                'hash_password.required' => 'La contraseña es requerida',
+                'hash_password.min' => 'La contraseña debe tener al menos 8 caracteres',
             ]
         );
 

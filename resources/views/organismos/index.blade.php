@@ -16,8 +16,38 @@
     </div>
 @endif
 
-        {{-- Tabla de organismos --}}
-        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+{{-- Filtros --}}
+<div class="bg-white shadow-md rounded-lg p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">🔍 Filtrar Organismos</h2>
+    <form action="{{ route('organismos.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+            <label for="buscar" class="block text-sm font-semibold text-gray-700 mb-2">Búsqueda General</label>
+            <input type="text" name="buscar" id="buscar" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                   placeholder="Código o nombre..." value="{{ $validated['buscar'] ?? '' }}">
+        </div>
+        <div>
+            <label for="codigo" class="block text-sm font-semibold text-gray-700 mb-2">Código</label>
+            <input type="text" name="codigo" id="codigo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                   placeholder="Código..." value="{{ $validated['codigo'] ?? '' }}">
+        </div>
+        <div>
+            <label for="nombre" class="block text-sm font-semibold text-gray-700 mb-2">Nombre</label>
+            <input type="text" name="nombre" id="nombre" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                   placeholder="Nombre..." value="{{ $validated['nombre'] ?? '' }}">
+        </div>
+        <div class="md:col-span-3 flex gap-2">
+            <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
+                🔎 Buscar
+            </button>
+            <a href="{{ route('organismos.index') }}" class="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400">
+                ✕ Limpiar
+            </a>
+        </div>
+    </form>
+</div>
+
+{{-- Tabla de organismos --}}
+<div class="bg-white shadow-md rounded-lg overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">

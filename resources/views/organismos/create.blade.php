@@ -21,7 +21,7 @@
                 @csrf
 
                 <div>
-                    <x-form-input name="codigo" label="Código" :value="old('codigo')" required placeholder="Ej: ORG-001" help="Código único del organismo" />
+                    <x-form-input id="codigo" name="codigo" label="Código" :value="old('codigo')" required placeholder="Ej: ORG-001" help="Código único del organismo" />
                 </div>
 
                 <div>
@@ -40,4 +40,13 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.getElementById('codigo').addEventListener('input', function (e) {
+        const regex = /^[0-9\-]*$/;
+        if (!regex.test(e.target.value)) {
+            e.target.value = e.target.value.replace(/[^0-9\-]/g, '');
+        }
+    });
+</script>
 @endsection

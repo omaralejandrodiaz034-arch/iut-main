@@ -89,14 +89,18 @@
 
                 <!-- Tipo de Bien -->
                 <div>
-                    <label for="tipo" class="block text-sm font-semibold text-gray-700 mb-2">Tipo de Bien</label>
-                    <select name="tipo" id="tipo" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                    <label for="tipo_bien" class="block text-sm font-semibold text-gray-700 mb-2">Tipo de Bien</label>
+                    <select name="tipo_bien" id="tipo_bien" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
                         <option value="">Seleccione...</option>
-                        <option value="inmueble">Inmueble</option>
-                        <option value="electrónico">Electrónico</option>
-                        <option value="mueble">Mueble</option>
-                        <option value="otro">Otro</option>
+                        @foreach($tiposBien as $value => $label)
+                            <option value="{{ $value }}" {{ old('tipo_bien') == $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
                     </select>
+                    @error('tipo_bien')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <!-- Campos dinámicos según el tipo de bien -->
@@ -156,60 +160,97 @@
 </script>
 
 <script>
-    document.getElementById('tipo').addEventListener('change', function () {
+    // Mapeo de campos específicos por tipo de bien
+    const camposPorTipo = {
+        'ELECTRONICO': [
+            { name: 'procesador', label: 'Procesador', type: 'text' },
+            { name: 'memoria', label: 'Memoria (GB)', type: 'text' },
+            { name: 'almacenamiento', label: 'Almacenamiento (GB)', type: 'text' },
+            { name: 'pantalla', label: 'Tamaño de pantalla', type: 'text' },
+            { name: 'serial', label: 'Número de serie', type: 'text' },
+            { name: 'garantia', label: 'Garantía hasta', type: 'date' }
+        ],
+        'INMUEBLE': [
+            { name: 'dimensiones', label: 'Dimensiones (largo x ancho x alto)', type: 'text' },
+            { name: 'material', label: 'Material principal', type: 'text' },
+            { name: 'area', label: 'Área (m²)', type: 'number' },
+            { name: 'pisos', label: 'Número de pisos', type: 'number' },
+            { name: 'construccion', label: 'Año de construcción', type: 'text' },
+            { name: 'direccion', label: 'Dirección exacta', type: 'text' }
+        ],
+        'MOBILIARIO': [
+            { name: 'material', label: 'Material', type: 'text' },
+            { name: 'dimensiones', label: 'Dimensiones', type: 'text' },
+            { name: 'color', label: 'Color', type: 'text' },
+            { name: 'capacidad', label: 'Capacidad de personas/carga', type: 'text' },
+            { name: 'cantidad_piezas', label: 'Cantidad de piezas', type: 'number' },
+            { name: 'acabado', label: 'Tipo de acabado', type: 'text' }
+        ],
+        'VEHICULO': [
+            { name: 'marca', label: 'Marca', type: 'text' },
+            { name: 'modelo', label: 'Modelo', type: 'text' },
+            { name: 'anio', label: 'Año', type: 'text' },
+            { name: 'placa', label: 'Placa o número de registro', type: 'text' },
+            { name: 'motor', label: 'Número de motor', type: 'text' },
+            { name: 'chasis', label: 'Número de chasis', type: 'text' },
+            { name: 'combustible', label: 'Tipo de combustible', type: 'text' },
+            { name: 'kilometraje', label: 'Kilometraje actual', type: 'text' }
+        ],
+        'OTROS': [
+            { name: 'especificaciones', label: 'Especificaciones adicionales', type: 'textarea' },
+            { name: 'cantidad', label: 'Cantidad de unidades', type: 'number' },
+            { name: 'presentacion', label: 'Presentación/Formato', type: 'text' }
+        ]
+    };
+
+    document.getElementById('tipo_bien').addEventListener('change', function () {
         const tipo = this.value;
         const container = document.getElementById('campos-tipo-bien');
         container.innerHTML = '';
 
-        if (tipo === 'electrónico') {
-            container.innerHTML = `
-                <div>
-                    <label for="serial" class="block text-sm font-semibold text-gray-700 mb-2">Serial</label>
-                    <input type="text" name="serial" id="serial" value="{{ old('serial') }}" placeholder="Ingrese el serial del bien"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                </div>
-                <div>
-                    <label for="caracteristicas" class="block text-sm font-semibold text-gray-700 mb-2">Características</label>
-                    <textarea name="caracteristicas" id="caracteristicas" rows="3" placeholder="Detalles técnicos del bien"
-                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">{{ old('caracteristicas') }}</textarea>
-                </div>
-            `;
-        } else if (tipo === 'inmueble') {
-            container.innerHTML = `
-                <div>
-                    <label for="ubicacion" class="block text-sm font-semibold text-gray-700 mb-2">Ubicación</label>
-                    <input type="text" name="ubicacion" id="ubicacion" value="{{ old('ubicacion') }}" placeholder="Ubicación del inmueble"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                </div>
-                <div>
-                    <label for="tipo_edificio" class="block text-sm font-semibold text-gray-700 mb-2">Tipo de Edificio</label>
-                    <input type="text" name="tipo_edificio" id="tipo_edificio" value="{{ old('tipo_edificio') }}" placeholder="Ej: Comercial, Residencial"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                </div>
-                <div>
-                    <label for="plantas" class="block text-sm font-semibold text-gray-700 mb-2">Número de Plantas</label>
-                    <input type="number" name="plantas" id="plantas" value="{{ old('plantas') }}" placeholder="Ej: 3"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                </div>
-            `;
-        } else if (tipo === 'mueble') {
-            container.innerHTML = `
-                <div>
-                    <label for="color" class="block text-sm font-semibold text-gray-700 mb-2">Color</label>
-                    <input type="text" name="color" id="color" value="{{ old('color') }}" placeholder="Ej: Rojo, Azul"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                </div>
-                <div>
-                    <label for="tipo_material" class="block text-sm font-semibold text-gray-700 mb-2">Tipo de Material</label>
-                    <input type="text" name="tipo_material" id="tipo_material" value="{{ old('tipo_material') }}" placeholder="Ej: Madera, Metal"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                </div>
-            `;
+        if (!tipo || !camposPorTipo[tipo]) {
+            return;
         }
+
+        const campos = camposPorTipo[tipo];
+        let html = `<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 rounded">
+            <p class="text-blue-800 font-semibold">Información específica para ${tipo.toLowerCase()}</p>
+        </div>`;
+
+        campos.forEach(campo => {
+            if (campo.type === 'textarea') {
+                html += `
+                    <div>
+                        <label for="${campo.name}" class="block text-sm font-semibold text-gray-700 mb-2">${campo.label}</label>
+                        <textarea name="${campo.name}" id="${campo.name}" rows="4" placeholder="Ingrese ${campo.label.toLowerCase()}"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"></textarea>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div>
+                        <label for="${campo.name}" class="block text-sm font-semibold text-gray-700 mb-2">${campo.label}</label>
+                        <input type="${campo.type}" name="${campo.name}" id="${campo.name}" placeholder="Ingrese ${campo.label.toLowerCase()}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                    </div>
+                `;
+            }
+        });
+
+        container.innerHTML = html;
     });
 
     // Trigger change event to load fields on page load
-    document.getElementById('tipo').dispatchEvent(new Event('change'));
+    document.getElementById('tipo_bien').dispatchEvent(new Event('change'));
+</script>
+
+<script>
+    document.getElementById('codigo').addEventListener('input', function (e) {
+        const regex = /^[0-9\-]*$/;
+        if (!regex.test(e.target.value)) {
+            e.target.value = e.target.value.replace(/[^0-9\-]/g, '');
+        }
+    });
 </script>
 @endpush
 

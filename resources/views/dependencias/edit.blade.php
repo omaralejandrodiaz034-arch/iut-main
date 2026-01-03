@@ -89,5 +89,14 @@
         </form>
     </div>
 </div>
+
+<script>
+    document.getElementById('codigo').addEventListener('input', function (e) {
+        const regex = /^[0-9\-]*$/;
+        if (!regex.test(e.target.value)) {
+            e.target.value = e.target.value.replace(/[^0-9\-]/g, '');
+        }
+    });
+</script>
 @endsection
 

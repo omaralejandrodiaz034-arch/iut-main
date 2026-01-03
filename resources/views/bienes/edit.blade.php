@@ -218,6 +218,13 @@
         event.target.value = event.target.value.replace(regex, '');
     }
 
+    document.getElementById('codigo').addEventListener('input', function (e) {
+        const regex = /^[0-9\-]*$/;
+        if (!regex.test(e.target.value)) {
+            e.target.value = e.target.value.replace(/[^0-9\-]/g, '');
+        }
+    });
+
     document.getElementById('codigo').addEventListener('input', soloAlfanumerico);
     document.getElementById('descripcion').addEventListener('input', descripcionValida);
     document.getElementById('ubicacion').addEventListener('input', soloLetrasNumerosEspacios);

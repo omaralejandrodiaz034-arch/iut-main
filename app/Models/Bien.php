@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EstadoBien;
+use App\Enums\TipoBien;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -28,14 +29,36 @@ class Bien extends Model
         'ubicacion',
         'estado',
         'fecha_registro',
-        'serial',
+        'tipo_bien',
         'procesador',
+        'memoria',
+        'almacenamiento',
+        'pantalla',
+        'garantia',
+        'marca',
+        'modelo',
+        'anio',
+        'placa',
+        'motor',
+        'chasis',
+        'combustible',
+        'kilometraje',
+        'color',
+        'capacidad',
+        'cantidad_piezas',
+        'acabado',
+        'pisos',
+        'construccion',
+        'cantidad',
+        'presentacion',
+        'especificaciones',
         'caracteristicas',
         'direccion',
         'area',
         'uso',
         'material',
         'dimensiones',
+        'serial',
     ];
 
     // App\Models\Bien.php
@@ -54,6 +77,7 @@ class Bien extends Model
     protected $casts = [
         'fecha_registro' => 'datetime',
         'estado' => EstadoBien::class, // Enum PHP 8.1+
+        'tipo_bien' => TipoBien::class, // Enum PHP 8.1+
         'precio' => 'decimal:2',
     ];
 

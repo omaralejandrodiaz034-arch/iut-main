@@ -72,7 +72,7 @@ class Usuario extends Authenticatable
      */
     public function getAuthIdentifierName()
     {
-        return 'correo'; // CORRECTO
+        return 'id'; // Cambiar a ID
     }
 
     /**

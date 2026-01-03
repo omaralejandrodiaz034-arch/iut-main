@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoBien;
+use App\Enums\TipoBien;
 use App\Models\Bien;
 use App\Models\Dependencia;
 use App\Models\Organismo;
@@ -32,7 +33,7 @@ public function index(Request $request)
         'fecha_desde' => ['nullable', 'date'],
         'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde'],
         'descripcion' => ['nullable', 'string', 'max:255'],
-        'codigo' => ['nullable', 'string', 'max:255'],
+        'codigo' => ['nullable', 'string', 'max:255', 'regex:/^[0-9\-]+$/'],
         // 🔽 nuevos parámetros de ordenamiento
         'sort' => ['nullable', 'string', Rule::in([
             'codigo', 'descripcion', 'precio', 'fecha_registro', 'estado'
@@ -140,8 +141,11 @@ public function index(Request $request)
     {
         // Cargamos las dependencias con su responsable para mostrar al seleccionar
         $dependencias = Dependencia::with('responsable')->get();
+        $tiposBien = collect(TipoBien::cases())->mapWithKeys(
+            fn (TipoBien $tipo) => [$tipo->value => $tipo->label()]
+        );
 
-        return view('bienes.create', compact('dependencias'));
+        return view('bienes.create', compact('dependencias', 'tiposBien'));
     }
         /**
      * Mostrar formulario de edición.
@@ -155,16 +159,59 @@ public function index(Request $request)
 
     public function store(Request $request)
 {
-    $validated = $request->validate([
-        'dependencia_id' => ['required', 'exists:dependencias,id'],
-        'codigo' => ['required', 'string', 'max:50', 'unique:bienes,codigo'],
-        'descripcion' => ['required', 'string', 'max:255'],
-        'precio' => ['required', 'numeric', 'min:0'],
-        'fotografia' => ['nullable', 'image', 'max:2048'],
-        'ubicacion' => ['nullable', 'string', 'max:255'],
-        'estado' => ['required', Rule::enum(EstadoBien::class)],
-        'fecha_registro' => ['required', 'date'],
-    ]);
+    $validated = $request->validate(
+        [
+            'dependencia_id' => ['required', 'exists:dependencias,id'],
+            'codigo' => ['required', 'string', 'max:50', 'unique:bienes,codigo', 'regex:/^[0-9\\-]+$/'],
+            'descripcion' => ['required', 'string', 'max:255'],
+            'precio' => ['required', 'numeric', 'min:0'],
+            'fotografia' => ['nullable', 'image', 'max:2048'],
+            'ubicacion' => ['nullable', 'string', 'max:255'],
+            'estado' => ['required', Rule::enum(EstadoBien::class)],
+            'tipo_bien' => ['required', Rule::enum(TipoBien::class)],
+            'fecha_registro' => ['required', 'date'],
+            // Campos dinámicos según tipo
+            'procesador' => ['nullable', 'string', 'max:255'],
+            'memoria' => ['nullable', 'string', 'max:255'],
+            'almacenamiento' => ['nullable', 'string', 'max:255'],
+            'pantalla' => ['nullable', 'string', 'max:255'],
+            'garantia' => ['nullable', 'string', 'max:255'],
+            'marca' => ['nullable', 'string', 'max:255'],
+            'modelo' => ['nullable', 'string', 'max:255'],
+            'anio' => ['nullable', 'string', 'max:255'],
+            'placa' => ['nullable', 'string', 'max:255'],
+            'motor' => ['nullable', 'string', 'max:255'],
+            'chasis' => ['nullable', 'string', 'max:255'],
+            'combustible' => ['nullable', 'string', 'max:255'],
+            'kilometraje' => ['nullable', 'string', 'max:255'],
+            'color' => ['nullable', 'string', 'max:255'],
+            'capacidad' => ['nullable', 'string', 'max:255'],
+            'cantidad_piezas' => ['nullable', 'string', 'max:255'],
+            'acabado' => ['nullable', 'string', 'max:255'],
+            'pisos' => ['nullable', 'string', 'max:255'],
+            'construccion' => ['nullable', 'string', 'max:255'],
+            'cantidad' => ['nullable', 'string', 'max:255'],
+            'presentacion' => ['nullable', 'string', 'max:255'],
+            'especificaciones' => ['nullable', 'string', 'max:1000'],
+        ],
+        [
+            'dependencia_id.required' => 'La dependencia es requerida',
+            'codigo.required' => 'El código es requerido',
+            'codigo.unique' => 'El código ya existe en el sistema',
+            'codigo.regex' => 'El código solo puede contener números y guiones',
+            'descripcion.required' => 'La descripción es requerida',
+            'descripcion.max' => 'La descripción no puede exceder 255 caracteres',
+            'precio.required' => 'El precio es requerido',
+            'precio.numeric' => 'El precio debe ser un número válido',
+            'precio.min' => 'El precio debe ser mayor o igual a 0',
+            'fotografia.image' => 'El archivo debe ser una imagen válida',
+            'fotografia.max' => 'La imagen no puede superar 2MB',
+            'estado.required' => 'El estado es requerido',
+            'tipo_bien.required' => 'El tipo de bien es requerido',
+            'fecha_registro.required' => 'La fecha de registro es requerida',
+            'fecha_registro.date' => 'La fecha de registro debe ser una fecha válida',
+        ]
+    );
 
     // Procesar fotografía si se subió
     if ($request->hasFile('fotografia')) {
@@ -271,21 +318,59 @@ private function procesarFotografia(Request $request, ?Bien $bien = null): ?stri
      */
     public function update(Request $request, Bien $bien)
 {
-    $validated = $request->validate([
-        'dependencia_id' => ['sometimes', 'exists:dependencias,id'],
-        'codigo' => [
-            'sometimes',
-            'string',
-            'max:50',
-            Rule::unique('bienes', 'codigo')->ignore($bien->getKey()),
+    $validated = $request->validate(
+        [
+            'dependencia_id' => ['sometimes', 'exists:dependencias,id'],
+            'codigo' => [
+                'sometimes',
+                'string',
+                'max:50',
+                Rule::unique('bienes', 'codigo')->ignore($bien->getKey()),
+            ],
+            'descripcion' => ['sometimes', 'string', 'max:255'],
+            'precio' => ['sometimes', 'numeric', 'min:0'],
+            'fotografia' => ['nullable', 'image', 'max:2048'],
+            'ubicacion' => ['nullable', 'string', 'max:255'],
+            'estado' => ['sometimes', Rule::enum(EstadoBien::class)],
+            'tipo_bien' => ['sometimes', Rule::enum(TipoBien::class)],
+            'fecha_registro' => ['sometimes', 'date'],
+            // Campos dinámicos según tipo
+            'procesador' => ['nullable', 'string', 'max:255'],
+            'memoria' => ['nullable', 'string', 'max:255'],
+            'almacenamiento' => ['nullable', 'string', 'max:255'],
+            'pantalla' => ['nullable', 'string', 'max:255'],
+            'garantia' => ['nullable', 'string', 'max:255'],
+            'marca' => ['nullable', 'string', 'max:255'],
+            'modelo' => ['nullable', 'string', 'max:255'],
+            'anio' => ['nullable', 'string', 'max:255'],
+            'placa' => ['nullable', 'string', 'max:255'],
+            'motor' => ['nullable', 'string', 'max:255'],
+            'chasis' => ['nullable', 'string', 'max:255'],
+            'combustible' => ['nullable', 'string', 'max:255'],
+            'kilometraje' => ['nullable', 'string', 'max:255'],
+            'color' => ['nullable', 'string', 'max:255'],
+            'capacidad' => ['nullable', 'string', 'max:255'],
+            'cantidad_piezas' => ['nullable', 'string', 'max:255'],
+            'acabado' => ['nullable', 'string', 'max:255'],
+            'pisos' => ['nullable', 'string', 'max:255'],
+            'construccion' => ['nullable', 'string', 'max:255'],
+            'cantidad' => ['nullable', 'string', 'max:255'],
+            'presentacion' => ['nullable', 'string', 'max:255'],
+            'especificaciones' => ['nullable', 'string', 'max:1000'],
         ],
-        'descripcion' => ['sometimes', 'string', 'max:255'],
-        'precio' => ['sometimes', 'numeric', 'min:0'],
-        'fotografia' => ['nullable', 'image', 'max:2048'],
-        'ubicacion' => ['nullable', 'string', 'max:255'],
-        'estado' => ['sometimes', Rule::enum(EstadoBien::class)],
-        'fecha_registro' => ['sometimes', 'date'],
-    ]);
+        [
+            'codigo.unique' => 'El código ya existe en el sistema',
+            'codigo.regex' => 'El código solo puede contener números y guiones',
+            'descripcion.max' => 'La descripción no puede exceder 255 caracteres',
+            'precio.numeric' => 'El precio debe ser un número válido',
+            'precio.min' => 'El precio debe ser mayor o igual a 0',
+            'fotografia.image' => 'El archivo debe ser una imagen válida',
+            'fotografia.max' => 'La imagen no puede superar 2MB',
+            'estado.enum' => 'El estado seleccionado no es válido',
+            'tipo_bien.enum' => 'El tipo de bien seleccionado no es válido',
+            'fecha_registro.date' => 'La fecha de registro debe ser una fecha válida',
+        ]
+    );
 
     // Procesar fotografía si se subió una nueva
     if ($request->hasFile('fotografia')) {
@@ -362,16 +447,28 @@ private function procesarFotografia(Request $request, ?Bien $bien = null): ?stri
             return response()->json(['message' => 'No tienes permisos para desincorporar bienes.'], 403);
         }
 
+        // Log para depuración del ID de usuario
+        $userId = auth()->id();
+        logger()->info('Valor de auth()->id() durante la desincorporación', ['userId' => $userId]);
+
+        if (!is_int($userId)) {
+            logger()->warning('ID de usuario inválido durante la desincorporación', ['userId' => $userId]);
+            return response()->json(['message' => 'Error interno: ID de usuario inválido.'], 500);
+        }
+
         // Registrar movimiento de desincorporación
         \App\Models\Movimiento::create([
             'bien_id' => $bien->id,
             'tipo' => 'desincorporación',
             'descripcion' => 'Bien desincorporado',
-            'usuario_id' => auth()->id(),
+            'usuario_id' => $userId,
         ]);
 
-        // Marcar el bien como desincorporado
-        $bien->update(['estado' => 'desincorporado']);
+        // Marcar el bien como extraviado (valor válido del enum EstadoBien)
+        $bien->update(['estado' => \App\Enums\EstadoBien::EXTRAVIADO]);
+
+        // Archivar el bien eliminado
+        \App\Services\EliminadosService::archiveModel($bien, $userId);
 
         return redirect()
             ->route('bienes.index')

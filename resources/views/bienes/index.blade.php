@@ -123,15 +123,13 @@
         {{-- Filtro por Tipo de Bien --}}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="flex flex-col">
-                <label for="tipo" class="text-sm font-medium text-gray-700 mb-1">Tipo de Bien</label>
-                <select name="tipo" id="tipo"
-                        class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label for="tipo_bien" class="text-sm font-medium text-gray-700 mb-1">Tipo de Bien</label>
+                <select name="tipo_bien" id="tipo_bien"
+                        class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto">
                     <option value="">Todos los Tipos</option>
-                    <option value="inmueble" {{ request('tipo') == 'inmueble' ? 'selected' : '' }}>Inmueble</option>
-                    <option value="electrónico" {{ request('tipo') == 'electrónico' ? 'selected' : '' }}>Electrónico
-                    </option>
-                    <option value="mueble" {{ request('tipo') == 'mueble' ? 'selected' : '' }}>Mueble</option>
-                    <option value="otro" {{ request('tipo') == 'otro' ? 'selected' : '' }}>Otro</option>
+                    @foreach(\App\Enums\TipoBien::cases() as $tipo)
+                        <option value="{{ $tipo->value }}" {{ request('tipo_bien') == $tipo->value ? 'selected' : '' }}>{{ $tipo->label() }}</option>
+                    @endforeach
                 </select>
             </div>
         </div>
@@ -176,7 +174,7 @@
                     'estado' => 'Estado',
                     'fecha_desde' => 'Desde',
                     'fecha_hasta' => 'Hasta',
-                    'tipo' => 'Tipo de Bien',
+                    'tipo_bien' => 'Tipo de Bien',
                     default => ucfirst(str_replace('_', ' ', $key)),
                 };
 
@@ -192,14 +190,9 @@
                     })->implode(', ');
                 } elseif ($key === 'estado') {
                     $display = collect($value)->map(fn ($estado) => $estados[$estado] ?? $estado)->implode(', ');
-                } elseif ($key === 'tipo') {
-                    $tiposBien = [
-                        'inmueble' => 'Inmueble',
-                        'electrónico' => 'Electrónico',
-                        'mueble' => 'Mueble',
-                        'otro' => 'Otro',
-                    ];
-                    $display = $tiposBien[$value] ?? $value;
+                } elseif ($key === 'tipo_bien') {
+                    $tipoBienEnum = \App\Enums\TipoBien::tryFrom($value);
+                    $display = $tipoBienEnum?->label() ?? $value;
                 }
 
                 // Generar nuevo query sin este filtro
@@ -256,6 +249,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unidad</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dependencia</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Responsable</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo de Bien</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                         <a href="{{ sortLink('precio', 'Precio') }}" class="flex items-center gap-1">
                             Precio
@@ -295,6 +289,22 @@
                         <td class="px-6 py-4 text-sm text-gray-600">{{ $bien->dependencia->unidadAdministradora->nombre ?? '-' }}</td>
                         <td class="px-6 py-4 text-sm text-gray-600">{{ $bien->dependencia->nombre ?? '-' }}</td>
                         <td class="px-6 py-4 text-sm text-gray-600">{{ $bien->dependencia->responsable->nombre ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm">
+                            @php
+                                $tipoBienLabel = $bien->tipo_bien?->label() ?? 'N/A';
+                                $tipoBienColor = match($bien->tipo_bien?->value) {
+                                    'ELECTRONICO' => 'bg-blue-100 text-blue-800',
+                                    'INMUEBLE' => 'bg-amber-100 text-amber-800',
+                                    'MOBILIARIO' => 'bg-purple-100 text-purple-800',
+                                    'VEHICULO' => 'bg-red-100 text-red-800',
+                                    'OTROS' => 'bg-gray-100 text-gray-800',
+                                    default => 'bg-gray-100 text-gray-700',
+                                };
+                            @endphp
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $tipoBienColor }}">
+                                {{ $tipoBienLabel }}
+                            </span>
+                        </td>
                         <td class="px-6 py-4 text-sm text-gray-900 font-semibold">
                             {{ number_format((float) $bien->precio, 2, ',', '.') }} Bs.
                         </td>
@@ -342,7 +352,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="12" class="px-6 py-4 text-center text-sm text-gray-500">
+                        <td colspan="13" class="px-6 py-4 text-center text-sm text-gray-500">
                             No hay bienes registrados.
                         </td>
                     </tr>
@@ -464,6 +474,13 @@
         });
 
         attachPaginationListeners();
+    });
+
+    document.getElementById('codigo').addEventListener('input', function (e) {
+        const regex = /^[0-9\-]*$/;
+        if (!regex.test(e.target.value)) {
+            e.target.value = e.target.value.replace(/[^0-9\-]/g, '');
+        }
     });
 </script>
 @endpush

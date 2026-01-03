@@ -26,17 +26,24 @@ class MovimientoService
                     return (int) $u->id;
                 }
             }
+
+            // Log para depuración
+            logger()->warning('No se pudo resolver el ID de usuario autenticado.', ['identifier' => $identifier]);
         } catch (\Throwable $e) {
             report($e);
         }
 
-        return null;
+        return null; // Retornar null si no se encuentra un ID válido
     }
 
     public static function registrarMovimiento(object $subject, string $tipo = 'Trámite', ?string $observaciones = null, ?int $usuarioId = null)
     {
         try {
             $userId = $usuarioId ?? self::resolveAuthenticatedUserId();
+
+            if (!is_int($userId)) {
+                throw new \InvalidArgumentException('El ID de usuario no es válido.');
+            }
 
             $subjectType = get_class($subject);
             $subjectId = method_exists($subject, 'getKey') ? $subject->getKey() : null;
@@ -52,6 +59,7 @@ class MovimientoService
             ]);
         } catch (\Throwable $e) {
             report($e);
+            throw $e; // Re-lanzar la excepción para depuración
         }
     }
 }
