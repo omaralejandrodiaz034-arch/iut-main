@@ -16,17 +16,17 @@
     <form action="{{ route('usuarios.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
             <label for="buscar" class="block text-sm font-semibold text-gray-700 mb-2">Búsqueda General</label>
-            <input type="text" name="buscar" id="buscar" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            <input type="text" name="buscar" id="buscar" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                    placeholder="Nombre, cédula..." value="{{ $validated['buscar'] ?? '' }}">
         </div>
         <div>
             <label for="cedula" class="block text-sm font-semibold text-gray-700 mb-2">Cédula</label>
-            <input type="text" name="cedula" id="cedula" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            <input type="text" name="cedula" id="cedula" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                    placeholder="V-XX.XXX.XXX" value="{{ $validated['cedula'] ?? '' }}">
         </div>
         <div>
             <label for="correo" class="block text-sm font-semibold text-gray-700 mb-2">Correo</label>
-            <input type="email" name="correo" id="correo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            <input type="email" name="correo" id="correo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                    placeholder="correo@ejemplo.com" value="{{ $validated['correo'] ?? '' }}">
         </div>
         <div>
