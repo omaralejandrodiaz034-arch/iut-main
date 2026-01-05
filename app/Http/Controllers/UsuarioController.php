@@ -238,6 +238,9 @@ class UsuarioController extends Controller
             'is_admin' => ['boolean'],
         ]);
 
+        // Asegurar que 'rol_id' exista en el array validado para evitar errores de clave indefinida
+        $validated['rol_id'] = $validated['rol_id'] ?? null;
+
         // Sólo administradores pueden cambiar la cédula de un usuario ya creado
         if (array_key_exists('cedula', $validated) && ! auth()->user()->isAdmin()) {
             return abort(403, 'Solo administradores pueden modificar la cédula de un usuario.');

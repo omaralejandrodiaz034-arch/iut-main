@@ -34,7 +34,7 @@
             <select name="rol_id" id="rol_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">Todos los roles</option>
                 @foreach($roles as $rol)
-                    <option value="{{ $rol->id }}" {{ $validated['rol_id'] == $rol->id ? 'selected' : '' }}>
+                    <option value="{{ $rol->id }}" {{ isset($validated['rol_id']) && $validated['rol_id'] == $rol->id ? 'selected' : '' }}>
                         {{ $rol->nombre }}
                     </option>
                 @endforeach
