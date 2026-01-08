@@ -92,6 +92,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
     Route::get('organismos/{organismo}/pdf', [OrganismoController::class, 'exportPdf'])->name('organismos.pdf');
     Route::resource('reportes', ReporteController::class);
     Route::get('reportes/pdf/{tipo}', [ReporteController::class, 'generarPdf'])->name('reportes.pdf');
+    Route::get('graficas', [ReporteController::class, 'graficas'])->name('graficas');
 
     Route::resource('unidades', UnidadAdministradoraController::class)->parameters(['unidades' => 'unidadAdministradora']);
     Route::get('unidades/{unidadAdministradora}/pdf', [UnidadAdministradoraController::class, 'exportPdf'])->name('unidades.pdf');

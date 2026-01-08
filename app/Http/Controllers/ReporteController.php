@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoBien;
+use App\Enums\TipoBien;
 use App\Models\Bien;
 use App\Models\Dependencia;
 use App\Models\Eliminado;
@@ -130,6 +132,41 @@ class ReporteController extends Controller
         ];
 
         return view('reportes.index', compact('reportTypes'));
+    }
+
+    public function graficas()
+    {
+        // Datos para gráfico de bienes por tipo
+        $bienesPorTipo = Bien::selectRaw('tipo_bien, COUNT(*) as count')
+            ->groupBy('tipo_bien')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                $tipo = TipoBien::tryFrom($item->tipo_bien);
+                $label = $tipo ? $tipo->label() : $item->tipo_bien;
+                return [$label => $item->count];
+            })
+            ->toArray();
+
+        // Datos para gráfico de bienes por estado
+        $bienesPorEstado = Bien::selectRaw('estado, COUNT(*) as count')
+            ->groupBy('estado')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                $estado = EstadoBien::tryFrom($item->estado);
+                $label = $estado ? $estado->label() : $item->estado;
+                return [$label => $item->count];
+            })
+            ->toArray();
+
+        // Datos para gráfico de bienes por registro (por mes)
+        $bienesPorRegistro = Bien::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as mes, COUNT(*) as count')
+            ->groupBy('mes')
+            ->orderBy('mes')
+            ->get()
+            ->pluck('count', 'mes')
+            ->toArray();
+
+        return view('reportes.graficas', compact('bienesPorTipo', 'bienesPorEstado', 'bienesPorRegistro'));
     }
 
     /**
