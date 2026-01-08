@@ -159,18 +159,18 @@
             });
 
             if (response.ok) {
-                mostrarModal('success', '✓ ¡Éxito!', 'El usuario ha sido actualizado correctamente.');
+                mostrarModal('success', '¡Éxito!', 'El usuario ha sido actualizado correctamente.');
                 document.getElementById('guardar-btn').disabled = true;
             } else if (response.status === 422) {
                 const errors = await response.json();
                 const errorMsg = Object.values(errors.errors || {})[0]?.[0] || 'Error en los datos ingresados';
-                mostrarModal('error', '⚠ Error de Validación', errorMsg);
+                mostrarModal('error', 'Error de Validación', errorMsg);
             } else {
-                mostrarModal('error', '❌ Error', 'Ocurrió un error al actualizar el usuario.');
+                mostrarModal('error', 'Error', 'Ocurrió un error al actualizar el usuario.');
             }
         } catch (error) {
             console.error('Error:', error);
-            mostrarModal('error', '❌ Error', 'Hubo un problema al conectarse con el servidor.');
+            mostrarModal('error', 'Error', 'Hubo un problema al conectarse con el servidor.');
         }
     });
 
@@ -186,14 +186,12 @@
         modalMessage.textContent = mensaje;
 
         if (tipo === 'success') {
-            modalIcon.textContent = '✓';
-            modalIcon.className = 'text-4xl flex-shrink-0 text-green-500 font-bold';
+            modalIcon.innerHTML = '<x-heroicon-o-check class="w-6 h-6 text-green-500" />';
             modalHeader.className = 'px-6 py-4 border-b bg-green-50';
             modalTitle.className = 'text-xl font-bold text-green-700';
             redirectBtn.style.display = 'inline-block';
         } else if (tipo === 'error') {
-            modalIcon.textContent = '✕';
-            modalIcon.className = 'text-4xl flex-shrink-0 text-red-500 font-bold';
+            modalIcon.innerHTML = '<x-heroicon-o-x class="w-6 h-6 text-red-500" />';
             modalHeader.className = 'px-6 py-4 border-b bg-red-50';
             modalTitle.className = 'text-xl font-bold text-red-700';
             redirectBtn.textContent = 'Cerrar';

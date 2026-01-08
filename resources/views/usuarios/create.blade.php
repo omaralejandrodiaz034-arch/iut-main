@@ -421,21 +421,21 @@
 
         // Estilos según tipo
         if (tipo === 'success') {
-            modalIcon.textContent = '✓';
+            modalIcon.innerHTML = '<x-heroicon-o-check class="w-6 h-6 text-green-500" />';
             modalIcon.className = 'text-4xl flex-shrink-0 text-green-500 font-bold';
             modalHeader.className = 'px-6 py-4 border-b bg-green-50';
             modalTitle.className = 'text-xl font-bold text-green-700';
             closeBtn.style.display = 'none';
             redirectBtn.style.display = 'inline-block';
         } else if (tipo === 'error') {
-            modalIcon.textContent = '✕';
+            modalIcon.innerHTML = '<x-heroicon-o-x class="w-6 h-6 text-red-500" />';
             modalIcon.className = 'text-4xl flex-shrink-0 text-red-500 font-bold';
             modalHeader.className = 'px-6 py-4 border-b bg-red-50';
             modalTitle.className = 'text-xl font-bold text-red-700';
             closeBtn.style.display = 'inline-block';
             redirectBtn.style.display = 'none';
         } else if (tipo === 'loading') {
-            modalIcon.textContent = '⏳';
+            modalIcon.innerHTML = '<x-heroicon-o-refresh class="w-6 h-6 text-blue-500 animate-spin" />';
             modalIcon.className = 'text-4xl flex-shrink-0 text-blue-500';
             modalHeader.className = 'px-6 py-4 border-b bg-blue-50';
             modalTitle.className = 'text-xl font-bold text-blue-700';

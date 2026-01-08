@@ -5,7 +5,9 @@
 @section('content')
 <div class="w-full">
     <div class="bg-white shadow rounded-lg p-6">
-        <h1 class="text-2xl font-bold mb-4">Registros Eliminados</h1>
+        <h1 class="text-2xl font-bold mb-4">
+            <x-heroicon-o-trash class="w-6 h-6 text-gray-500" /> Registros Eliminados
+        </h1>
 
         @if(session('success'))
             <div class="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded">{{ session('success') }}</div>

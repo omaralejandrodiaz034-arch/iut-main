@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
     @if (session('success'))
         <div class="mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded">
             <div class="flex items-center">
-                <span class="text-2xl mr-3">✓</span>
+                <x-heroicon-o-check class="w-6 h-6 text-green-500" />
                 <div>
                     <p class="font-bold">¡Éxito!</p>
                     <p class="text-sm">{{ session('success') }}</p>

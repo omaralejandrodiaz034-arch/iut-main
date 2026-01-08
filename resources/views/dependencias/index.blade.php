@@ -4,8 +4,9 @@
 
 @section('content')
 <div class="flex justify-between items-center mb-6">
+    <!-- Reemplazo de emojis por Heroicons -->
     <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
-        🔗 Dependencias
+        <x-heroicon-o-link class="w-6 h-6 text-gray-500" /> Dependencias
     </h1>
     <div class="flex gap-2">
         <a href="{{ route('dependencias.create') }}"

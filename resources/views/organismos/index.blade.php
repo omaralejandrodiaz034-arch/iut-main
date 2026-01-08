@@ -22,17 +22,17 @@
     <form action="{{ route('organismos.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
             <label for="buscar" class="block text-sm font-semibold text-gray-700 mb-2">Búsqueda General</label>
-            <input type="text" name="buscar" id="buscar" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            <input type="text" name="buscar" id="buscar" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                    placeholder="Código o nombre..." value="{{ $validated['buscar'] ?? '' }}">
         </div>
         <div>
             <label for="codigo" class="block text-sm font-semibold text-gray-700 mb-2">Código</label>
-            <input type="text" name="codigo" id="codigo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            <input type="text" name="codigo" id="codigo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                    placeholder="Código..." value="{{ $validated['codigo'] ?? '' }}">
         </div>
         <div>
             <label for="nombre" class="block text-sm font-semibold text-gray-700 mb-2">Nombre</label>
-            <input type="text" name="nombre" id="nombre" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            <input type="text" name="nombre" id="nombre" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                    placeholder="Nombre..." value="{{ $validated['nombre'] ?? '' }}">
         </div>
         <div class="md:col-span-3 flex gap-2">
