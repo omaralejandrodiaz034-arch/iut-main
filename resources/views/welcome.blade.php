@@ -12,7 +12,7 @@
     @include('layouts.head')
 
     <!-- Hero Section -->
-    <section class="bg-gradient-to-r from-blue-700 to-blue-600 text-white py-20 px-6">
+    <section class="bg-gradient-to-r from-[#640B21] to-[#7a1a33] text-gray-100 py-20 px-6">
         <div class="max-w-6xl mx-auto text-center">
             <h1 class="text-5xl font-bold mb-6">Oficina de Bienes Nacionales</h1>
             <p class="max-w-3xl mx-auto text-lg leading-relaxed">
