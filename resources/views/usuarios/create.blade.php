@@ -7,19 +7,10 @@
     <div class="bg-white shadow rounded-lg p-6">
         <h1 class="text-2xl font-bold text-gray-800 mb-6">Crear Nuevo Usuario</h1>
 
+        {{-- Aviso para no-administradores --}}
         @if(!auth()->user()->isAdmin())
-            <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 rounded">
-                <p class="text-sm">Solo puedes crear usuarios normales. Para crear administradores, contacta a un administrador existente.</p>
-            </div>
-        @endif
-
-        @if ($errors->any())
-            <div class="mb-4 p-4 bg-red-100 border border-red-300 text-red-800 rounded">
-                <ul class="text-sm">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
+            <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 rounded-lg">
+                <p class="text-sm font-semibold">ℹ Solo puedes crear usuarios con privilegios normales. Para perfiles administrativos, contacta al administrador principal.</p>
             </div>
         @endif
 
@@ -27,110 +18,92 @@
             @csrf
 
             <div>
-                <x-form-input name="cedula" label="Cédula (Formato: V-XX.XXX.XXX)" :value="old('cedula')" placeholder="V-12.345.678" maxlength="20" required help="Debe comenzar con V-, seguido de números separados por puntos" />
+                <x-form-input name="cedula" id="cedula" label="Cédula (Formato: V-XX.XXX.XXX)"
+                    :value="old('cedula')" placeholder="V-12.345.678" maxlength="20" required
+                    help="Debe comenzar con V-, seguido de números separados por puntos" />
+                @error('cedula')
+                    <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <x-form-input name="nombre" label="Nombre" :value="old('nombre')" placeholder="Ej: Juan" required />
+                    @error('nombre')
+                        <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div>
                     <x-form-input name="apellido" label="Apellido" :value="old('apellido')" placeholder="Ej: Pérez" required />
+                    @error('apellido')
+                        <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
+                    @enderror
                 </div>
             </div>
 
             <div>
-                <x-form-input name="correo" label="Correo" type="email" :value="old('correo')" placeholder="usuario@ejemplo.com" required />
+                <x-form-input name="correo" label="Correo Electrónico" type="email" :value="old('correo')" placeholder="usuario@ejemplo.com" required />
+                @error('correo')
+                    <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
+                @enderror
             </div>
-
-            <!-- El rol se selecciona dinámicamente si el creador es admin; por defecto es Usuario Normal -->
-            @unless(auth()->user()->isAdmin())
-                <input type="hidden" name="rol_id" id="rol_id" value="{{ old('rol_id') ?: \App\Models\Rol::where('nombre', 'Usuario Normal')->value('id') }}">
-            @endunless
 
             <div>
                 <x-form-input name="hash_password" label="Contraseña (mínimo 8 caracteres)" type="password" id="password" placeholder="••••••••" required />
+                @error('hash_password')
+                    <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
+                @enderror
             </div>
 
             @if(auth()->user()->isAdmin())
                 <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 class="text-sm font-semibold text-gray-800 mb-3">Rol del Usuario</h3>
-                    <select name="rol_id" id="rol_id_select" class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <label for="rol_id_select" class="block text-sm font-semibold text-gray-700 mb-2">Rol del Usuario</label>
+                    <select name="rol_id" id="rol_id_select"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white">
                         @foreach($roles as $rol)
                             <option value="{{ $rol->id }}" {{ (old('rol_id') == $rol->id) ? 'selected' : '' }}>{{ $rol->nombre }}</option>
                         @endforeach
                     </select>
                     @error('rol_id')
-                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                     @enderror
                 </div>
-                <!-- Campo oculto para enviar is_admin (se ajusta en el servidor según el rol seleccionado) -->
+                {{-- Campo oculto para manejar is_admin lógicamente --}}
                 <input type="hidden" name="is_admin" id="is_admin" value="0">
+            @else
+                <input type="hidden" name="rol_id" value="{{ old('rol_id') ?: \App\Models\Rol::where('nombre', 'Usuario Normal')->value('id') }}">
             @endif
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Activo</label>
-                <div class="flex items-center">
-                    <input type="checkbox" name="activo" id="activo" value="1"
-                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                           {{ old('activo', true) ? 'checked' : '' }}>
-                    <label for="activo" class="ml-2 block text-sm text-gray-700">
-                        Usuario activo
-                    </label>
-                </div>
+            <div class="flex items-center p-2 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                <input type="checkbox" name="activo" id="activo" value="1"
+                       class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition cursor-pointer"
+                       {{ old('activo', true) ? 'checked' : '' }}>
+                <label for="activo" class="ml-3 block text-sm font-semibold text-gray-700 cursor-pointer">
+                    Habilitar acceso al sistema para este usuario
+                </label>
             </div>
 
-            <div class="flex gap-4">
-                <button type="submit" id="guardar-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                    Guardar
-                </button>
-                <a href="{{ route('usuarios.index') }}" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400">
-                    Cancelar
+            <div class="flex justify-end gap-4 pt-6 border-t border-gray-200">
+                <a href="{{ route('usuarios.index') }}"
+                   class="px-6 py-3 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition duration-200">
+                    ✗ Cancelar
                 </a>
+                <button type="submit" id="guardar-btn"
+                        class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:shadow-lg transition duration-200">
+                    ✓ Guardar Usuario
+                </button>
             </div>
         </form>
     </div>
 </div>
-
-<!-- Modal de Resultado -->
-<div id="resultado-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <!-- Encabezado -->
-        <div id="modal-header" class="px-6 py-4 border-b">
-            <h2 id="modal-title" class="text-xl font-bold"></h2>
-        </div>
-
-        <!-- Contenido -->
-        <div class="px-6 py-4">
-            <div class="flex items-start gap-4">
-                <div id="modal-icon" class="text-4xl flex-shrink-0"></div>
-                <div>
-                    <p id="modal-message" class="text-gray-700 text-sm"></p>
-                    <p id="modal-details" class="text-gray-600 text-xs mt-2" style="display: none;"></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Botones -->
-        <div class="px-6 py-4 border-t flex gap-3 justify-end">
-            <button id="modal-close-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400" onclick="cerrarModal()">
-                Cerrar
-            </button>
-            <button id="modal-redirect-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onclick="redirigirAListar()" style="display: none;">
-                Ir a Usuarios
-            </button>
-        </div>
-    </div>
-</div>
-
 @endsection
 
+@push('scripts')
 <script>
+    // Lógica de Máscara de Cédula (V-XX.XXX.XXX)
     const cedulaInput = document.getElementById('cedula');
-    const cedulaError = document.getElementById('cedula-error');
 
-    // --- LÓGICA DE CÉDULA ---
     cedulaInput.addEventListener('input', function(e) {
         let value = e.target.value.toUpperCase();
         value = value.replace(/[^V0-9\-]/g, '');
@@ -146,104 +119,18 @@
             value = 'V-';
         }
         e.target.value = value;
-        validarCedula(value);
     });
 
-    function validarCedula(cedula) {
-        const regex = /^V-\d{2}\.\d{3}\.\d{3}$/;
-        if (cedula.trim() === '' || cedula === 'V-') {
-            cedulaError.style.display = 'none';
-            return true;
-        }
-        if (!regex.test(cedula)) {
-            cedulaError.textContent = 'Formato inválido. Debe ser: V-XX.XXX.XXX';
-            cedulaError.style.display = 'block';
-            return false;
-        }
-        cedulaError.style.display = 'none';
-        return true;
+    // Sincronizar campo oculto is_admin según el rol
+    const rolSelect = document.getElementById('rol_id_select');
+    if(rolSelect) {
+        rolSelect.addEventListener('change', function() {
+            const isAdminInput = document.getElementById('is_admin');
+            const selectedText = this.options[this.selectedIndex].text;
+            isAdminInput.value = (selectedText === 'Administrador') ? '1' : '0';
+        });
+        // Disparar una vez al cargar para asegurar consistencia
+        rolSelect.dispatchEvent(new Event('change'));
     }
-
-    // --- ELEMENTOS Y VALIDACIONES ---
-    const nombreInput = document.getElementById('nombre');
-    const apellidoInput = document.getElementById('apellido');
-    const correoInput = document.getElementById('correo');
-    const passwordInput = document.getElementById('password');
-    const guardarBtn = document.getElementById('guardar-btn');
-
-    const nombreErrorEl = document.getElementById('nombre-error');
-    const apellidoErrorEl = document.getElementById('apellido-error');
-    const correoErrorEl = document.getElementById('correo-error');
-    const passwordErrorEl = document.getElementById('password-error');
-
-    // --- ENVÍO ASÍNCRONO ---
-    document.querySelector('form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-
-        // Validación rápida antes de enviar
-        if (!validarCedula(cedulaInput.value)) {
-            cedulaInput.focus();
-            return;
-        }
-
-        mostrarModal('loading', 'Procesando...', 'Por favor espera mientras registramos al usuario.');
-
-        try {
-            const formData = new FormData(this);
-            const response = await fetch('{{ route("usuarios.store") }}', {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            });
-
-            if (response.ok) {
-                mostrarModal('success', '✓ Éxito', 'El usuario ha sido registrado correctamente.');
-                guardarBtn.disabled = true;
-                setTimeout(() => redirigirAListar(), 2000);
-            } else {
-                const data = await response.json();
-                mostrarModal('error', '⚠ Error', data.message || 'Error en los datos.');
-            }
-        } catch (error) {
-            mostrarModal('error', '❌ Error', 'Hubo un problema de conexión.');
-        }
-    });
-
-    // --- FUNCIÓN CORREGIDA (SIN COMPONENTES BLADE) ---
-    function mostrarModal(tipo, titulo, mensaje) {
-        const modal = document.getElementById('resultado-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalIcon = document.getElementById('modal-icon');
-        const modalMessage = document.getElementById('modal-message');
-        const modalHeader = document.getElementById('modal-header');
-        const closeBtn = document.getElementById('modal-close-btn');
-        const redirectBtn = document.getElementById('modal-redirect-btn');
-
-        modalTitle.textContent = titulo;
-        modalMessage.textContent = mensaje;
-
-        if (tipo === 'success') {
-            modalIcon.innerHTML = '<svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-            modalHeader.className = 'px-6 py-4 border-b bg-green-50';
-            modalTitle.className = 'text-xl font-bold text-green-700';
-            closeBtn.style.display = 'none';
-            redirectBtn.style.display = 'inline-block';
-        } else if (tipo === 'error') {
-            modalIcon.innerHTML = '<svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-            modalHeader.className = 'px-6 py-4 border-b bg-red-50';
-            modalTitle.className = 'text-xl font-bold text-red-700';
-            closeBtn.style.display = 'inline-block';
-            redirectBtn.style.display = 'none';
-        } else if (tipo === 'loading') {
-            modalIcon.innerHTML = '<svg class="w-12 h-12 text-blue-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>';
-            modalHeader.className = 'px-6 py-4 border-b bg-blue-50';
-            modalTitle.className = 'text-xl font-bold text-blue-700';
-            closeBtn.style.display = 'none';
-            redirectBtn.style.display = 'none';
-        }
-        modal.style.display = 'flex';
-    }
-
-    function cerrarModal() { document.getElementById('resultado-modal').style.display = 'none'; }
-    function redirigirAListar() { window.location.href = '{{ route("usuarios.index") }}'; }
 </script>
+@endpush

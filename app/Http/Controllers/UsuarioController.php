@@ -84,82 +84,80 @@ class UsuarioController extends Controller
      * Guardar un nuevo usuario.
      */
     public function store(Request $request)
-    {
-        // Solo administradores pueden crear usuarios
-        if (! auth()->user()->isAdmin()) {
-            return response()->json([
-                'message' => 'No tienes permisos para crear usuarios.',
-            ], 403);
-        }
-
-        // Obtener el rol Administrador
-        $rolAdmin = \App\Models\Rol::where('nombre', 'Administrador')->first();
-
-        // Normalizar cédula antes de validar para aceptar entradas con o sin 'V-' y/o puntos
-        if ($request->filled('cedula')) {
-            $request->merge(['cedula' => $this->normalizeCedula($request->input('cedula'))]);
-        }
-
-        $validated = $request->validate(
-            [
-                'rol_id' => ['required', 'exists:roles,id'],
-                'cedula' => ['required', 'string', 'max:20', 'unique:usuarios,cedula', 'regex:/^V-\d{2}\.\d{3}\.\d{3}$/'],
-                'nombre' => ['required', 'string', 'max:150'],
-                'apellido' => ['required', 'string', 'max:150'],
-                'correo' => ['required', 'email', 'max:255', 'unique:usuarios,correo'],
-                'hash_password' => ['required', 'string', 'min:8'],
-                'activo' => ['boolean'],
-                'is_admin' => ['boolean'],
-            ],
-            [
-                'rol_id.required' => 'El rol es requerido',
-                'cedula.required' => 'La cédula es requerida',
-                'cedula.regex' => 'La cédula debe tener el formato V-XX.XXX.XXX',
-                'cedula.unique' => 'Esta cédula ya está registrada',
-                'nombre.required' => 'El nombre es requerido',
-                'nombre.max' => 'El nombre no puede exceder 150 caracteres',
-                'apellido.required' => 'El apellido es requerido',
-                'apellido.max' => 'El apellido no puede exceder 150 caracteres',
-                'correo.required' => 'El correo es requerido',
-                'correo.email' => 'Debe proporcionar un correo válido',
-                'correo.unique' => 'Este correo ya está registrado',
-                'hash_password.required' => 'La contraseña es requerida',
-                'hash_password.min' => 'La contraseña debe tener al menos 8 caracteres',
-            ]
-        );
-
-        // Validar que no intente seleccionar rol de Administrador si no es admin
-        if ($rolAdmin && $validated['rol_id'] == $rolAdmin->getKey() && ! auth()->user()->isAdmin()) {
-            return response()->json([
-                'message' => 'Solo administradores pueden asignar el rol de Administrador.',
-            ], 403);
-        }
-
-        // Solo administradores pueden crear otros administradores
-        if ($request->boolean('is_admin') && ! auth()->user()->isAdmin()) {
-            return response()->json([
-                'message' => 'Solo administradores pueden crear otros administradores.',
-            ], 403);
-        }
-
-        // Forzar coherencia: si rol es Administrador => is_admin = true; caso contrario false
-        if ($rolAdmin) {
-            $validated['is_admin'] = ((int) $validated['rol_id'] === (int) $rolAdmin->getKey());
-        }
-
-        $validated['hash_password'] = Hash::make($validated['hash_password']);
-
-        $usuario = Usuario::create($validated);
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Usuario creado correctamente',
-                'usuario' => $usuario,
-            ], 201);
-        }
-
-        return redirect()->route('usuarios.index')->with('success', 'Usuario creado correctamente');
+{
+    // 1. Verificación de permisos con mensaje en español
+    if (! auth()->user()->isAdmin()) {
+        return response()->json([
+            'message' => 'Acceso denegado. Solo los administradores pueden realizar esta acción.',
+        ], 403);
     }
+
+    $rolAdmin = \App\Models\Rol::where('nombre', 'Administrador')->first();
+
+    // Normalizar cédula
+    if ($request->filled('cedula')) {
+        $request->merge(['cedula' => $this->normalizeCedula($request->input('cedula'))]);
+    }
+
+    // 2. Validación con mensajes personalizados en español
+    $validated = $request->validate(
+        [
+            'rol_id'        => ['required', 'exists:roles,id'],
+            'cedula'        => ['required', 'string', 'max:20', 'unique:usuarios,cedula', 'regex:/^V-\d{2}\.\d{3}\.\d{3}$/'],
+            'nombre'        => ['required', 'string', 'max:150'],
+            'apellido'      => ['required', 'string', 'max:150'],
+            'correo'        => ['required', 'email', 'max:255', 'unique:usuarios,correo'],
+            'hash_password' => ['required', 'string', 'min:8'],
+            'activo'        => ['boolean'],
+            'is_admin'      => ['boolean'],
+        ],
+        [
+            'rol_id.required'        => 'Debe seleccionar un rol para el usuario.',
+            'rol_id.exists'          => 'El rol seleccionado no es válido.',
+            'cedula.required'        => 'La cédula de identidad es obligatoria.',
+            'cedula.regex'           => 'Formato de cédula incorrecto (Ej: V-12.345.678).',
+            'cedula.unique'          => 'Esta cédula ya se encuentra registrada en el sistema.',
+            'nombre.required'        => 'El nombre es obligatorio.',
+            'nombre.max'             => 'El nombre no puede tener más de 150 caracteres.',
+            'apellido.required'      => 'El apellido es obligatorio.',
+            'apellido.max'           => 'El apellido no puede tener más de 150 caracteres.',
+            'correo.required'        => 'El correo electrónico es obligatorio.',
+            'correo.email'           => 'Debe ingresar una dirección de correo válida.',
+            'correo.unique'          => 'Este correo ya está siendo usado por otro usuario.',
+            'hash_password.required' => 'La contraseña es obligatoria.',
+            'hash_password.min'      => 'La contraseña debe tener al menos 8 caracteres.',
+        ]
+    );
+
+    // 3. Verificaciones de seguridad adicionales
+    if ($rolAdmin && (int)$validated['rol_id'] === (int)$rolAdmin->getKey() && ! auth()->user()->isAdmin()) {
+        return response()->json([
+            'message' => 'No tiene permisos para asignar privilegios de Administrador.',
+        ], 403);
+    }
+
+    // Forzar coherencia de is_admin
+    if ($rolAdmin) {
+        $validated['is_admin'] = ((int) $validated['rol_id'] === (int) $rolAdmin->getKey());
+    }
+
+    // Encriptar contraseña
+    $validated['hash_password'] = Hash::make($validated['hash_password']);
+
+    // Crear usuario
+    $usuario = Usuario::create($validated);
+
+    // 4. Respuesta según el tipo de petición
+    if ($request->expectsJson()) {
+        return response()->json([
+            'message' => '¡Usuario creado con éxito!',
+            'usuario' => $usuario,
+        ], 201);
+    }
+
+    return redirect()->route('usuarios.index')
+                     ->with('success', 'El usuario ha sido registrado correctamente en el sistema.');
+}
 
     /**
      * Mostrar formulario para editar un usuario.
