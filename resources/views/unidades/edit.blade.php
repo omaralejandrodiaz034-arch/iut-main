@@ -3,76 +3,107 @@
 @section('title', 'Editar Unidad')
 
 @section('content')
-<div class="max-w-2xl mx-auto">
-    <div class="bg-white shadow rounded-lg p-6">
-        <h1 class="text-2xl font-bold text-gray-800 mb-6">Editar Unidad Administradora</h1>
+<div class="max-w-2xl mx-auto mt-10">
+    <div class="bg-white shadow-sm rounded-xl p-8 border border-gray-100">
+        <h1 class="text-2xl font-bold text-slate-800 mb-8 px-2">Editar Unidad Administradora</h1>
 
-            <form action="{{ route('unidades.update', ['unidadAdministradora' => $unidadAdministradora->getKey()]) }}" method="POST" class="space-y-6">
-                @csrf
-                @method('PATCH')
+        <form action="{{ route('unidades.update', ['unidadAdministradora' => $unidadAdministradora->getKey()]) }}" 
+              method="POST" id="editUnidadForm" class="space-y-6" novalidate>
+            @csrf
+            @method('PATCH')
 
-                <!-- Organismo -->
-                <div>
-                    <label for="organismo_id" class="block text-sm font-medium text-gray-700">Organismo</label>
-                    <select name="organismo_id" id="organismo_id"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm
-                                   focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                        <option value="">Seleccione...</option>
-                        @foreach($organismos as $org)
-                            <option value="{{ $org->id }}" {{ old('organismo_id', $unidadAdministradora->organismo_id) == $org->id ? 'selected' : '' }}>
-                                {{ $org->nombre }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('organismo_id')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
+            <div class="px-2">
+                <label for="organismo_id" class="block text-sm font-bold text-slate-700 mb-2">Organismo</label>
+                <select name="organismo_id" id="organismo_id"
+                        class="w-full px-4 py-3 border @error('organismo_id') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition bg-white cursor-pointer">
+                    <option value="">Seleccione el organismo...</option>
+                    @foreach($organismos as $org)
+                        <option value="{{ $org->id }}" {{ old('organismo_id', $unidadAdministradora->organismo_id) == $org->id ? 'selected' : '' }}>
+                            {{ $org->nombre }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('organismo_id')
+                    <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
+                @enderror
+            </div>
 
-                <!-- Código -->
-                <div>
-                    <label for="codigo" class="block text-sm font-medium text-gray-700">Código</label>
-                    <input type="text" name="codigo" id="codigo" value="{{ old('codigo', $unidadAdministradora->codigo) }}"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm
-                                  focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                    @error('codigo')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
+            <div class="px-2">
+                <label for="codigo" class="block text-sm font-bold text-slate-700 mb-2">Código de Unidad</label>
+                <input type="text" name="codigo" id="codigo" value="{{ old('codigo', $unidadAdministradora->codigo) }}"
+                       maxlength="8" inputmode="numeric" autocomplete="off"
+                       class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono">
+                @error('codigo')
+                    <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
+                @enderror
+                <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Solo 8 números. Se completará con ceros automáticamente.</p>
+            </div>
 
-                <!-- Nombre -->
-                <div>
-                    <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre</label>
-                    <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $unidadAdministradora->nombre) }}"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm
-                                  focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                    @error('nombre')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
+            <div class="px-2">
+                <label for="nombre" class="block text-sm font-bold text-slate-700 mb-2">Nombre de la Unidad</label>
+                <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $unidadAdministradora->nombre) }}" 
+                       maxlength="30" autocomplete="off"
+                       class="w-full px-4 py-3 border @error('nombre') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                @error('nombre')
+                    <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
+                @enderror
+                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 30 caracteres.</p>
+            </div>
 
-                <!-- Botones -->
-                <div class="flex justify-end space-x-3">
-                    <a href="{{ route('unidades.index') }}"
-                       class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
-                        Cancelar
-                    </a>
-                    <button type="submit"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                        Guardar
-                    </button>
-                </div>
-            </form>
-        </div>
+            <div class="pt-6 flex justify-center items-center gap-8 border-t border-gray-50">
+                <a href="{{ route('unidades.index') }}" 
+                   class="flex items-center gap-2 text-slate-900 font-bold transition-opacity hover:opacity-70">
+                    <span class="text-xl">✕</span>
+                    <span>Cancelar</span>
+                </a>
+                
+                <button type="submit" id="btnGuardar" 
+                        class="flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-3 rounded-lg font-bold w-64 shadow-sm hover:bg-blue-700 transition-all active:scale-95">
+                    <span id="btnIcon">✓</span>
+                    <span id="btnText">Guardar Cambios</span>
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
-    document.getElementById('codigo').addEventListener('input', function (e) {
-        const regex = /^[0-9\-]*$/;
-        if (!regex.test(e.target.value)) {
-            e.target.value = e.target.value.replace(/[^0-9\-]/g, '');
-        }
+    document.addEventListener('DOMContentLoaded', function() {
+        const codigoInput = document.getElementById('codigo');
+        const nombreInput = document.getElementById('nombre');
+        const form = document.getElementById('editUnidadForm');
+
+        // 1. BLOQUEO TOTAL DE LETRAS Y GUIONES (SOLO NÚMEROS)
+        codigoInput.addEventListener('input', function(e) {
+            let val = e.target.value.replace(/[^0-9]/g, '');
+            e.target.value = val.slice(0, 8);
+        });
+
+        // AUTORELLENO CON CEROS AL SALIR DEL CAMPO (BLUR)
+        codigoInput.addEventListener('blur', function(e) {
+            if (e.target.value.length > 0) {
+                e.target.value = e.target.value.padStart(8, '0');
+            }
+        });
+
+        // 2. RESTRICCIÓN DE LONGITUD PARA EL NOMBRE (LÍMITE 30)
+        nombreInput.addEventListener('input', function(e) {
+            if (e.target.value.length > 30) {
+                e.target.value = e.target.value.slice(0, 30);
+            }
+        });
+
+        // 3. ESTADO DE CARGA AL ENVIAR
+        form.addEventListener('submit', function() {
+            const btn = document.getElementById('btnGuardar');
+            const icon = document.getElementById('btnIcon');
+            const text = document.getElementById('btnText');
+
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-wait');
+            icon.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+            text.innerText = 'Actualizando...';
+        });
     });
 </script>
 @endsection
