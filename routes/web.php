@@ -42,9 +42,6 @@ Route::get('/dashboard', function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
-    // Establecer contraseña para usuarios importados desde el API
-    Route::get('/set-password', [AuthController::class, 'showSetPasswordForm'])->name('auth.set_password.form');
-    Route::post('/set-password', [AuthController::class, 'setPassword'])->name('auth.set_password.store');
 });
 
 /*

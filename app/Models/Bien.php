@@ -30,6 +30,7 @@ class Bien extends Model
         'estado',
         'fecha_registro',
         'tipo_bien',
+        'caracteristicas',
 
     ];
 
@@ -51,6 +52,7 @@ class Bien extends Model
         'estado' => EstadoBien::class, // Enum PHP 8.1+
         'tipo_bien' => TipoBien::class, // Enum PHP 8.1+
         'precio' => 'decimal:2',
+        'caracteristicas' => 'array',
     ];
 
     // Relaciones
@@ -62,5 +64,26 @@ class Bien extends Model
     public function movimientos()
     {
         return $this->hasMany(Movimiento::class);
+    }
+
+    // Detalles por tipo
+    public function electronico()
+    {
+        return $this->hasOne(BienElectronico::class, 'bien_id');
+    }
+
+    public function mobiliario()
+    {
+        return $this->hasOne(BienMobiliario::class, 'bien_id');
+    }
+
+    public function vehiculo()
+    {
+        return $this->hasOne(BienVehiculo::class, 'bien_id');
+    }
+
+    public function otro()
+    {
+        return $this->hasOne(BienOtro::class, 'bien_id');
     }
 }

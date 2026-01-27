@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
@@ -191,12 +192,42 @@ class AuthController extends Controller
 
     private function buscarPersonaEnApiPorCedula(string $cedula): ?array
     {
+        $digits = $this->normalizeCedulaDigits($cedula);
+
+        // 1) Intentar API externa
+        $url = config('services.people_api.url');
+        $token = config('services.people_api.token');
+        $timeout = (int) config('services.people_api.timeout', 5);
+        try {
+            if ($url && $token) {
+                $resp = Http::timeout($timeout)
+                    ->acceptJson()
+                    ->get($url, ['pin' => $digits, 'token' => $token]);
+
+                if ($resp->ok()) {
+                    $payload = $resp->json();
+                    // Estructura esperada: [{ data: [...] }]
+                    $list = is_array($payload) ? ($payload[0]['data'] ?? []) : [];
+                    $persona = collect($list)->first(function ($item) use ($digits) {
+                        return $this->normalizeCedulaDigits((string) ($item['pin'] ?? '')) === $digits;
+                    });
+                    if ($persona) {
+                        return $persona;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Fallo API externa people_api, usando fallback JSON', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // 2) Fallback al JSON local
         $jsonPath = storage_path('app/respuesta.json');
         if (! file_exists($jsonPath)) {
             return null;
         }
         $data = json_decode(file_get_contents($jsonPath), true);
-        $digits = $this->normalizeCedulaDigits($cedula);
         $persona = collect($data[0]['data'] ?? [])->first(function ($item) use ($digits) {
             return $this->normalizeCedulaDigits((string) ($item['pin'] ?? '')) === $digits;
         });
