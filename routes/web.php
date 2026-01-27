@@ -40,9 +40,24 @@ Route::get('/dashboard', function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware('guest')->group(function () {
+    // Login tradicional
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+
+    // ESTAS RUTAS DEBEN ESTAR AQUÍ (Fuera del middleware auth)
+    // Porque el usuario del API aún no está autenticado localmente
+
+    // ... otras rutas como login ...
+
+    // Esta ruta resuelve el error "auth.set_password.form not defined"
+    Route::get('/configurar-password', [AuthController::class, 'showSetPasswordForm'])
+        ->name('auth.set_password.form');
+
+    // Esta ruta resuelve el error "auth.set_password.store not defined"
+    Route::post('/configurar-password', [AuthController::class, 'setPassword'])
+        ->name('auth.set_password.store');
 });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -50,9 +65,10 @@ Route::middleware('guest')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () {
-
-    // Salida de sesión
+    // Elimina las rutas de configurar-password de aquí adentro
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // ... el resto de tus rutas (bienes, dependencias, etc.)
 
     // --- BIENES ---
     // 1. Rutas específicas (DEBEN ir primero para evitar conflictos)
