@@ -13,14 +13,22 @@
     </div>
 
     @if(session('success'))
+<<<<<<< HEAD
         <div
             class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-800 rounded-lg shadow-sm flex items-center gap-3 text-base">
+=======
+        <div class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-800 rounded-lg shadow-sm flex items-center gap-3 text-base">
+>>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
             <span class="font-bold">✓</span>
             <span class="font-medium">{{ session('success') }}</span>
         </div>
     @endif
 
+<<<<<<< HEAD
     {{-- Panel de Filtros --}}
+=======
+    {{-- Panel de Filtros - Punto Medio --}}
+>>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
     <div class="bg-white shadow-sm rounded-xl p-6 mb-6 border border-gray-100">
         <h2 class="text-xl font-bold text-slate-800 mb-5 flex items-center gap-2">
             <span>🔍</span> Filtrar Organismos
@@ -32,9 +40,14 @@
                 <label for="buscar" class="block text-sm font-bold text-slate-700 mb-2">Búsqueda General</label>
                 <input type="text" name="buscar" id="buscar" maxlength="30"
                     class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-sm"
+<<<<<<< HEAD
                     placeholder="Solo letras y números..." value="{{ $validated['buscar'] ?? '' }}">
                 <p id="error-buscar" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">No se permiten caracteres especiales.</p>
                 <p class="text-gray-400 text-[11px] mt-1 italic">Máximo 30 caracteres (sin símbolos).</p>
+=======
+                    placeholder="Buscar..." value="{{ $validated['buscar'] ?? '' }}">
+                <p class="text-gray-400 text-[11px] mt-1 italic">Máximo 30 caracteres.</p>
+>>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
             </div>
 
             <div>
@@ -51,8 +64,12 @@
                 <input type="text" name="nombre" id="nombre_filtro" maxlength="30"
                     class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-sm"
                     placeholder="Nombre..." value="{{ $validated['nombre'] ?? '' }}">
+<<<<<<< HEAD
                 <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">Solo letras.</p>
                 <p class="text-gray-400 text-[11px] mt-1 italic">Máximo 30 caracteres (solo letras).</p>
+=======
+                <p class="text-gray-400 text-[11px] mt-1 italic">Máximo 30 caracteres.</p>
+>>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
             </div>
 
             <div class="md:col-span-3 flex items-center gap-6 pt-2">
@@ -69,7 +86,7 @@
         </form>
     </div>
 
-    {{-- Tabla --}}
+    {{-- Tabla - Punto Medio --}}
     <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -90,9 +107,15 @@
                             <td class="px-6 py-4 text-sm text-right">
                                 <div class="flex justify-end">
                                     @include('components.action-buttons', [
+<<<<<<< HEAD
                                         'resource' => 'organismos',
                                         'model' => $organismo,
                                         'confirm' => '¿Eliminar?',
+=======
+                                        'resource' => 'organismos', 
+                                        'model' => $organismo, 
+                                        'confirm' => '¿Eliminar?', 
+>>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
                                         'label' => $organismo->nombre
                                     ])
                                 </div>
@@ -117,12 +140,19 @@
             const nombreInput = document.getElementById('nombre_filtro');
             const errorMsgNombre = document.getElementById('error-nombre');
 
+<<<<<<< HEAD
             // 1. Lógica para BÚSQUEDA GENERAL (Solo letras, números y espacios)
             buscarInput?.addEventListener('input', function (e) {
                 const originalValue = e.target.value;
                 // Remueve caracteres que no sean letras, números o espacios
                 const cleanValue = originalValue.replace(/[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ]/g, '');
                 
+=======
+            codigoInput?.addEventListener('input', function (e) {
+                const originalValue = e.target.value;
+                const cleanValue = originalValue.replace(/[^0-9]/g, '');
+
+>>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
                 if (originalValue !== cleanValue) {
                     errorMsgBuscar?.classList.remove('hidden');
                     setTimeout(() => errorMsgBuscar?.classList.add('hidden'), 2000);
@@ -141,6 +171,7 @@
                 e.target.value = cleanValue.slice(0, 8);
             });
 
+<<<<<<< HEAD
             // 3. Lógica para NOMBRE (Solo letras y espacios, prohibe números y símbolos)
             nombreInput?.addEventListener('input', function (e) {
                 const originalValue = e.target.value;
@@ -152,6 +183,13 @@
                     setTimeout(() => errorMsgNombre?.classList.add('hidden'), 2000);
                 }
                 e.target.value = cleanValue.slice(0, 30);
+=======
+            const inputs30 = [document.getElementById('buscar'), document.getElementById('nombre_filtro')];
+            inputs30.forEach(input => {
+                input?.addEventListener('input', e => {
+                    if (e.target.value.length > 30) e.target.value = e.target.value.slice(0, 30);
+                });
+>>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
             });
         });
     </script>

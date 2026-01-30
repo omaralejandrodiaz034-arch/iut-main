@@ -5,7 +5,6 @@ namespace App\Enums;
 enum TipoBien: string
 {
     case ELECTRONICO = 'ELECTRONICO';
-    case INMUEBLE = 'INMUEBLE';
     case MOBILIARIO = 'MOBILIARIO';
     case VEHICULO = 'VEHICULO';
     case OTROS = 'OTROS';
@@ -15,7 +14,6 @@ enum TipoBien: string
     {
         return match ($this) {
             self::ELECTRONICO => 'Electrónico',
-            self::INMUEBLE => 'Inmueble',
             self::MOBILIARIO => 'Mobiliario',
             self::VEHICULO => 'Vehículo',
             self::OTROS => 'Otros',
@@ -33,14 +31,6 @@ enum TipoBien: string
                 'pantalla' => 'Tamaño de pantalla',
                 'serial' => 'Número de serie',
                 'garantia' => 'Garantía hasta',
-            ],
-            self::INMUEBLE => [
-                'dimensiones' => 'Dimensiones (largo x ancho x alto)',
-                'material' => 'Material principal',
-                'area' => 'Área (m²)',
-                'pisos' => 'Número de pisos',
-                'construccion' => 'Año de construcción',
-                'direccion' => 'Dirección exacta',
             ],
             self::MOBILIARIO => [
                 'material' => 'Material',

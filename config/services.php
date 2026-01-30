@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    // API de personas (externa) con soporte de fallback a JSON local
+    'people_api' => [
+        'url' => env('PEOPLE_API_URL', 'http://api.uptos.edu.ve/1.7.7/directory/search_person.json'),
+        'token' => env('PEOPLE_API_TOKEN', 'HHFK7758DF77F8F'),
+        'timeout' => env('PEOPLE_API_TIMEOUT', 5), // segundos
+    ],
+
 ];
