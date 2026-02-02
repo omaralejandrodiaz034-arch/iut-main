@@ -15,16 +15,39 @@ class UnidadAdministradoraController extends Controller
      * Listar todas las Unidades Administradoras.
      */
     public function index(Request $request)
-    {
-        $search = $request->input('search');
+{
+    // 1. Capturamos los parámetros de búsqueda y filtro
+    $search = $request->input('search');
+    $organismo_id = $request->input('organismo_id');
 
-        $unidades = UnidadAdministradora::with(['organismo', 'dependencias'])
-            ->search($search)
-            ->paginate(10)
-            ->appends(['search' => $search]);
+    // 2. Construimos la consulta con filtros dinámicos
+    $query = UnidadAdministradora::with(['organismo', 'dependencias']);
 
-        return view('unidades.index', compact('unidades', 'search'));
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('nombre', 'LIKE', "%{$search}%")
+              ->orWhere('codigo', 'LIKE', "%{$search}%");
+        });
     }
+
+    if ($organismo_id) {
+        $query->where('organismo_id', $organismo_id);
+    }
+
+    // 3. Paginación manteniendo los parámetros en los links
+    $unidades = $query->paginate(10)
+                      ->appends($request->only(['search', 'organismo_id']));
+
+    // 4. Cargamos la lista de organismos para el select del filtro
+    $organismos = Organismo::orderBy('nombre')->get();
+
+    // 5. Soporte para AJAX (Carga parcial de la vista)
+    if ($request->ajax()) {
+        return view('unidades.index', compact('unidades', 'organismos', 'search'))->render();
+    }
+
+    return view('unidades.index', compact('unidades', 'organismos', 'search'));
+}
 
     public function create()
     {

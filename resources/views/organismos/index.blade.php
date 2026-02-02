@@ -3,194 +3,194 @@
 @section('title', 'Organismos')
 
 @section('content')
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-slate-800 tracking-tight">🏢 Organismos</h1>
+{{-- resources/views/organismos/index.blade.php --}}
+
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
+        🏢 Organismos
+    </h1>
+    <div class="flex gap-4">
         <a href="{{ route('organismos.create') }}"
-            class="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold shadow-sm hover:bg-blue-700 transition-all active:scale-95 text-sm">
-            <span>+</span>
-            <span>Nuevo Organismo</span>
+           class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition">
+            + Nuevo Organismo
         </a>
     </div>
+</div>
 
-    @if(session('success'))
-<<<<<<< HEAD
-        <div
-            class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-800 rounded-lg shadow-sm flex items-center gap-3 text-base">
-=======
-        <div class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-800 rounded-lg shadow-sm flex items-center gap-3 text-base">
->>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
-            <span class="font-bold">✓</span>
-            <span class="font-medium">{{ session('success') }}</span>
+{{-- Mensajes de éxito --}}
+@if(session('success'))
+    <div class="mb-4 p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg shadow-sm">
+        {{ session('success') }}
+    </div>
+@endif
+
+{{-- Filtros --}}
+{{-- Filtros con validación de caracteres --}}
+<div class="mb-6 bg-white shadow rounded-lg p-4 space-y-4">
+    <form action="{{ route('organismos.index') }}" method="GET" class="space-y-4" id="filtrosForm">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {{-- Filtro General (Búsqueda) --}}
+            <div class="flex flex-col">
+                <label for="buscar" class="text-sm font-medium text-gray-700 mb-1">Búsqueda general</label>
+                <input type="text"
+                       name="buscar"
+                       id="buscar"
+                       value="{{ $validated['buscar'] ?? '' }}"
+                       maxlength="40"
+                       placeholder="Nombre o código (máx. 40 caracteres)..."
+                       class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto filtro-input">
+                <p id="error-msg" class="text-red-500 text-xs mt-1 hidden font-semibold">
+                    ⚠️ No se permiten caracteres especiales.
+                </p>
+            </div>
+
+            {{-- Filtro por Código (Específico) --}}
+            <div class="flex flex-col">
+                <label for="codigo" class="text-sm font-medium text-gray-700 mb-1">Código exacto</label>
+                <input type="text"
+                       name="codigo"
+                       id="codigo"
+                       value="{{ $validated['codigo'] ?? '' }}"
+                       placeholder="Ej: 001"
+                       class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto filtro-input">
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 justify-end">
+            <a href="{{ route('organismos.index') }}"
+               class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition">
+                Limpiar
+            </a>
+            <button type="submit"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                Aplicar filtros
+            </button>
+        </div>
+    </form>
+</div>
+{{-- Chips de Filtros Activos --}}
+<div id="activeFiltersContainer">
+    @php
+        $activeFilters = collect(request()->only(['buscar', 'codigo', 'nombre']))->filter();
+    @endphp
+    @if($activeFilters->isNotEmpty())
+        <div class="mb-4 flex flex-wrap items-center gap-2 text-sm">
+            <span class="font-medium text-gray-700">Filtros activos:</span>
+            @foreach($activeFilters as $key => $value)
+                <span class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700">
+                    {{ ucfirst($key) }}: <span class="ml-1 font-medium">{{ $value }}</span>
+                    <a href="{{ route('organismos.index', request()->except($key)) }}"
+                       class="ml-2 text-indigo-500 hover:text-red-600 font-bold"> × </a>
+                </span>
+            @endforeach
         </div>
     @endif
+</div>
 
-<<<<<<< HEAD
-    {{-- Panel de Filtros --}}
-=======
-    {{-- Panel de Filtros - Punto Medio --}}
->>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
-    <div class="bg-white shadow-sm rounded-xl p-6 mb-6 border border-gray-100">
-        <h2 class="text-xl font-bold text-slate-800 mb-5 flex items-center gap-2">
-            <span>🔍</span> Filtrar Organismos
-        </h2>
-        <form action="{{ route('organismos.index') }}" method="GET" id="filterForm"
-            class="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-            <div>
-                <label for="buscar" class="block text-sm font-bold text-slate-700 mb-2">Búsqueda General</label>
-                <input type="text" name="buscar" id="buscar" maxlength="30"
-                    class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-sm"
-<<<<<<< HEAD
-                    placeholder="Solo letras y números..." value="{{ $validated['buscar'] ?? '' }}">
-                <p id="error-buscar" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">No se permiten caracteres especiales.</p>
-                <p class="text-gray-400 text-[11px] mt-1 italic">Máximo 30 caracteres (sin símbolos).</p>
-=======
-                    placeholder="Buscar..." value="{{ $validated['buscar'] ?? '' }}">
-                <p class="text-gray-400 text-[11px] mt-1 italic">Máximo 30 caracteres.</p>
->>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
-            </div>
-
-            <div>
-                <label for="codigo_filtro" class="block text-sm font-bold text-slate-700 mb-2">Código</label>
-                <input type="text" name="codigo" id="codigo_filtro" maxlength="8" inputmode="numeric"
-                    class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono shadow-sm"
-                    placeholder="00000000" value="{{ $validated['codigo'] ?? '' }}">
-                <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">Solo números.</p>
-                <p class="text-blue-500 text-[10px] mt-1 italic">Máximo 8 números.</p>
-            </div>
-
-            <div>
-                <label for="nombre_filtro" class="block text-sm font-bold text-slate-700 mb-2">Nombre</label>
-                <input type="text" name="nombre" id="nombre_filtro" maxlength="30"
-                    class="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-sm"
-                    placeholder="Nombre..." value="{{ $validated['nombre'] ?? '' }}">
-<<<<<<< HEAD
-                <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">Solo letras.</p>
-                <p class="text-gray-400 text-[11px] mt-1 italic">Máximo 30 caracteres (solo letras).</p>
-=======
-                <p class="text-gray-400 text-[11px] mt-1 italic">Máximo 30 caracteres.</p>
->>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
-            </div>
-
-            <div class="md:col-span-3 flex items-center gap-6 pt-2">
-                <button type="submit"
-                    class="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold shadow-md hover:bg-blue-700 transition-all active:scale-95 text-base">
-                    🔎 Aplicar Filtros
-                </button>
-                <a href="{{ route('organismos.index') }}"
-                    class="flex items-center gap-2 text-slate-500 font-bold transition-all hover:text-black text-sm">
-                    <span class="text-lg">✕</span>
-                    <span>Limpiar</span>
-                </a>
-            </div>
-        </form>
-    </div>
-
-    {{-- Tabla - Punto Medio --}}
-    <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-slate-50">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">ID</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Código</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-100">
+{{-- Tabla --}}
+<div class="bg-white shadow-md rounded-lg overflow-hidden" id="tablaOrganismos">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($organismos as $organismo)
-                        <tr class="hover:bg-blue-50/30 transition-colors">
-                            <td class="px-6 py-4 text-sm text-slate-400 font-mono italic">{{ $organismo->id }}</td>
-                            <td class="px-6 py-4 text-base font-bold text-slate-700 font-mono tracking-tight">{{ $organismo->codigo }}</td>
-                            <td class="px-6 py-4 text-base text-slate-600 font-medium">{{ $organismo->nombre }}</td>
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 text-sm text-gray-400 font-mono">#{{ $organismo->id }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900 font-bold">{{ $organismo->codigo }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ $organismo->nombre }}</td>
                             <td class="px-6 py-4 text-sm text-right">
-                                <div class="flex justify-end">
-                                    @include('components.action-buttons', [
-<<<<<<< HEAD
-                                        'resource' => 'organismos',
-                                        'model' => $organismo,
-                                        'confirm' => '¿Eliminar?',
-=======
-                                        'resource' => 'organismos', 
-                                        'model' => $organismo, 
-                                        'confirm' => '¿Eliminar?', 
->>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
-                                        'label' => $organismo->nombre
-                                    ])
-                                </div>
+                                @include('components.action-buttons', [
+                                    'resource' => 'organismos',
+                                    'model' => $organismo,
+                                    'confirm' => '¿Desea eliminar este organismo?',
+                                    'label' => $organismo->nombre
+                                ])
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-12 text-center text-slate-400 italic">No hay resultados.</td>
+                            <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-500 italic">
+                                No se encontraron organismos.
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>
-            </table>
-        </div>
+        </table>
     </div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const buscarInput = document.getElementById('buscar');
-            const errorMsgBuscar = document.getElementById('error-buscar');
-            const codigoInput = document.getElementById('codigo_filtro');
-            const errorMsgCodigo = document.getElementById('error-codigo');
-            const nombreInput = document.getElementById('nombre_filtro');
-            const errorMsgNombre = document.getElementById('error-nombre');
+{{-- Paginación --}}
+<div class="mt-6" id="organismosPagination">
+    @if($organismos->hasPages())
+        {{ $organismos->links() }}
+    @endif
+</div>
 
-<<<<<<< HEAD
-            // 1. Lógica para BÚSQUEDA GENERAL (Solo letras, números y espacios)
-            buscarInput?.addEventListener('input', function (e) {
-                const originalValue = e.target.value;
-                // Remueve caracteres que no sean letras, números o espacios
-                const cleanValue = originalValue.replace(/[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ]/g, '');
-                
-=======
-            codigoInput?.addEventListener('input', function (e) {
-                const originalValue = e.target.value;
-                const cleanValue = originalValue.replace(/[^0-9]/g, '');
+@push('scripts')
+<script>
+    let fetchTimeout;
 
->>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
-                if (originalValue !== cleanValue) {
-                    errorMsgBuscar?.classList.remove('hidden');
-                    setTimeout(() => errorMsgBuscar?.classList.add('hidden'), 2000);
-                }
-                e.target.value = cleanValue.slice(0, 30);
-            });
+    function aplicarFiltros(url = null) {
+        if (fetchTimeout) clearTimeout(fetchTimeout);
 
-            // 2. Lógica para CÓDIGO (Solo permite números)
-            codigoInput?.addEventListener('input', function (e) {
-                const originalValue = e.target.value;
-                const cleanValue = originalValue.replace(/[^0-9]/g, '');
-                if (originalValue !== cleanValue) {
-                    errorMsgCodigo?.classList.remove('hidden');
-                    setTimeout(() => errorMsgCodigo?.classList.add('hidden'), 2000);
-                }
-                e.target.value = cleanValue.slice(0, 8);
-            });
+        fetchTimeout = setTimeout(() => {
+            const form = document.getElementById('filtrosForm');
+            const baseUrl = url || form.action;
+            const formParams = new URLSearchParams(new FormData(form));
+            const fetchUrl = baseUrl.split('?')[0] + '?' + formParams.toString();
 
-<<<<<<< HEAD
-            // 3. Lógica para NOMBRE (Solo letras y espacios, prohibe números y símbolos)
-            nombreInput?.addEventListener('input', function (e) {
-                const originalValue = e.target.value;
-                // Solo letras, tildes y espacios
-                const cleanValue = originalValue.replace(/[^a-zA-Z\sáéíóúÁÉÍÓÚñÑ]/g, '');
-                
-                if (originalValue !== cleanValue) {
-                    errorMsgNombre?.classList.remove('hidden');
-                    setTimeout(() => errorMsgNombre?.classList.add('hidden'), 2000);
-                }
-                e.target.value = cleanValue.slice(0, 30);
-=======
-            const inputs30 = [document.getElementById('buscar'), document.getElementById('nombre_filtro')];
-            inputs30.forEach(input => {
-                input?.addEventListener('input', e => {
-                    if (e.target.value.length > 30) e.target.value = e.target.value.slice(0, 30);
-                });
->>>>>>> 31838aec7962599342adf5f0477eb157d3c8bcc8
+            window.history.pushState(null, '', fetchUrl);
+
+            fetch(fetchUrl, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                document.getElementById('tablaOrganismos').innerHTML = doc.querySelector('#tablaOrganismos').innerHTML;
+                document.getElementById('organismosPagination').innerHTML = doc.querySelector('#organismosPagination').innerHTML;
+                document.getElementById('activeFiltersContainer').innerHTML = doc.querySelector('#activeFiltersContainer').innerHTML;
+
+                attachPaginationListeners();
+            })
+            .catch(error => console.error('Error:', error));
+        }, 300);
+    }
+
+    function attachPaginationListeners() {
+        document.querySelectorAll('#organismosPagination a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                aplicarFiltros(this.href);
             });
         });
-    </script>
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.filtro-auto').forEach(el => {
+            el.addEventListener('change', () => aplicarFiltros());
+        });
+
+        document.querySelectorAll('.filtro-input').forEach(el => {
+            el.addEventListener('keyup', () => aplicarFiltros());
+        });
+
+        document.getElementById('filtrosForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            aplicarFiltros();
+        });
+
+        attachPaginationListeners();
+    });
+</script>
+@endpush
 @endsection

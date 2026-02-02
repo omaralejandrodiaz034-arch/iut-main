@@ -4,14 +4,13 @@
 
 @section('content')
 <div class="flex justify-between items-center mb-6">
-    <!-- Reemplazo de emojis por Heroicons -->
     <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
         <x-heroicon-o-link class="w-6 h-6 text-gray-500" /> Dependencias
     </h1>
     <div class="flex gap-2">
         <a href="{{ route('dependencias.create') }}"
            class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition">
-            + Nueva
+            + Nueva Dependencia
         </a>
         <a href="{{ route('responsables.create') }}"
            class="bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition">
@@ -27,97 +26,214 @@
     </div>
 @endif
 
-{{-- Buscador --}}
-<div class="mb-4">
-    <form action="{{ route('dependencias.index') }}" method="GET" class="flex gap-2">
-        <input type="text" name="search" value="{{ $search ?? '' }}"
-               placeholder="Buscar por código o nombre..."
-               class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <button type="submit"
-                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-            Buscar
-        </button>
+{{-- Panel de Filtros Avanzado --}}
+<div class="mb-6 bg-white shadow rounded-lg p-4 space-y-4">
+    <form action="{{ route('dependencias.index') }}" method="GET" class="space-y-4" id="filtrosForm">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {{-- Filtro General con validación --}}
+            <div class="flex flex-col">
+                <label for="search" class="text-sm font-medium text-gray-700 mb-1">Búsqueda rápida</label>
+                <input type="text" name="search" id="search" value="{{ request('search') }}"
+                       maxlength="40"
+                       placeholder="Código o nombre..."
+                       class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto">
+                <p id="error-msg" class="text-red-500 text-[10px] mt-1 hidden font-semibold italic">
+                    ⚠️ No se permiten caracteres especiales.
+                </p>
+            </div>
+
+            {{-- Filtro por Unidad Administradora --}}
+            <div class="flex flex-col">
+                <label for="unidad_id" class="text-sm font-medium text-gray-700 mb-1">Unidad Administradora</label>
+                <select name="unidad_id" id="unidad_id"
+                        class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto">
+                    <option value="">Todas las unidades</option>
+                    @foreach($unidades as $unidad)
+                        <option value="{{ $unidad->id }}" @selected(request('unidad_id') == $unidad->id)>
+                            {{ $unidad->nombre }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- Filtro por Responsable --}}
+            <div class="flex flex-col">
+                <label for="responsable_id" class="text-sm font-medium text-gray-700 mb-1">Responsable</label>
+                <select name="responsable_id" id="responsable_id"
+                        class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto">
+                    <option value="">Todos los responsables</option>
+                    @foreach($responsables as $resp)
+                        <option value="{{ $resp->id }}" @selected(request('responsable_id') == $resp->id)>
+                            {{ $resp->nombre }} ({{ $resp->cedula }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 justify-end">
+            <a href="{{ route('dependencias.index') }}"
+               class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition text-sm font-medium">
+                Limpiar Filtros
+            </a>
+            <button type="submit"
+                    class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-bold">
+                Aplicar
+            </button>
+        </div>
     </form>
 </div>
 
-{{-- Tabla --}}
-<div class="bg-white shadow-md rounded-lg overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-200 table-fixed">
-        <thead class="bg-gray-50">
-            <tr>
-                <th class="w-24 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
-                <th class="w-64 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                <th class="w-64 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unidad Administradora</th>
-                <th class="w-72 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Responsable</th>
-                <th class="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bienes</th>
-                <th class="w-40 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
-            </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-            @forelse($dependencias as $dep)
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="px-4 py-4 text-sm text-gray-900 font-mono">{{ $dep->codigo }}</td>
+{{-- Chips de Filtros Activos --}}
+<div id="activeFiltersContainer">
+    @php
+        $params = request()->only(['search', 'unidad_id', 'responsable_id']);
+        $activeFilters = collect($params)->filter();
+    @endphp
+    @if($activeFilters->isNotEmpty())
+        <div class="mb-4 flex flex-wrap items-center gap-2 text-sm">
+            <span class="font-medium text-gray-600">Filtrado por:</span>
+            @foreach($activeFilters as $key => $value)
+                <span class="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                    <span class="font-bold mr-1">
+                        {{ $key == 'search' ? 'Búsqueda' : ($key == 'unidad_id' ? 'Unidad' : 'Responsable') }}:
+                    </span>
+                    @php
+                        $display = $value;
+                        if($key == 'unidad_id') $display = $unidades->firstWhere('id', $value)->nombre ?? $value;
+                        if($key == 'responsable_id') $display = $responsables->firstWhere('id', $value)->nombre ?? $value;
+                    @endphp
+                    {{ $display }}
+                    <a href="{{ route('dependencias.index', request()->except($key)) }}" class="ml-2 hover:text-red-500">×</a>
+                </span>
+            @endforeach
+        </div>
+    @endif
+</div>
 
-                    <td class="px-4 py-4 text-sm text-gray-900 truncate" title="{{ $dep->nombre }}">
-                        {{ $dep->nombre }}
-                    </td>
-
-                    <td class="px-4 py-4 text-sm text-gray-600 truncate" title="{{ $dep->unidadAdministradora->nombre ?? '-' }}">
-                        {{ $dep->unidadAdministradora->nombre ?? '-' }}
-                    </td>
-
-                    <td class="px-4 py-4 text-sm text-gray-600 truncate" title="{{ $dep->responsable?->nombre }}">
-                        @if($dep->responsable)
-                            {{ $dep->responsable->nombre }}
-                            @if($dep->responsable->cedula)
-                                ({{ $dep->responsable->cedula }})
-                            @endif
-                            - {{ $dep->responsable->tipo->nombre ?? '' }}
-                        @else
-                            <span class="text-gray-400">—</span>
-                        @endif
-                    </td>
-
-                    <td class="px-4 py-4 text-sm text-gray-600">
-                        @if($dep->bienes->count())
-                            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
-                                {{ $dep->bienes->count() }} bienes
-                            </span>
-                        @else
-                            <span class="text-gray-400">—</span>
-                        @endif
-                    </td>
-
-                    <td class="px-4 py-4 text-sm text-right space-x-2">
-                        @include('components.action-buttons', [
-                            'resource' => 'dependencias',
-                            'model' => $dep,
-                            'confirm' => "¿Seguro que deseas eliminar esta dependencia?",
-                            'label' => $dep->nombre
-                        ])
-                    </td>
-                </tr>
-            @empty
+{{-- Tabla de Dependencias --}}
+<div class="bg-white shadow-md rounded-xl overflow-hidden border border-gray-100" id="tablaDependencias">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
                 <tr>
-                    <td colspan="6" class="px-4 py-4 text-center text-sm text-gray-500">
-                        No hay dependencias registradas.
-                    </td>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Código</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Unidad Adm.</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Responsable</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Bienes</th>
+                    <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
-            @endforelse
-        </tbody>
-    </table>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100 italic-empty">
+                @forelse($dependencias as $dep)
+                    <tr class="hover:bg-blue-50/30 transition-colors">
+                        <td class="px-6 py-4 text-sm font-mono text-blue-600 font-semibold">{{ $dep->codigo }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{ $dep->nombre }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ $dep->unidadAdministradora->nombre ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            @if($dep->responsable)
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-gray-800">{{ $dep->responsable->nombre }}</span>
+                                    <span class="text-[11px] text-gray-500">{{ $dep->responsable->cedula }}</span>
+                                </div>
+                            @else
+                                <span class="text-gray-400 italic">No asignado</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4">
+                            @if($dep->bienes_count > 0)
+                                <span class="px-2.5 py-0.5 bg-green-100 text-green-800 rounded-full text-xs font-bold">
+                                    {{ $dep->bienes_count }} items
+                                </span>
+                            @else
+                                <span class="text-gray-300 text-xs">0 bienes</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            @include('components.action-buttons', [
+                                'resource' => 'dependencias',
+                                'model' => $dep,
+                                'confirm' => "¿Desea eliminar la dependencia: $dep->nombre?",
+                                'label' => $dep->nombre
+                            ])
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="px-6 py-10 text-center text-gray-500 italic">
+                            No se encontraron dependencias con los criterios seleccionados.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 </div>
 
 {{-- Paginación --}}
-@if($dependencias->hasPages())
-    <div class="mt-6">
-        {{ $dependencias->links() }}
-    </div>
-@endif
+<div class="mt-6" id="paginationLinks">
+    {{ $dependencias->links() }}
+</div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('search');
+        const errorMsg = document.getElementById('error-msg');
+        const form = document.getElementById('filtrosForm');
+
+        // 1. Validación de Caracteres Especiales y Límite de 40
+        searchInput.addEventListener('input', function(e) {
+            const originalValue = e.target.value;
+            const cleanValue = originalValue.replace(/[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ]/g, '');
+
+            if (originalValue !== cleanValue) {
+                errorMsg.classList.remove('hidden');
+                setTimeout(() => errorMsg.classList.add('hidden'), 2000);
+            }
+
+            e.target.value = cleanValue.slice(0, 40);
+            updateTable();
+        });
+
+        // 2. Disparadores para Selects
+        document.querySelectorAll('.filtro-auto').forEach(el => {
+            if(el.type === 'select-one') el.addEventListener('change', updateTable);
+        });
+
+        // 3. Función AJAX para actualización fluida
+        function updateTable(url = null) {
+            const formData = new URLSearchParams(new FormData(form));
+            const fetchUrl = url || `${form.action}?${formData.toString()}`;
+
+            window.history.pushState(null, '', fetchUrl);
+
+            fetch(fetchUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(res => res.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    document.getElementById('tablaDependencias').innerHTML = doc.getElementById('tablaDependencias').innerHTML;
+                    document.getElementById('paginationLinks').innerHTML = doc.getElementById('paginationLinks').innerHTML;
+                    document.getElementById('activeFiltersContainer').innerHTML = doc.getElementById('activeFiltersContainer').innerHTML;
+
+                    attachPagination();
+                });
+        }
+
+        function attachPagination() {
+            document.querySelectorAll('#paginationLinks a').forEach(link => {
+                link.addEventListener('click', e => {
+                    e.preventDefault();
+                    updateTable(link.href);
+                });
+            });
+        }
+
+        attachPagination();
+    });
+</script>
+@endpush
 @endsection
-
-
-
-
-
-

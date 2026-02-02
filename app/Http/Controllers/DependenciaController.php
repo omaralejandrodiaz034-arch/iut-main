@@ -13,16 +13,28 @@ use Illuminate\Validation\Rule;
 class DependenciaController extends Controller
 {
     public function index(Request $request)
-    {
-        $search = $request->input('search');
+{
 
-        $dependencias = Dependencia::with(['unidadAdministradora', 'bienes', 'responsable'])
-            ->search($search)
-            ->paginate(10)
-            ->appends(['search' => $search]);
+    $query = Dependencia::with(['unidadAdministradora', 'responsable'])
+        ->withCount('bienes'); // Para usar $dep->bienes_count que es más rápido
 
-        return view('dependencias.index', compact('dependencias', 'search'));
+    // Filtros
+    if ($request->filled('search')) {
+        $query->search($request->search);
     }
+    if ($request->filled('unidad_id')) {
+        $query->where('unidad_administradora_id', $request->unidad_id);
+    }
+    if ($request->filled('responsable_id')) {
+        $query->where('responsable_id', $request->responsable_id);
+    }
+
+    return view('dependencias.index', [
+        'dependencias' => $query->paginate(10)->withQueryString(),
+        'unidades' => \App\Models\UnidadAdministradora::all(), // Requerido para el select
+        'responsables' => \App\Models\Responsable::all(),     // Requerido para el select
+    ]);
+}
 
     public function store(Request $request)
     {
