@@ -57,26 +57,19 @@
                     </h2>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {{-- Código del Bien con Sugerencia --}}
+                        {{-- Código del Bien --}}
                         <div>
                             <label for="codigo" class="block text-sm font-bold text-gray-700 mb-2">Código del Bien</label>
                             <input type="text" name="codigo" id="codigo" value="{{ old('codigo', $codigoSugerido ?? '') }}"
-                                maxlength="8" inputmode="numeric" placeholder="Ej: 00000001"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase">
+                                maxlength="8" inputmode="numeric" placeholder="00000000"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition">
 
-                            {{-- Contenedor para la sugerencia --}}
                             <div id="sugerencia-container" class="mt-1 hidden">
                                 <button type="button" id="btn-sugerencia"
                                     class="text-[10px] text-blue-600 hover:underline font-bold italic">
                                     💡 ¿Usar código sugerido: <span id="span-sugerencia"></span>?
                                 </button>
                             </div>
-
-                            <p id="codigo-error" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo
-                                números (0-9).</p>
-                            @error('codigo')
-                                <p class="text-red-600 text-xs mt-1 font-semibold">{{ $message }}</p>
-                            @enderror
                         </div>
 
                         {{-- Tipo de Bien --}}
@@ -115,27 +108,33 @@
                             <span id="char-count" class="text-[10px] font-bold text-gray-400">0 / 50</span>
                         </div>
                         <textarea name="descripcion" id="descripcion" rows="2" required maxlength="50"
-                            placeholder="Indique nombre, marca, modelo..."
+                            placeholder="Nombre, marca, modelo..."
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition">{{ old('descripcion') }}</textarea>
                     </div>
                 </div>
 
                 {{-- Sección 3: Valores y Archivos --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {{-- PRECIO CON MÁSCARA CONTABLE --}}
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Precio (Bs.)</label>
-                        <input type="number" name="precio" step="0.01" min="0" value="{{ old('precio', '0.00') }}"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label for="precio_display" class="block text-sm font-bold text-gray-700 mb-2">Precio (Bs.)</label>
+                        <input type="text" id="precio_display"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-right font-mono"
+                            placeholder="0,00">
+                        {{-- Campo oculto para el envío de datos --}}
+                        <input type="hidden" name="precio" id="precio_hidden" value="{{ old('precio', '0.00') }}">
                     </div>
+
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Adquisición</label>
                         <input type="date" name="fecha_registro" value="{{ old('fecha_registro', now()->format('Y-m-d')) }}"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
+
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Fotografía</label>
                         <input type="file" name="fotografia" accept="image/*"
-                            class="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            class="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700">
                     </div>
                 </div>
 
@@ -160,8 +159,7 @@
             @foreach($dependencias as $d)
                 '{{ $d->id }}': '{{ $d->responsable ? $d->responsable->nombre : "Sin responsable asignado" }}',
             @endforeach
-        };
-
+            };
         const depSelect = document.getElementById('dependencia_id');
         const respDisplay = document.getElementById('responsable_display');
 
@@ -171,28 +169,16 @@
             respDisplay.classList.toggle('font-bold', !!this.value);
         });
 
-        /* 2. Lógica de Código con Sugerencia */
+        /* 2. Código con Sugerencia */
         const codigoInput = document.getElementById('codigo');
-        const codigoError = document.getElementById('codigo-error');
         const sugerenciaContainer = document.getElementById('sugerencia-container');
         const spanSugerencia = document.getElementById('span-sugerencia');
         const btnSugerencia = document.getElementById('btn-sugerencia');
-
-        // El código que vino del servidor originalmente
         const codigoOriginalSugerido = "{{ $codigoSugerido ?? '' }}";
 
         codigoInput.addEventListener('input', function (e) {
-            const original = e.target.value;
-            const cleaned = original.replace(/\D/g, '');
-
-            if (original !== cleaned) {
-                codigoError.classList.remove('hidden');
-                setTimeout(() => codigoError.classList.add('hidden'), 2000);
-            }
-            e.target.value = cleaned;
-
-            // Si el usuario borra o cambia el código sugerido, mostramos la recomendación
-            if (codigoOriginalSugerido && cleaned !== codigoOriginalSugerido) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+            if (codigoOriginalSugerido && e.target.value !== codigoOriginalSugerido) {
                 spanSugerencia.textContent = codigoOriginalSugerido;
                 sugerenciaContainer.classList.remove('hidden');
             } else {
@@ -205,12 +191,6 @@
             sugerenciaContainer.classList.add('hidden');
         });
 
-        codigoInput.addEventListener('blur', function () {
-            if (this.value && this.value.length > 0) {
-                this.value = this.value.padStart(8, '0');
-            }
-        });
-
         /* 3. Límite de Caracteres en Descripción */
         const descTextarea = document.getElementById('descripcion');
         const charCount = document.getElementById('char-count');
@@ -218,35 +198,48 @@
         descTextarea.addEventListener('input', function () {
             const len = this.value.length;
             charCount.textContent = `${len} / 50`;
-
-            if (len >= 50) {
-                charCount.classList.add('text-red-500');
-            } else {
-                charCount.classList.remove('text-red-500');
-            }
+            charCount.classList.toggle('text-red-500', len >= 50);
         });
 
-        // Inicializar contador al cargar
-        if (descTextarea) descTextarea.dispatchEvent(new Event('input'));
+        /* 4. PRECIO: MÁSCARA CONTABLE (DERECHA A IZQUIERDA) */
+        const precioDisplay = document.getElementById('precio_display');
+        const precioHidden = document.getElementById('precio_hidden');
 
-        /* 4. Campos Dinámicos */
+        precioDisplay.addEventListener('input', function (e) {
+            let value = this.value.replace(/\D/g, '');
+            if (value === "") value = "0";
+
+            let numericValue = (parseInt(value) / 100).toFixed(2);
+            let displayValue = numericValue.replace('.', ',');
+
+            // Separador de miles opcional
+            displayValue = displayValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+            this.value = displayValue;
+            precioHidden.value = numericValue;
+        });
+
+        // Inicializar valor si existe old()
+        if (precioHidden.value) {
+            let initial = (parseFloat(precioHidden.value) * 100).toString();
+            precioDisplay.value = initial;
+            precioDisplay.dispatchEvent(new Event('input'));
+        }
+
+        /* 5. Campos Dinámicos */
         const camposPorTipo = {
             'ELECTRONICO': [
                 { name: 'serial', label: 'Número de Serie', type: 'text' },
                 { name: 'modelo', label: 'Modelo/Versión', type: 'text' },
-                { name: 'procesador', label: 'Procesador', type: 'text' },
-                { name: 'memoria', label: 'RAM/Memoria', type: 'text' }
+                { name: 'procesador', label: 'Procesador', type: 'text' }
             ],
             'VEHICULO': [
                 { name: 'placa', label: 'Número de Placa', type: 'text' },
-                { name: 'marca', label: 'Marca', type: 'text' },
-                { name: 'motor', label: 'Serial de Motor', type: 'text' },
-                { name: 'chasis', label: 'Serial de Carrocería', type: 'text' }
+                { name: 'marca', label: 'Marca', type: 'text' }
             ],
             'MOBILIARIO': [
-                { name: 'material', label: 'Material de Fabricación', type: 'text' },
-                { name: 'color', label: 'Color', type: 'text' },
-                { name: 'dimensiones', label: 'Dimensiones (Largo x Ancho)', type: 'text' }
+                { name: 'material', label: 'Material', type: 'text' },
+                { name: 'dimensiones', label: 'Dimensiones', type: 'text' }
             ],
             'OTROS': [
                 { name: 'especificaciones', label: 'Especificaciones Extra', type: 'textarea' }
@@ -255,7 +248,6 @@
 
         const tipoBienSelect = document.getElementById('tipo_bien');
         const container = document.getElementById('campos-tipo-bien');
-        const oldValues = @json(old());
 
         tipoBienSelect.addEventListener('change', function () {
             const tipo = this.value;
@@ -263,26 +255,17 @@
             if (!tipo || !camposPorTipo[tipo]) return;
 
             let html = `
-                <div class="bg-blue-50/50 border border-blue-100 p-6 rounded-xl space-y-4 animate-fade-in">
-                    <h3 class="text-blue-800 font-bold text-sm uppercase tracking-wider flex items-center gap-2">
-                        <x-heroicon-o-information-circle class="w-5 h-5" /> Detalles Técnicos del ${tipo}
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            `;
+                    <div class="bg-blue-50/50 border border-blue-100 p-6 rounded-xl space-y-4 animate-fade-in">
+                        <h3 class="text-blue-800 font-bold text-sm uppercase tracking-wider flex items-center gap-2">Detalles Técnicos del ${tipo}</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
 
             camposPorTipo[tipo].forEach(campo => {
-                const val = oldValues[campo.name] || '';
-                const isFull = campo.type === 'textarea' ? 'md:col-span-2' : '';
                 html += `
-                    <div class="${isFull}">
-                        <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label}</label>
-                        ${campo.type === 'textarea'
-                        ? `<textarea name="${campo.name}" class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">${val}</textarea>`
-                        : `<input type="${campo.type}" name="${campo.name}" value="${val}" class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white uppercase">`
-                    }
-                    </div>`;
+                        <div class="${campo.type === 'textarea' ? 'md:col-span-2' : ''}">
+                            <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label}</label>
+                            <input type="${campo.type}" name="${campo.name}" class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                        </div>`;
             });
-
             html += `</div></div>`;
             container.innerHTML = html;
         });
