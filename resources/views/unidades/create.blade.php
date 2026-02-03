@@ -27,7 +27,7 @@
                 @enderror
             </div>
 
-            {{-- Código de Unidad (Secuencial Automático) --}}
+            {{-- Código de Unidad --}}
             <div class="px-2">
                 <label for="codigo" class="block text-sm font-bold text-slate-700 mb-2">Código de Unidad</label>
                 <div class="relative">
@@ -37,29 +37,42 @@
                            placeholder="00000000"
                            class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono bg-blue-50/20">
                     
+                    {{-- Botón original "Recomendar" a la derecha --}}
                     <button type="button" onclick="restaurarSugerencia()" 
                             class="absolute right-3 top-3 text-[10px] bg-blue-100 text-blue-700 px-2 py-1.5 rounded hover:bg-blue-200 transition font-bold uppercase tracking-wider">
-                        Recomendar
+                        Sugerir
                     </button>
                 </div>
+
+                {{-- NUEVO: Aviso de recuperación abajo si se modifica el código sugerido --}}
+                <div id="recuperar-contenedor" class="hidden mt-2 flex items-center gap-2 bg-blue-50/50 p-2 rounded-md border border-blue-100">
+                    <span class="text-blue-800 text-[11px] font-medium">⚠️ El código no coincide con la sugerencia:</span>
+                    <button type="button" id="btnRecuperar" 
+                            class="text-blue-600 text-[11px] font-bold hover:text-blue-800 underline flex items-center gap-1">
+                        Restaurar sugerencia ({{ $siguienteCodigo ?? '' }})
+                    </button>
+                </div>
+
                 @error('codigo')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
+                <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">Solo se permiten números.</p>
                 <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Sugerencia secuencial activa.</p>
             </div>
 
-            {{-- Nombre de la Unidad (Solo letras) --}}
+            {{-- Nombre de la Unidad (Límite 40) --}}
             <div class="px-2">
                 <label for="nombre" class="block text-sm font-bold text-slate-700 mb-2">Nombre de la Unidad</label>
                 <input type="text" name="nombre" id="nombre" value="{{ old('nombre') }}" 
-                       maxlength="30" autocomplete="off"
+                       maxlength="40"
+                       autocomplete="off"
                        placeholder="Ej: Recursos Humanos"
                        class="w-full px-4 py-3 border @error('nombre') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                 @error('nombre')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
                 <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">Solo se permiten letras.</p>
-                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Límite: 30 caracteres (sin números).</p>
+                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Límite: 40 caracteres (sin números).</p>
             </div>
 
             {{-- Botones de Acción --}}
@@ -81,51 +94,86 @@
 </div>
 
 <script>
-    // Almacenamos la sugerencia enviada por el controlador
+    // Valor sugerido por el controlador
     const sugerenciaInicial = "{{ $siguienteCodigo ?? '' }}";
 
+    // Función que se dispara desde el botón lateral o el aviso de abajo
     function restaurarSugerencia() {
         const codigoInput = document.getElementById('codigo');
+        const recuperarContenedor = document.getElementById('recuperar-contenedor');
+        
         codigoInput.value = sugerenciaInicial;
-        // Efecto visual de resaltado
-        codigoInput.classList.add('ring-2', 'ring-blue-400');
-        setTimeout(() => codigoInput.classList.remove('ring-2', 'ring-blue-400'), 800);
+        recuperarContenedor.classList.add('hidden');
+        
+        // Efecto visual de éxito
+        codigoInput.classList.add('ring-2', 'ring-green-400', 'bg-green-50');
+        setTimeout(() => {
+            codigoInput.classList.remove('ring-2', 'ring-green-400', 'bg-green-50');
+        }, 800);
     }
 
     document.addEventListener('DOMContentLoaded', function() {
         const codigoInput = document.getElementById('codigo');
+        const errorCodigo = document.getElementById('error-codigo');
+        const recuperarContenedor = document.getElementById('recuperar-contenedor');
+        const btnRecuperar = document.getElementById('btnRecuperar');
         const nombreInput = document.getElementById('nombre');
         const errorNombre = document.getElementById('error-nombre');
         const form = document.getElementById('unidadForm');
 
-        // 1. RESTRICCIÓN DE CÓDIGO (Solo números)
+        // 1. LÓGICA DE CÓDIGO CON RECOMENDACIÓN PROACTIVA
         codigoInput.addEventListener('input', function(e) {
-            let val = e.target.value.replace(/[^0-9]/g, '');
-            e.target.value = val.slice(0, 8);
-        });
+            let originalValue = e.target.value;
+            let filteredValue = originalValue.replace(/[^0-9]/g, '');
 
-        // Autocompletar con ceros si el usuario escribe menos de 8 números
-        codigoInput.addEventListener('blur', function(e) {
-            if (e.target.value.length > 0 && e.target.value.length < 8) {
-                e.target.value = e.target.value.padStart(8, '0');
+            // Si intenta escribir letras
+            if (originalValue !== filteredValue) {
+                errorCodigo.classList.remove('hidden');
+                setTimeout(() => errorCodigo.classList.add('hidden'), 2000);
+            }
+
+            e.target.value = filteredValue.slice(0, 8);
+
+            // Si el valor actual es diferente a la sugerencia, mostramos el aviso abajo
+            if (e.target.value !== sugerenciaInicial) {
+                recuperarContenedor.classList.remove('hidden');
+            } else {
+                recuperarContenedor.classList.add('hidden');
             }
         });
 
-        // 2. RESTRICCIÓN DE NOMBRE (Solo letras, tildes y espacios)
-        nombreInput.addEventListener('input', function(e) {
-            let originalValue = e.target.value;
-            let filteredValue = originalValue.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+        // Evento para el botón de restaurar abajo
+        btnRecuperar.addEventListener('click', restaurarSugerencia);
 
-            if (originalValue !== filteredValue) {
+        codigoInput.addEventListener('blur', function(e) {
+            if (e.target.value.length > 0 && e.target.value.length < 8) {
+                e.target.value = e.target.value.padStart(8, '0');
+                // Volver a chequear tras el padStart
+                if (e.target.value === sugerenciaInicial) {
+                    recuperarContenedor.classList.add('hidden');
+                }
+            }
+        });
+
+        // 2. RESTRICCIÓN DE NOMBRE (40 caracteres)
+        nombreInput.addEventListener('input', function(e) {
+            let val = e.target.value;
+            let filtered = val.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+
+            if (val !== filtered) {
                 errorNombre.classList.remove('hidden');
                 setTimeout(() => errorNombre.classList.add('hidden'), 2000);
             }
 
-            e.target.value = filteredValue.slice(0, 30);
+            e.target.value = filtered.slice(0, 40);
         });
 
-        // 3. EFECTO DE CARGA AL ENVIAR
-        form.addEventListener('submit', function() {
+        // 3. EFECTO DE CARGA
+        form.addEventListener('submit', function(e) {
+            if (nombreInput.value.trim() === "" || codigoInput.value.trim() === "") {
+                return; 
+            }
+
             const btn = document.getElementById('btnGuardar');
             const icon = document.getElementById('btnIcon');
             const text = document.getElementById('btnText');

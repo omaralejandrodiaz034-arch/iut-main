@@ -25,7 +25,6 @@
 @endif
 
 {{-- Filtros --}}
-{{-- Filtros con validación de caracteres --}}
 <div class="mb-6 bg-white shadow rounded-lg p-4 space-y-4">
     <form action="{{ route('organismos.index') }}" method="GET" class="space-y-4" id="filtrosForm">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -39,20 +38,27 @@
                        maxlength="40"
                        placeholder="Nombre o código (máx. 40 caracteres)..."
                        class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto filtro-input">
-                <p id="error-msg" class="text-red-500 text-xs mt-1 hidden font-semibold">
+                {{-- Aviso de error para búsqueda general --}}
+                <p id="error-buscar-msg" class="text-red-500 text-xs mt-1 hidden font-semibold">
                     ⚠️ No se permiten caracteres especiales.
                 </p>
             </div>
 
             {{-- Filtro por Código (Específico) --}}
             <div class="flex flex-col">
-                <label for="codigo" class="text-sm font-medium text-gray-700 mb-1">Código exacto</label>
+                <label for="codigo" class="text-sm font-medium text-gray-700 mb-1">Código exacto (Sólo números)</label>
                 <input type="text"
                        name="codigo"
                        id="codigo"
+                       inputmode="numeric"
+                       maxlength="8"
                        value="{{ $validated['codigo'] ?? '' }}"
-                       placeholder="Ej: 001"
+                       placeholder="Máx. 8 dígitos"
                        class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto filtro-input">
+                {{-- Aviso de error para el código --}}
+                <p id="error-codigo-msg" class="text-red-500 text-xs mt-1 hidden font-semibold">
+                    ⚠️ Solo se permiten números (máx. 8).
+                </p>
             </div>
         </div>
 
@@ -68,6 +74,7 @@
         </div>
     </form>
 </div>
+
 {{-- Chips de Filtros Activos --}}
 <div id="activeFiltersContainer">
     @php
@@ -100,28 +107,28 @@
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($organismos as $organismo)
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 text-sm text-gray-400 font-mono">#{{ $organismo->id }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 font-bold">{{ $organismo->codigo }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-600">{{ $organismo->nombre }}</td>
-                            <td class="px-6 py-4 text-sm text-right">
-                                @include('components.action-buttons', [
-                                    'resource' => 'organismos',
-                                    'model' => $organismo,
-                                    'confirm' => '¿Desea eliminar este organismo?',
-                                    'label' => $organismo->nombre
-                                ])
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-500 italic">
-                                No se encontraron organismos.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
+                @forelse($organismos as $organismo)
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 text-sm text-gray-400 font-mono">#{{ $organismo->id }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900 font-bold">{{ $organismo->codigo }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ $organismo->nombre }}</td>
+                        <td class="px-6 py-4 text-sm text-right">
+                            @include('components.action-buttons', [
+                                'resource' => 'organismos',
+                                'model' => $organismo,
+                                'confirm' => '¿Desea eliminar este organismo?',
+                                'label' => $organismo->nombre
+                            ])
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-500 italic">
+                            No se encontraron organismos.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
         </table>
     </div>
 </div>
@@ -137,13 +144,45 @@
 <script>
     let fetchTimeout;
 
+    // --- ELEMENTOS ---
+    const inputBuscar = document.getElementById('buscar');
+    const msgErrorBuscar = document.getElementById('error-buscar-msg');
+    const inputCodigo = document.getElementById('codigo');
+    const msgErrorCodigo = document.getElementById('error-codigo-msg');
+
+    // --- VALIDACIÓN BÚSQUEDA GENERAL (Alfanumérico y espacios) ---
+    if (inputBuscar) {
+        inputBuscar.addEventListener('input', function() {
+            // Permite letras, números, espacios y acentos básicos. Bloquea símbolos.
+            const regex = /[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ]/g;
+            if (regex.test(this.value)) {
+                msgErrorBuscar.classList.remove('hidden');
+                this.value = this.value.replace(regex, '');
+                setTimeout(() => msgErrorBuscar.classList.add('hidden'), 2000);
+            }
+        });
+    }
+
+    // --- VALIDACIÓN CÓDIGO (Sólo números) ---
+    if (inputCodigo) {
+        inputCodigo.addEventListener('input', function() {
+            const regex = /[^0-9]/g;
+            if (regex.test(this.value)) {
+                msgErrorCodigo.classList.remove('hidden');
+                this.value = this.value.replace(regex, '');
+                setTimeout(() => msgErrorCodigo.classList.add('hidden'), 2000);
+            }
+        });
+    }
+
     function aplicarFiltros(url = null) {
         if (fetchTimeout) clearTimeout(fetchTimeout);
 
         fetchTimeout = setTimeout(() => {
             const form = document.getElementById('filtrosForm');
             const baseUrl = url || form.action;
-            const formParams = new URLSearchParams(new FormData(form));
+            const formData = new FormData(form);
+            const formParams = new URLSearchParams(formData);
             const fetchUrl = baseUrl.split('?')[0] + '?' + formParams.toString();
 
             window.history.pushState(null, '', fetchUrl);
@@ -181,7 +220,13 @@
         });
 
         document.querySelectorAll('.filtro-input').forEach(el => {
-            el.addEventListener('keyup', () => aplicarFiltros());
+            el.addEventListener('keyup', (e) => {
+                // Evita disparar el fetch si la tecla presionada fue un carácter inválido
+                if (el.id === 'codigo' && /[^0-9]/.test(e.key) && e.key.length === 1) return;
+                if (el.id === 'buscar' && /[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ]/.test(e.key) && e.key.length === 1) return;
+                
+                aplicarFiltros();
+            });
         });
 
         document.getElementById('filtrosForm').addEventListener('submit', function(e) {

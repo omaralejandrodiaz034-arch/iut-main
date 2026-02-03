@@ -4,7 +4,6 @@
 
 @section('content')
 <div class="max-w-2xl mx-auto mt-10">
-    {{-- El contenedor principal DEBE tener overflow-hidden para que el degradado del encabezado no se salga de las esquinas redondeadas --}}
     <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
 
         {{-- ENCABEZADO --}}
@@ -53,12 +52,23 @@
 
                     <button type="button" onclick="restaurarSugerencia()"
                             class="absolute right-3 top-3 text-[10px] bg-blue-100 text-blue-700 px-2 py-1.5 rounded hover:bg-blue-200 transition font-bold uppercase tracking-wider">
-                        Recomendar
+                        Sugerir
                     </button>
                 </div>
+
+                {{-- AVISO DE RECOMENDACIÓN ABAJO --}}
+                <div id="recuperar-contenedor" class="hidden mt-2 flex items-center gap-2 bg-blue-50/50 p-2 rounded-md border border-blue-100">
+                    <span class="text-blue-800 text-[11px] font-medium">⚠️ El código no coincide con la sugerencia:</span>
+                    <button type="button" id="btnRecuperar" 
+                            class="text-blue-600 text-[11px] font-bold hover:text-blue-800 underline flex items-center gap-1">
+                        Restaurar sugerencia ({{ $proximoCodigo ?? '' }})
+                    </button>
+                </div>
+
                 @error('codigo')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
+                <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten números.</p>
                 <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Sugerencia secuencial activa (8 dígitos).</p>
             </div>
 
@@ -73,6 +83,7 @@
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
                 <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten letras y espacios.</p>
+                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Límite: 40 caracteres.</p>
             </div>
 
             {{-- Responsable --}}
@@ -114,17 +125,28 @@
 
     function restaurarSugerencia() {
         const codigoInput = document.getElementById('codigo');
+        const recuperarContenedor = document.getElementById('recuperar-contenedor');
+        
         codigoInput.value = sugerenciaInicial;
-        codigoInput.classList.add('ring-2', 'ring-blue-400');
-        setTimeout(() => codigoInput.classList.remove('ring-2', 'ring-blue-400'), 800);
+        recuperarContenedor.classList.add('hidden');
+        
+        // Efecto visual
+        codigoInput.classList.add('ring-2', 'ring-green-400', 'bg-green-50');
+        setTimeout(() => {
+            codigoInput.classList.remove('ring-2', 'ring-green-400', 'bg-green-50');
+        }, 800);
     }
 
     document.addEventListener('DOMContentLoaded', function() {
         const nombreInput = document.getElementById('nombre');
         const codigoInput = document.getElementById('codigo');
         const errorNombre = document.getElementById('error-nombre');
+        const errorCodigo = document.getElementById('error-codigo');
+        const recuperarContenedor = document.getElementById('recuperar-contenedor');
+        const btnRecuperar = document.getElementById('btnRecuperar');
         const form = document.getElementById('dependenciaForm');
 
+        // 1. LÓGICA DE NOMBRE (40 CARACTERES)
         nombreInput.addEventListener('input', function(e) {
             let original = e.target.value;
             let filtrado = original.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
@@ -135,19 +157,42 @@
             e.target.value = filtrado.slice(0, 40);
         });
 
+        // 2. LÓGICA DE CÓDIGO CON RECOMENDACIÓN ABAJO
         codigoInput.addEventListener('input', function(e) {
-            e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 8);
+            let original = e.target.value;
+            let filtrado = original.replace(/[^0-9]/g, '');
+
+            if (original !== filtrado) {
+                errorCodigo.classList.remove('hidden');
+                setTimeout(() => errorCodigo.classList.add('hidden'), 2000);
+            }
+
+            e.target.value = filtrado.slice(0, 8);
+
+            // Mostrar el aviso de abajo si el valor actual no es igual a la sugerencia
+            if (e.target.value !== sugerenciaInicial) {
+                recuperarContenedor.classList.remove('hidden');
+            } else {
+                recuperarContenedor.classList.add('hidden');
+            }
         });
+
+        // Evento para el botón de restaurar del aviso inferior
+        btnRecuperar.addEventListener('click', restaurarSugerencia);
 
         codigoInput.addEventListener('blur', function(e) {
             let valor = e.target.value;
             if (valor.length > 0 && valor.length < 8) {
                 e.target.value = valor.padStart(8, '0');
+                // Re-verificar tras el padStart
+                if (e.target.value === sugerenciaInicial) {
+                    recuperarContenedor.classList.add('hidden');
+                }
             }
         });
 
+        // 3. ESTADO DE CARGA
         form.addEventListener('submit', function() {
-            if(!form.checkValidity()) return;
             const btn = document.getElementById('btnGuardar');
             const icon = document.getElementById('btnIcon');
             const text = document.getElementById('btnText');
