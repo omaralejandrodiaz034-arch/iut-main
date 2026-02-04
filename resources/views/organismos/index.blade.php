@@ -132,30 +132,6 @@
                         </tr>
                     @endforelse
                 </tbody>
-=======
-                @forelse($organismos as $organismo)
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 text-sm text-gray-400 font-mono">#{{ $organismo->id }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900 font-bold">{{ $organismo->codigo }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ $organismo->nombre }}</td>
-                        <td class="px-6 py-4 text-sm text-right">
-                            @include('components.action-buttons', [
-                                'resource' => 'organismos',
-                                'model' => $organismo,
-                                'confirm' => '¿Desea eliminar este organismo?',
-                                'label' => $organismo->nombre
-                            ])
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-500 italic">
-                            No se encontraron organismos.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
->>>>>>> 44fa59c4714a6fbc0641edd2b17c64cc51d1efc7
         </table>
     </div>
 </div>
@@ -269,7 +245,7 @@
                 // Evita disparar el fetch si la tecla presionada fue un carácter inválido
                 if (el.id === 'codigo' && /[^0-9]/.test(e.key) && e.key.length === 1) return;
                 if (el.id === 'buscar' && /[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ]/.test(e.key) && e.key.length === 1) return;
-                
+
                 aplicarFiltros();
             });
         });
