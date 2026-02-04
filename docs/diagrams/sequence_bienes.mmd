@@ -1,0 +1,153 @@
+sequenceDiagram
+    participant Usuario
+    participant BienController
+    participant Bien
+    participant Dependencia
+    participant DB
+    participant Storage
+    participant FpdfReportService
+
+    %% LISTAR BIENES
+    rect rgb(200, 230, 255)
+    note right of Usuario: Listar Bienes con Filtros
+    Usuario->>BienController: GET /bienes (index)
+    BienController->>BienController: Validar filtros (search, estado, dependencias, etc.)
+    BienController->>Bien: Query con relaciones (dependencia, responsable)
+    Bien->>DB: Aplicar filtros y ordenamiento
+    DB-->>Bien: Resultados paginados
+    Bien-->>BienController: Collection de bienes
+    BienController->>Dependencia: Cargar organismos, unidades, dependencias
+    Dependencia-->>BienController: Datos relacionados
+    BienController-->>Usuario: Vista bienes.index con datos filtrados
+    end
+
+    %% CREAR BIEN
+    rect rgb(255, 240, 200)
+    note right of Usuario: Crear Nuevo Bien
+    Usuario->>BienController: GET /bienes/create (create)
+    BienController->>Bien: Obtener último código secuencial
+    Bien->>DB: SELECT MAX(codigo) WHERE codigo REGEXP '^[0-9]+$'
+    DB-->>Bien: Último código numérico
+    Bien-->>BienController: Código siguiente sugerido (8 dígitos)
+    BienController->>Dependencia: Cargar dependencias con responsables
+    Dependencia-->>BienController: Lista de dependencias
+    BienController-->>Usuario: Vista bienes.create con código sugerido
+    
+    Usuario->>BienController: POST /bienes (store)
+    BienController->>BienController: Validar datos (código, descripción, precio, foto, etc.)
+    
+    alt Tiene fotografía
+        BienController->>BienController: procesarFotografia()
+        BienController->>Storage: Guardar archivo en storage/bienes
+        Storage-->>BienController: Path de la foto
+    end
+    
+    BienController->>Bien: Create con datos validados
+    Bien->>DB: INSERT INTO bienes
+    DB-->>Bien: Bien creado
+    Bien->>Bien: setAttribute('_observaciones', 'Registro inicial...')
+    Bien-->>BienController: Bien guardado
+    BienController-->>Usuario: Redirect a bienes.index con mensaje de éxito
+    end
+
+    %% VER DETALLE
+    rect rgb(230, 255, 230)
+    note right of Usuario: Ver Detalle de Bien
+    Usuario->>BienController: GET /bienes/{id} (show)
+    BienController->>Bien: Cargar bien con relaciones
+    Bien->>DB: SELECT con dependencia, responsable, movimientos
+    DB-->>Bien: Datos completos del bien
+    Bien-->>BienController: Bien con relaciones
+    BienController-->>Usuario: Vista bienes.show con detalles
+    end
+
+    %% EDITAR BIEN
+    rect rgb(255, 230, 255)
+    note right of Usuario: Editar Bien Existente
+    Usuario->>BienController: GET /bienes/{id}/edit (edit)
+    BienController->>Bien: Buscar bien por ID
+    Bien->>DB: SELECT FROM bienes WHERE id = ?
+    DB-->>Bien: Datos del bien
+    BienController->>Dependencia: Cargar dependencias
+    Dependencia-->>BienController: Lista de dependencias
+    BienController-->>Usuario: Vista bienes.edit con datos
+    
+    Usuario->>BienController: PUT /bienes/{id} (update)
+    BienController->>BienController: Validar datos (con unique ignore)
+    BienController->>Bien: Obtener dependencia_id y estado originales
+    
+    alt Tiene nueva fotografía
+        BienController->>Storage: Eliminar foto anterior (si existe)
+        BienController->>Storage: Guardar nueva foto
+        Storage-->>BienController: Path de nueva foto
+    end
+    
+    BienController->>Bien: Update con datos validados
+    Bien->>DB: UPDATE bienes SET ...
+    DB-->>Bien: Bien actualizado
+    
+    alt Cambió dependencia o estado
+        BienController->>Bien: setAttribute('_observaciones', cambios detectados)
+    end
+    
+    Bien-->>BienController: Bien actualizado
+    BienController-->>Usuario: Redirect con mensaje de éxito
+    end
+
+    %% ELIMINAR BIEN (DESINCORPORAR)
+    rect rgb(255, 200, 200)
+    note right of Usuario: Desincorporar Bien
+    Usuario->>BienController: DELETE /bienes/{id} (destroy)
+    BienController->>Usuario: Verificar permisos (canDeleteData)
+    
+    alt No tiene permisos
+        BienController-->>Usuario: Error 403 (sin permisos)
+    else Tiene permisos
+        BienController->>DB: Crear movimiento de desincorporación
+        DB-->>BienController: Movimiento registrado
+        BienController->>Bien: Update estado a EXTRAVIADO
+        Bien->>DB: UPDATE bienes SET estado = 'extraviado'
+        DB-->>Bien: Estado actualizado
+        BienController->>BienController: EliminadosService::archiveModel()
+        BienController-->>Usuario: Redirect con mensaje de éxito
+    end
+    end
+
+    %% EXPORTAR PDF
+    rect rgb(255, 255, 200)
+    note right of Usuario: Exportar Bien a PDF
+    Usuario->>BienController: GET /bienes/{id}/pdf (exportPdf)
+    BienController->>Bien: Cargar bien con movimientos ordenados
+    Bien->>DB: SELECT con relaciones
+    DB-->>Bien: Bien completo
+    BienController->>FpdfReportService: loadView('bienes.pdf')
+    FpdfReportService-->>BienController: PDF generado
+    BienController-->>Usuario: Descargar archivo PDF
+    end
+
+    %% GALERÍA COMPLETA
+    rect rgb(230, 230, 255)
+    note right of Usuario: Ver Galería de Bienes
+    Usuario->>BienController: GET /bienes/galeria-completa (galeriaCompleta)
+    BienController->>Bien: Query WHERE fotografia IS NOT NULL
+    Bien->>DB: SELECT id, codigo, descripcion, fotografia
+    DB-->>Bien: Bienes con fotos
+    Bien-->>BienController: Collection de bienes
+    BienController->>Storage: Generar URLs públicas
+    Storage-->>BienController: URLs de imágenes
+    BienController-->>Usuario: Vista bienes.galeria-completa
+    end
+
+    %% GENERAR REPORTE
+    rect rgb(255, 220, 200)
+    note right of Usuario: Generar Reporte de Bienes
+    Usuario->>BienController: GET /bienes/reporte (generarReporte)
+    BienController->>BienController: Validar filtros (search, estado, dependencias, etc.)
+    BienController->>Bien: Query con filtros aplicados
+    Bien->>DB: SELECT con relaciones
+    DB-->>Bien: Bienes filtrados
+    Bien-->>BienController: Collection de bienes
+    BienController->>FpdfReportService: downloadBienesListado()
+    FpdfReportService-->>BienController: PDF de reporte
+    BienController-->>Usuario: Descargar reporte_bienes.pdf
+    end

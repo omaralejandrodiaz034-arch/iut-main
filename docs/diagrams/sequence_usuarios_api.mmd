@@ -1,0 +1,195 @@
+sequenceDiagram
+    participant Usuario as Usuario Admin
+    participant UsuarioController
+    participant Usuario as Model Usuario
+    participant Rol
+    participant DB
+    participant Hash
+    participant Pdf
+    participant EliminadosService
+
+    %% LISTAR USUARIOS
+    rect rgb(200, 230, 255)
+    note right of Usuario: Listar Usuarios con Filtros
+    Usuario->>UsuarioController: GET /usuarios (index)
+    UsuarioController->>UsuarioController: Validar filtros (buscar, cedula, nombre, correo, rol_id, activo)
+    UsuarioController->>Usuario: Query con relación 'rol'
+    
+    alt Búsqueda general
+        Usuario->>DB: WHERE nombre/apellido/cedula/correo LIKE '%term%'
+    end
+    
+    alt Filtros específicos
+        Usuario->>DB: WHERE cedula/nombre/correo LIKE '%filter%'
+        Usuario->>DB: WHERE rol_id = ? OR activo = ?
+    end
+    
+    DB-->>Usuario: Resultados filtrados
+    Usuario-->>UsuarioController: Collection paginada de usuarios
+    UsuarioController->>Rol: Cargar todos los roles
+    Rol->>DB: SELECT FROM roles ORDER BY nombre
+    DB-->>Rol: Lista de roles
+    Rol-->>UsuarioController: Roles disponibles
+    UsuarioController-->>Usuario: Vista usuarios.index con datos
+    end
+
+    %% CREAR USUARIO
+    rect rgb(255, 240, 200)
+    note right of Usuario: Crear Nuevo Usuario
+    Usuario->>UsuarioController: GET /usuarios/create (create)
+    UsuarioController->>Rol: Cargar roles (excluir obsoletos)
+    Rol->>DB: SELECT WHERE nombre != 'Gerente de Bienes'
+    DB-->>Rol: Roles disponibles
+    Rol-->>UsuarioController: Lista de roles
+    UsuarioController-->>Usuario: Vista usuarios.create con roles
+    
+    Usuario->>UsuarioController: POST /usuarios (store)
+    UsuarioController->>Usuario: Verificar si es Admin (isAdmin)
+    
+    alt No es Admin
+        UsuarioController-->>Usuario: Error 403 (Acceso denegado)
+    else Es Admin
+        UsuarioController->>Usuario: normalizeCedula(cedula)
+        Usuario-->>UsuarioController: Cédula normalizada (V-XX.XXX.XXX)
+        UsuarioController->>UsuarioController: Validar datos (rol_id, cedula, nombre, apellido, correo, password)
+        
+        UsuarioController->>Rol: Verificar si rol es Administrador
+        Rol->>DB: SELECT FROM roles WHERE nombre = 'Administrador'
+        DB-->>Rol: Rol Admin
+        Rol-->>UsuarioController: Determinar is_admin
+        
+        UsuarioController->>Hash: make(password)
+        Hash-->>UsuarioController: Password hasheado
+        
+        UsuarioController->>Usuario: Create con datos validados
+        Usuario->>DB: INSERT INTO usuarios
+        DB-->>Usuario: Usuario creado
+        Usuario-->>UsuarioController: Usuario guardado
+        
+        alt Request espera JSON
+            UsuarioController-->>Usuario: JSON response con usuario creado (201)
+        else Request desde navegador
+            UsuarioController-->>Usuario: Redirect a usuarios.index con mensaje de éxito
+        end
+    end
+    end
+
+    %% VER DETALLE DE USUARIO
+    rect rgb(230, 255, 230)
+    note right of Usuario: Ver Detalle de Usuario
+    Usuario->>UsuarioController: GET /usuarios/{id} (show)
+    UsuarioController->>Usuario: Cargar usuario con relaciones
+    Usuario->>DB: SELECT con rol, reportes, movimientos
+    DB-->>Usuario: Datos completos del usuario
+    Usuario-->>UsuarioController: Usuario con relaciones
+    
+    alt Request espera JSON
+        UsuarioController-->>Usuario: JSON response con usuario
+    else Request desde navegador
+        UsuarioController-->>Usuario: Vista usuarios.show con detalles
+    end
+    end
+
+    %% EDITAR USUARIO
+    rect rgb(255, 230, 255)
+    note right of Usuario: Editar Usuario Existente
+    Usuario->>UsuarioController: GET /usuarios/{id}/edit (edit)
+    UsuarioController->>Usuario: Buscar usuario por ID
+    Usuario->>DB: SELECT FROM usuarios WHERE id = ?
+    DB-->>Usuario: Datos del usuario
+    UsuarioController->>Rol: Cargar roles (excluir obsoletos)
+    Rol->>DB: SELECT WHERE nombre != 'Gerente de Bienes'
+    DB-->>Rol: Roles disponibles
+    UsuarioController-->>Usuario: Vista usuarios.edit con datos
+    
+    Usuario->>UsuarioController: PUT /usuarios/{id} (update)
+    UsuarioController->>Usuario: Verificar permisos (canDeleteData)
+    
+    alt No tiene permisos
+        UsuarioController-->>Usuario: Error 403
+    else Tiene permisos
+        UsuarioController->>Usuario: normalizeCedula(cedula) si está presente
+        Usuario-->>UsuarioController: Cédula normalizada
+        UsuarioController->>UsuarioController: Validar datos (con unique ignore)
+        
+        alt Cambió rol_id
+            UsuarioController->>Rol: Verificar si nuevo rol es Admin
+            Rol->>DB: SELECT FROM roles WHERE nombre = 'Administrador'
+            DB-->>Rol: Rol Admin
+            Rol-->>UsuarioController: Actualizar is_admin
+        end
+        
+        alt Cambió password
+            UsuarioController->>Hash: make(nuevo_password)
+            Hash-->>UsuarioController: Password hasheado
+        end
+        
+        UsuarioController->>Usuario: Update con datos validados
+        Usuario->>DB: UPDATE usuarios SET ...
+        DB-->>Usuario: Usuario actualizado
+        Usuario-->>UsuarioController: Usuario actualizado
+        UsuarioController-->>Usuario: Redirect a usuarios.show con mensaje de éxito
+    end
+    end
+
+    %% ELIMINAR USUARIO
+    rect rgb(255, 200, 200)
+    note right of Usuario: Eliminar Usuario
+    Usuario->>UsuarioController: DELETE /usuarios/{id} (destroy)
+    UsuarioController->>Usuario: Verificar permisos (canDeleteUser)
+    
+    alt No puede eliminar (no es admin, es el mismo usuario, o el objetivo es admin)
+        UsuarioController-->>Usuario: Error 403
+    else Puede eliminar
+        UsuarioController->>EliminadosService: archiveModel(usuario, auth_id)
+        EliminadosService->>DB: INSERT INTO eliminados (registro del usuario)
+        DB-->>EliminadosService: Registro archivado
+        UsuarioController->>Usuario: delete()
+        Usuario->>DB: DELETE FROM usuarios WHERE id = ?
+        DB-->>Usuario: Usuario eliminado
+        Usuario-->>UsuarioController: Usuario eliminado
+        UsuarioController-->>Usuario: Response 204 (sin contenido)
+    end
+    end
+
+    %% EXPORTAR USUARIO A PDF
+    rect rgb(255, 255, 200)
+    note right of Usuario: Exportar Usuario a PDF
+    Usuario->>UsuarioController: GET /usuarios/{id}/pdf (exportPdf)
+    UsuarioController->>Usuario: Cargar usuario con relaciones
+    Usuario->>DB: SELECT con rol, reportes, movimientos
+    DB-->>Usuario: Usuario completo
+    UsuarioController->>Pdf: loadView('usuarios.pdf', usuario)
+    Pdf-->>UsuarioController: PDF generado
+    UsuarioController-->>Usuario: Descargar usuario_{cedula}_{nombre}.pdf
+    end
+
+    %% IMPORTAR USUARIO DESDE API
+    rect rgb(200, 255, 200)
+    note right of Usuario: Importar Usuario desde API Externo
+    Usuario->>UsuarioController: POST /usuarios/importar (importarPorCedula)
+    UsuarioController->>Usuario: normalizeCedula(cedula)
+    Usuario-->>UsuarioController: Cédula normalizada
+    
+    UsuarioController->>UsuarioController: Leer storage/app/respuesta.json
+    UsuarioController->>UsuarioController: Buscar persona por PIN (cédula)
+    
+    alt Cédula no encontrada en JSON
+        UsuarioController-->>Usuario: Redirect con error 'Cédula no existe en API'
+    else Cédula encontrada
+        UsuarioController->>Rol: Buscar rol 'Usuario Normal'
+        Rol->>DB: SELECT FROM roles WHERE nombre = 'Usuario Normal'
+        DB-->>Rol: Rol encontrado
+        Rol-->>UsuarioController: rol_id
+        
+        UsuarioController->>Hash: make(cedula sin formato como password)
+        Hash-->>UsuarioController: Password hasheado
+        
+        UsuarioController->>Usuario: updateOrCreate(cedula, datos_api)
+        Usuario->>DB: INSERT/UPDATE INTO usuarios
+        DB-->>Usuario: Usuario creado/actualizado
+        Usuario-->>UsuarioController: Usuario procesado
+        
+        UsuarioController-->>Usuario: Redirect con mensaje 'Usuario registrado/actualizado'
+    end
+    end

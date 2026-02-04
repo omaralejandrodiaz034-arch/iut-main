@@ -42,24 +42,31 @@
             </div>
 
             {{-- Código de Dependencia --}}
+            {{-- Busca el bloque del Código de Dependencia y sustitúyelo --}}
             <div>
                 <label for="codigo" class="block text-sm font-bold text-slate-700 mb-2">Código de Dependencia</label>
                 <div class="relative">
                     <input type="text" name="codigo" id="codigo"
-                           value="{{ old('codigo', $proximoCodigo ?? '') }}"
-                           maxlength="8" inputmode="numeric" autocomplete="off"
-                           placeholder="00000001"
-                           class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition font-mono bg-blue-50/20">
+                        value="{{ old('codigo', $proximoCodigo ?? '') }}"
+                        maxlength="8" inputmode="numeric" autocomplete="off"
+                        placeholder="00000001"
+                        class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition font-mono bg-blue-50/20">
 
                     <button type="button" onclick="restaurarSugerencia()"
                             class="absolute right-3 top-3 text-[10px] bg-blue-100 text-blue-700 px-2 py-1.5 rounded hover:bg-blue-200 transition font-bold uppercase tracking-wider">
                         Recomendar
                     </button>
                 </div>
+
+                {{-- Info de Recomendación Global --}}
+                <div id="recomendar-tag" class="mt-2 flex items-center gap-2 text-blue-600 bg-blue-50 py-1 px-3 rounded-md w-fit border border-blue-100">
+                    <span class="animate-pulse">✨</span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest">Sugerencia Global Activa</span>
+                </div>
+
                 @error('codigo')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
-                <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Sugerencia secuencial activa (8 dígitos).</p>
             </div>
 
             {{-- Nombre --}}
@@ -73,6 +80,7 @@
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
                 <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten letras y espacios.</p>
+                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 40 caracteres (solo letras y espacios).</p>
             </div>
 
             {{-- Responsable --}}
@@ -130,7 +138,7 @@
             let filtrado = original.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
             if (original !== filtrado) {
                 errorNombre.classList.remove('hidden');
-                setTimeout(() => errorNombre.classList.add('hidden'), 2000);
+                setTimeout(() => errorNombre.classList.add('hidden'), 2500);
             }
             e.target.value = filtrado.slice(0, 40);
         });

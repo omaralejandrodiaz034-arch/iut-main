@@ -7,7 +7,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-
+use App\Services\CodigoUnicoService;
 class OrganismoController extends Controller
 {
     /**
@@ -49,12 +49,8 @@ class OrganismoController extends Controller
      */
     public function create()
     {
-        // Obtener el último registro para seguir la secuencia
-        $ultimo = Organismo::latest('id')->first();
-        $nuevoNumero = $ultimo ? (int) $ultimo->codigo + 1 : 1;
-
-        // Formatear a 8 dígitos con ceros (ej: 00000001)
-        $codigoSugerido = str_pad($nuevoNumero, 8, '0', STR_PAD_LEFT);
+        // Usamos tu servicio para obtener el código real disponible en todo el sistema
+        $codigoSugerido = CodigoUnicoService::obtenerSiguienteCodigo();
 
         return view('organismos.create', compact('codigoSugerido'));
     }
@@ -63,20 +59,26 @@ class OrganismoController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate(
-            [
-                // Validamos que sean exactamente 8 números
-                'codigo' => ['required', 'string', 'size:8', 'unique:organismos,codigo', 'regex:/^[0-9]+$/'],
-                'nombre' => ['required', 'string', 'max:255'],
+        $validated = $request->validate([
+            'codigo' => [
+                'required',
+                'string',
+                'size:8',
+                'regex:/^[0-9]+$/',
+                function ($attribute, $value, $fail) {
+                    // Validación cruzada usando tu servicio
+                    if (CodigoUnicoService::codigoExiste($value)) {
+                        $ubicacion = CodigoUnicoService::obtenerUbicacionCodigo($value);
+                        $fail("Este código ya está en uso por: " . $ubicacion['tabla'] . " (" . $ubicacion['nombre'] . ")");
+                    }
+                },
             ],
-            [
-                'codigo.required' => 'El código del organismo es requerido',
-                'codigo.unique' => 'Este código ya existe en el sistema',
-                'codigo.size' => 'El código debe tener exactamente 8 dígitos',
-                'codigo.regex' => 'El código solo puede contener números',
-                'nombre.required' => 'El nombre del organismo es requerido',
-            ]
-        );
+            'nombre' => ['required', 'string', 'max:255'],
+        ], [
+            'codigo.required' => 'El código del organismo es requerido',
+            'codigo.size' => 'El código debe tener exactamente 8 dígitos',
+            'codigo.regex' => 'El código solo puede contener números',
+        ]);
 
         Organismo::create($validated);
 
@@ -96,27 +98,28 @@ class OrganismoController extends Controller
      */
     public function update(Request $request, Organismo $organismo)
     {
-        $validated = $request->validate(
-            [
-                'codigo' => [
-                    'required',
-                    'string',
-                    'size:8',
-                    'regex:/^[0-9]+$/',
-                    Rule::unique('organismos', 'codigo')->ignore($organismo->id),
-                ],
-                'nombre' => ['required', 'string', 'max:255'],
+        $validated = $request->validate([
+            'codigo' => [
+                'required',
+                'string',
+                'size:8',
+                'regex:/^[0-9]+$/',
+                function ($attribute, $value, $fail) use ($organismo) {
+                    // Validar si existe en otros sitios, pero ignorar el registro actual
+                    if (CodigoUnicoService::codigoExiste($value, 'organismos', $organismo->id)) {
+                        $ubicacion = CodigoUnicoService::obtenerUbicacionCodigo($value);
+                        $fail("No puedes usar este código. Ya pertenece a: " . $ubicacion['tabla']);
+                    }
+                },
             ],
-            [
-                'codigo.unique' => 'Este código ya existe',
-                'codigo.size' => 'Debe tener 8 dígitos',
-            ]
-        );
+            'nombre' => ['required', 'string', 'max:255'],
+        ]);
 
         $organismo->update($validated);
 
-        return redirect()->route('organismos.index')->with('success', 'Organismo actualizado correctamente');
+        return redirect()->route('organismos.index')->with('success', 'Organismo actualizado');
     }
+
 
     // Los demás métodos (show, exportPdf, destroy) se mantienen igual...
 

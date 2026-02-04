@@ -48,8 +48,8 @@
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
                 {{-- Alerta visual para el usuario --}}
-                <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">Solo se permiten letras.</p>
-                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 30 caracteres (solo letras).</p>
+                <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten letras y espacios.</p>
+                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 30 caracteres (solo letras y espacios).</p>
             </div>
 
             <div class="pt-6 flex justify-center items-center gap-8 border-t border-gray-50">
@@ -98,7 +98,7 @@
             if (originalValue !== filteredValue) {
                 // Muestra el error si se intenta ingresar algo prohibido
                 errorNombre.classList.remove('hidden');
-                setTimeout(() => errorNombre.classList.add('hidden'), 2000);
+                setTimeout(() => errorNombre.classList.add('hidden'), 2500);
             }
 
             e.target.value = filteredValue.slice(0, 30);

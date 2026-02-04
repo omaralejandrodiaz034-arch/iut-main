@@ -8,7 +8,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-
+use App\Services\CodigoUnicoService;
 class UnidadAdministradoraController extends Controller
 {
     /**
@@ -51,15 +51,11 @@ class UnidadAdministradoraController extends Controller
 
     public function create()
     {
-        // Cargar los organismos para el select
         $organismos = Organismo::all();
 
-        // --- Lógica agregada para el código secuencial ---
-        // Obtenemos el código más alto, lo convertimos a número, sumamos 1 y rellenamos con ceros a la izquierda
-        $ultimoCodigo = UnidadAdministradora::max('codigo');
-        $siguienteCodigo = str_pad((int) $ultimoCodigo + 1, 8, '0', STR_PAD_LEFT);
+        // CAMBIO: Ahora usamos el servicio global en lugar de solo el máximo de esta tabla
+        $siguienteCodigo = CodigoUnicoService::obtenerSiguienteCodigo();
 
-        // Retornar la vista del formulario enviando la sugerencia
         return view('unidades.create', compact('organismos', 'siguienteCodigo'));
     }
 
@@ -76,29 +72,31 @@ class UnidadAdministradoraController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            // Validamos que el ID exista en la tabla 'organismos'
             'organismo_id' => ['required', 'exists:organismos,id'],
-            'codigo' => ['required', 'string', 'max:50', 'unique:unidades_administradoras,codigo'],
+            'codigo' => [
+                'required',
+                'string',
+                'size:8', // Forzamos 8 dígitos
+                'regex:/^[0-9]+$/',
+                function ($attribute, $value, $fail) {
+                    // VALIDACIÓN GLOBAL: Verifica si el código existe en CUALQUIER tabla
+                    if (CodigoUnicoService::codigoExiste($value)) {
+                        $ubicacion = CodigoUnicoService::obtenerUbicacionCodigo($value);
+                        $fail("Este código ya está en uso por: " . $ubicacion['tabla'] . " (" . $ubicacion['nombre'] . ")");
+                    }
+                },
+            ],
             'nombre' => ['required', 'string', 'max:255'],
         ], [
-            // Mensajes personalizados para el Organismo
             'organismo_id.required' => 'Debe seleccionar un organismo.',
-            'organismo_id.exists' => 'El organismo seleccionado no existe en nuestra base de datos.',
-
-            // Mensajes para el Código de la unidad
             'codigo.required' => 'El código de la unidad es obligatorio.',
-            'codigo.unique' => 'Este código ya pertenece a otra unidad administradora.',
-            'codigo.max' => 'El código es demasiado largo (máximo 50 caracteres).',
-
-            // Mensajes para el Nombre de la unidad
+            'codigo.size' => 'El código debe tener exactamente 8 dígitos.',
             'nombre.required' => 'El nombre de la unidad es obligatorio.',
-            'nombre.max' => 'El nombre no puede superar los 255 caracteres.',
         ]);
 
-        $unidad = UnidadAdministradora::create($validated);
+        UnidadAdministradora::create($validated);
 
-        return redirect()->route('unidades.index')
-            ->with('success', 'Unidad creada correctamente');
+        return redirect()->route('unidades.index')->with('success', 'Unidad creada correctamente');
     }
 
     /**
@@ -141,8 +139,15 @@ class UnidadAdministradoraController extends Controller
             'codigo' => [
                 'sometimes',
                 'string',
-                'max:50',
-                Rule::unique('unidades_administradoras', 'codigo')->ignore($unidadAdministradora->getKey()),
+                'size:8',
+                'regex:/^[0-9]+$/',
+                function ($attribute, $value, $fail) use ($unidadAdministradora) {
+                    // VALIDACIÓN GLOBAL: Ignora el ID actual de la unidad que se edita
+                    if (CodigoUnicoService::codigoExiste($value, 'unidades', $unidadAdministradora->id)) {
+                        $ubicacion = CodigoUnicoService::obtenerUbicacionCodigo($value);
+                        $fail("No puedes usar este código. Ya pertenece a: " . $ubicacion['tabla']);
+                    }
+                },
             ],
             'nombre' => ['sometimes', 'string', 'max:255'],
         ]);

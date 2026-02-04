@@ -39,8 +39,8 @@
                        maxlength="40"
                        placeholder="Nombre o código (máx. 40 caracteres)..."
                        class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto filtro-input">
-                <p id="error-msg" class="text-red-500 text-xs mt-1 hidden font-semibold">
-                    ⚠️ No se permiten caracteres especiales.
+                <p id="error-msg-buscar" class="text-red-500 text-xs mt-1 hidden font-semibold">
+                    ⚠️ Solo se permiten letras, números y espacios.
                 </p>
             </div>
 
@@ -93,30 +93,27 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($organismos as $organismo)
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 text-sm text-gray-400 font-mono">#{{ $organismo->id }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 font-bold">{{ $organismo->codigo }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-600">{{ $organismo->nombre }}</td>
+                        <tr class="hover:bg-blue-50/30 transition-colors">
+                            <td class="px-6 py-4 text-sm font-semibold text-blue-600 font-mono">{{ $organismo->codigo }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{ $organismo->nombre }}</td>
                             <td class="px-6 py-4 text-sm text-right">
                                 @include('components.action-buttons', [
                                     'resource' => 'organismos',
                                     'model' => $organismo,
-                                    'confirm' => '¿Desea eliminar este organismo?',
-                                    'label' => $organismo->nombre
+                                    'canDelete' => false
                                 ])
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-500 italic">
+                            <td colspan="3" class="px-6 py-12 text-center text-sm text-gray-500 italic">
                                 No se encontraron organismos.
                             </td>
                         </tr>
@@ -176,6 +173,24 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        const buscarInput = document.getElementById('buscar');
+        const errorMsg = document.getElementById('error-msg-buscar');
+
+        // Validación de caracteres especiales en búsqueda
+        if(buscarInput) {
+            buscarInput.addEventListener('input', function(e) {
+                const originalValue = e.target.value;
+                const cleanValue = originalValue.replace(/[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ]/g, '');
+
+                if (originalValue !== cleanValue) {
+                    errorMsg.classList.remove('hidden');
+                    setTimeout(() => errorMsg.classList.add('hidden'), 2500);
+                }
+
+                e.target.value = cleanValue.slice(0, 40);
+            });
+        }
+
         document.querySelectorAll('.filtro-auto').forEach(el => {
             el.addEventListener('change', () => aplicarFiltros());
         });

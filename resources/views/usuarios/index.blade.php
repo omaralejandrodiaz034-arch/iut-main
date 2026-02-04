@@ -61,36 +61,36 @@
 
 <div class="bg-white shadow rounded-lg overflow-hidden">
     <table class="w-full">
-        <thead class="bg-gray-100 border-b">
+        <thead class="bg-gray-50">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Cédula</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Nombre y Apellido</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Correo</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Rol</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Tipo</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Estado</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Acciones</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cédula</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre y Apellido</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correo</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="bg-white divide-y divide-gray-200">
             @forelse($usuarios as $usuario)
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="px-6 py-4 text-sm text-gray-900">{{ $usuario->cedula }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">{{ $usuario->nombre_completo }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">{{ $usuario->correo }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">{{ $usuario->rol->nombre ?? 'N/A' }}</td>
+                <tr class="hover:bg-blue-50/30 transition-colors">
+                    <td class="px-6 py-4 text-sm font-semibold text-blue-600 font-mono">{{ $usuario->cedula }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{ $usuario->nombre_completo }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">{{ $usuario->correo }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">{{ $usuario->rol->nombre ?? 'N/A' }}</td>
                     <td class="px-6 py-4 text-sm">
                         @if($usuario->is_admin)
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold text-purple-800 bg-purple-100 rounded-full">Administrador</span>
+                            <span class="px-2.5 py-1 text-xs font-bold text-purple-800 bg-purple-100 rounded-full">Administrador</span>
                         @else
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full">Usuario</span>
+                            <span class="px-2.5 py-1 text-xs font-bold text-blue-800 bg-blue-100 rounded-full">Usuario</span>
                         @endif
                     </td>
                     <td class="px-6 py-4 text-sm">
                         @if($usuario->activo)
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Activo</span>
+                            <span class="px-2.5 py-1 text-xs font-bold text-green-800 bg-green-100 rounded-full">Activo</span>
                         @else
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full">Inactivo</span>
+                            <span class="px-2.5 py-1 text-xs font-bold text-red-800 bg-red-100 rounded-full">Inactivo</span>
                         @endif
                     </td>
                     <td class="px-6 py-4 text-sm text-right space-x-2">
@@ -105,7 +105,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">No hay usuarios registrados</td>
+                    <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-500 italic">No hay usuarios registrados</td>
                 </tr>
             @endforelse
         </tbody>

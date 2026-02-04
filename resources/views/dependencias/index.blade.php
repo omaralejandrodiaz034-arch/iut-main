@@ -5,7 +5,7 @@
 @section('content')
 <div class="flex justify-between items-center mb-6">
     <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
-        <x-heroicon-o-link class="w-6 h-6 text-gray-500" /> Dependencias
+        🏛️ Dependencias
     </h1>
     <div class="flex gap-2">
         <a href="{{ route('dependencias.create') }}"
@@ -35,10 +35,10 @@
                 <label for="search" class="text-sm font-medium text-gray-700 mb-1">Búsqueda rápida</label>
                 <input type="text" name="search" id="search" value="{{ request('search') }}"
                        maxlength="40"
-                       placeholder="Código o nombre..."
+                       placeholder="Código o nombre (máx. 40 caracteres)..."
                        class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto">
-                <p id="error-msg" class="text-red-500 text-[10px] mt-1 hidden font-semibold italic">
-                    ⚠️ No se permiten caracteres especiales.
+                <p id="error-msg" class="text-red-500 text-xs mt-1 hidden font-semibold">
+                    ⚠️ Solo se permiten letras, números y espacios.
                 </p>
             </div>
 
@@ -117,51 +117,50 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Código</th>
-                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre</th>
-                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Unidad Adm.</th>
-                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Responsable</th>
-                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Bienes</th>
-                    <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidad Adm.</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsable</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bienes</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-100 italic-empty">
+            <tbody class="bg-white divide-y divide-gray-200">
                 @forelse($dependencias as $dep)
                     <tr class="hover:bg-blue-50/30 transition-colors">
-                        <td class="px-6 py-4 text-sm font-mono text-blue-600 font-semibold">{{ $dep->codigo }}</td>
+                        <td class="px-6 py-4 text-sm font-semibold text-blue-600 font-mono">{{ $dep->codigo }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{ $dep->nombre }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ $dep->unidadAdministradora->nombre ?? '-' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ $dep->unidadAdministradora->nombre ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm">
                             @if($dep->responsable)
                                 <div class="flex flex-col">
-                                    <span class="font-bold text-gray-800">{{ $dep->responsable->nombre }}</span>
+                                    <span class="font-semibold text-gray-900">{{ $dep->responsable->nombre }}</span>
                                     <span class="text-[11px] text-gray-500">{{ $dep->responsable->cedula }}</span>
                                 </div>
                             @else
                                 <span class="text-gray-400 italic">No asignado</span>
                             @endif
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-4 text-sm">
                             @if($dep->bienes_count > 0)
-                                <span class="px-2.5 py-0.5 bg-green-100 text-green-800 rounded-full text-xs font-bold">
+                                <span class="px-2.5 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold">
                                     {{ $dep->bienes_count }} items
                                 </span>
                             @else
-                                <span class="text-gray-300 text-xs">0 bienes</span>
+                                <span class="text-gray-400 italic">0 bienes</span>
                             @endif
                         </td>
                         <td class="px-6 py-4 text-right">
                             @include('components.action-buttons', [
                                 'resource' => 'dependencias',
                                 'model' => $dep,
-                                'confirm' => "¿Desea eliminar la dependencia: $dep->nombre?",
-                                'label' => $dep->nombre
+                                'canDelete' => false
                             ])
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-10 text-center text-gray-500 italic">
+                        <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500 italic">
                             No se encontraron dependencias con los criterios seleccionados.
                         </td>
                     </tr>
@@ -190,16 +189,17 @@
 
             if (originalValue !== cleanValue) {
                 errorMsg.classList.remove('hidden');
-                setTimeout(() => errorMsg.classList.add('hidden'), 2000);
+                setTimeout(() => errorMsg.classList.add('hidden'), 2500);
             }
 
             e.target.value = cleanValue.slice(0, 40);
-            updateTable();
         });
 
-        // 2. Disparadores para Selects
+        // 2. Disparadores para filtros
+        searchInput.addEventListener('keyup', updateTable);
+        
         document.querySelectorAll('.filtro-auto').forEach(el => {
-            if(el.type === 'select-one') el.addEventListener('change', updateTable);
+            if(el.tagName === 'SELECT') el.addEventListener('change', updateTable);
         });
 
         // 3. Función AJAX para actualización fluida

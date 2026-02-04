@@ -34,7 +34,7 @@
                        placeholder="Código o nombre (máx. 40 caracteres)..."
                        class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto filtro-input">
                 <p id="error-msg" class="text-red-500 text-xs mt-1 hidden font-semibold">
-                    ⚠️ No se permiten caracteres especiales.
+                    ⚠️ Solo se permiten letras, números y espacios.
                 </p>
             </div>
 
@@ -97,40 +97,39 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organismo</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dependencias</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organismo</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dependencias</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 @forelse($unidades as $unidad)
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 text-sm text-gray-900 font-mono">{{ $unidad->codigo }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ $unidad->nombre }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ $unidad->organismo->nombre ?? '-' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">
+                    <tr class="hover:bg-blue-50/30 transition-colors">
+                        <td class="px-6 py-4 text-sm font-semibold text-blue-600 font-mono">{{ $unidad->codigo }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{ $unidad->nombre }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ $unidad->organismo->nombre ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm">
                             @if($unidad->dependencias->count())
-                                <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                                <span class="px-2.5 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold">
                                     {{ $unidad->dependencias->count() }} dependencias
                                 </span>
                             @else
-                                <span class="text-gray-400">—</span>
+                                <span class="text-gray-400 italic">—</span>
                             @endif
                         </td>
                         <td class="px-6 py-4 text-sm text-right">
                             @include('components.action-buttons', [
                                 'resource' => 'unidades',
                                 'model' => $unidad,
-                                'confirm' => "¿Seguro que deseas eliminar esta unidad?",
-                                'label' => $unidad->nombre
+                                'canDelete' => false
                             ])
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500">
+                        <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500 italic">
                             No hay unidades que coincidan con la búsqueda.
                         </td>
                     </tr>
@@ -200,16 +199,17 @@
 
             if (originalValue !== cleanValue) {
                 errorMsg.classList.remove('hidden');
-                setTimeout(() => errorMsg.classList.add('hidden'), 2000);
+                setTimeout(() => errorMsg.classList.add('hidden'), 2500);
             }
 
             e.target.value = cleanValue.slice(0, 40);
-            aplicarFiltros();
         });
 
-        // Otros disparadores automáticos
+        // Disparadores automáticos
+        searchInput.addEventListener('keyup', () => aplicarFiltros());
+        
         document.querySelectorAll('.filtro-auto').forEach(el => {
-            if(el.id !== 'search') el.addEventListener('change', () => aplicarFiltros());
+            if(el.tagName === 'SELECT') el.addEventListener('change', () => aplicarFiltros());
         });
 
         document.getElementById('filtrosForm').addEventListener('submit', (e) => {

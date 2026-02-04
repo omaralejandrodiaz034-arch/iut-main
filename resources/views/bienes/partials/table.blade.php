@@ -4,31 +4,31 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organismo</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unidad</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dependencia</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Responsable</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo de Bien</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Foto</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ubicación</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Registro</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organismo</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidad</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dependencia</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsable</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo de Bien</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Foto</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Registro</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
             </thead>
 
             <tbody class="bg-white divide-y divide-gray-200">
                 @forelse($bienes as $bien)
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 text-sm text-gray-900 font-mono">{{ $bien->codigo }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ $bien->descripcion }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ $bien->dependencia->unidadAdministradora->organismo->nombre ?? '-' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ $bien->dependencia->unidadAdministradora->nombre ?? '-' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ $bien->dependencia->nombre ?? '-' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ $bien->dependencia->responsable->nombre ?? '-' }}</td>
+                    <tr class="hover:bg-blue-50/30 transition-colors">
+                        <td class="px-6 py-4 text-sm font-semibold text-blue-600 font-mono">{{ $bien->codigo }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{ $bien->descripcion }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ $bien->dependencia->unidadAdministradora->organismo->nombre ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ $bien->dependencia->unidadAdministradora->nombre ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ $bien->dependencia->nombre ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ $bien->dependencia->responsable->nombre ?? '-' }}</td>
                         <td class="px-6 py-4 text-sm">
                             @php
                                 $tipoBienLabel = $bien->tipo_bien?->label() ?? 'N/A';
@@ -45,16 +45,16 @@
                                 {{ $tipoBienLabel }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-900 font-semibold">
+                        <td class="px-6 py-4 text-sm text-gray-900 font-bold">
                             {{ number_format((float) $bien->precio, 2, ',', '.') }} Bs.
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-600">
+                        <td class="px-6 py-4 text-sm">
                             @if($bien->fotografia && file_exists(public_path('storage/' . $bien->fotografia)))
                                 <img src="{{ asset('storage/' . $bien->fotografia) }}"
                                      alt="Foto del bien"
                                      class="w-48 h-48 object-cover rounded-lg shadow">
                             @else
-                                <span class="text-gray-500">Sin fotografía disponible</span>
+                                <span class="text-gray-400 italic">Sin foto</span>
                             @endif
                         </td>
                         <td class="px-6 py-4 text-sm">
@@ -74,8 +74,8 @@
                                 {{ $estadoLabel }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ $bien->ubicacion ?? '-' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ $bien->ubicacion ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">
                             {{ optional($bien->fecha_registro)->format('d/m/Y') }}
                         </td>
                         <td class="px-6 py-4 text-sm text-right space-x-2">
@@ -90,7 +90,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="13" class="px-6 py-4 text-center text-sm text-gray-500">
+                        <td colspan="13" class="px-6 py-12 text-center text-sm text-gray-500 italic">
                             No hay bienes registrados.
                         </td>
                     </tr>

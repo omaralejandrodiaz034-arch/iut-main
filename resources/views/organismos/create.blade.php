@@ -36,7 +36,7 @@
                 <label for="nombre" class="block text-sm font-bold text-slate-700 mb-2">Nombre del Organismo</label>
                 <input type="text" name="nombre" id="nombre"
                        value="{{ old('nombre') }}"
-                       maxlength="40"
+                       maxlength="30"
                        placeholder="Ej: Ministerio de Educación"
                        class="w-full px-4 py-3 border @error('nombre') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
 
@@ -44,7 +44,7 @@
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
                 <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten letras y espacios.</p>
-                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Límite: 40 caracteres (sin números ni símbolos).</p>
+                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 30 caracteres (solo letras y espacios).</p>
             </div>
 
             {{-- Botones de Acción --}}
@@ -101,10 +101,10 @@
 
             if (originalValue !== filteredValue) {
                 errorNombre.classList.remove('hidden');
-                setTimeout(() => errorNombre.classList.add('hidden'), 2000);
+                setTimeout(() => errorNombre.classList.add('hidden'), 2500);
             }
 
-            e.target.value = filteredValue.slice(0, 40);
+            e.target.value = filteredValue.slice(0, 30);
         });
 
         // 3. Estado de carga al enviar

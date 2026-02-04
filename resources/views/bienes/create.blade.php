@@ -63,17 +63,40 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {{-- Código --}}
-                    <div>
-                        <label for="codigo" class="block text-sm font-bold text-gray-700 mb-2">Código del Bien</label>
+                    {{-- Selector de Dependencia: Quitamos el "required" visual y el mensaje de error si es opcional --}}
+                <div class="px-2">
+                    <label for="dependencia_id" class="block text-sm font-bold text-slate-700 mb-2">
+                        Dependencia Asignada <span class="text-gray-400 font-normal">(Opcional)</span>
+                    </label>
+                    <select name="dependencia_id" id="dependencia_id"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white cursor-pointer">
+                        <option value="">-- Sin Asignar (Almacén / Tránsito) --</option>
+                        @foreach($dependencias as $dep)
+                            <option value="{{ $dep->id }}" {{ old('dependencia_id') == $dep->id ? 'selected' : '' }}>
+                                {{ $dep->nombre }} {{ $dep->responsable ? " - Resp: {$dep->responsable->nombre}" : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Código del Bien con Recomendación Global --}}
+                <div class="px-2">
+                    <label for="codigo" class="block text-sm font-bold text-slate-700 mb-2">Código del Bien (Nº Inventario)</label>
+                    <div class="relative">
                         <input type="text" name="codigo" id="codigo"
-                            value="{{ old('codigo', $codigoSugerido ?? '') }}"
-                            maxlength="8" inputmode="numeric" placeholder="Ej: 00000001"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase">
-                        <p id="codigo-error" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo números (0-9).</p>
-                        @error('codigo')
-                            <p class="text-red-600 text-xs mt-1 font-semibold">{{ $message }}</p>
-                        @enderror
+                            value="{{ old('codigo', $codigoSugerido) }}"
+                            maxlength="8"
+                            class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 font-mono bg-blue-50/20">
+
+                        <button type="button" onclick="restaurarSugerencia()"
+                                class="absolute right-3 top-3 text-[10px] bg-blue-100 text-blue-700 px-2 py-1.5 rounded hover:bg-blue-200 transition font-bold uppercase">
+                            Sugerir
+                        </button>
                     </div>
+                    <p class="text-[10px] text-blue-600 mt-2 font-semibold italic">
+                        💡 Recomendación basada en el inventario global de Organismos, Unidades y Dependencias.
+                    </p>
+                </div>
 
                     {{-- Tipo de Bien --}}
                     <div>

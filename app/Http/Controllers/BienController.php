@@ -8,6 +8,7 @@ use App\Models\Bien;
 use App\Models\Dependencia;
 use App\Models\Organismo;
 use App\Models\UnidadAdministradora;
+use App\Services\CodigoUnicoService;
 use App\Services\FpdfReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -142,16 +143,11 @@ class BienController extends Controller
      */
     public function create()
     {
-        // 🚀 Lógica de Código Secuencial de 8 dígitos
-        $ultimoBien = Bien::whereRaw('codigo REGEXP "^[0-9]+$"')
-            ->orderByRaw('CAST(codigo AS UNSIGNED) DESC')
-            ->first();
+        // Uso del servicio para sugerir el código real disponible
+        $codigoSugerido = CodigoUnicoService::obtenerSiguienteCodigo();
 
-        $siguienteNumero = $ultimoBien ? (intval($ultimoBien->codigo) + 1) : 1;
-        $codigoSugerido = str_pad($siguienteNumero, 8, '0', STR_PAD_LEFT);
-
-        // Cargamos las dependencias con su responsable
         $dependencias = Dependencia::with('responsable')->get();
+
         $tiposBien = collect(TipoBien::cases())->mapWithKeys(
             fn(TipoBien $tipo) => [$tipo->value => $tipo->label()]
         );
@@ -164,50 +160,43 @@ class BienController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate(
-            [
-                'dependencia_id' => ['required', 'exists:dependencias,id'],
-                'codigo' => ['required', 'string', 'max:50', 'unique:bienes,codigo', 'regex:/^[0-9\\-]+$/'],
-                'descripcion' => ['required', 'string', 'max:255'],
-                'precio' => ['required', 'numeric', 'min:0'],
-                'fotografia' => ['nullable', 'image', 'max:2048'],
-                'ubicacion' => ['nullable', 'string', 'max:255'],
-                'estado' => ['required', Rule::enum(EstadoBien::class)],
-                'tipo_bien' => ['required', Rule::enum(TipoBien::class)],
-                'fecha_registro' => ['required', 'date'],
+        $validated = $request->validate([
+            // CAMBIO: 'nullable' para que la dependencia no sea obligatoria
+            'dependencia_id' => ['nullable', 'exists:dependencias,id'],
+            'codigo' => [
+                'required',
+                'string',
+                'size:8',
+                'regex:/^[0-9]+$/',
+                function ($attribute, $value, $fail) {
+                    if (CodigoUnicoService::codigoExiste($value)) {
+                        $info = CodigoUnicoService::obtenerUbicacionCodigo($value);
+                        $fail("El código ya está asignado a: " . $info['tabla'] . " (" . $info['nombre'] . ")");
+                    }
+                }
             ],
-            [
-                'dependencia_id.required' => 'La dependencia es requerida',
-                'codigo.required' => 'El código es requerido',
-                'codigo.unique' => 'El código ya existe en el sistema',
-                'codigo.regex' => 'El código solo puede contener números y guiones',
-                'descripcion.required' => 'La descripción es requerida',
-                'descripcion.max' => 'La descripción no puede exceder 255 caracteres',
-                'precio.required' => 'El precio es requerido',
-                'precio.numeric' => 'El precio debe ser un número válido',
-                'precio.min' => 'El precio debe ser mayor o igual a 0',
-                'fotografia.image' => 'El archivo debe ser una imagen válida',
-                'fotografia.max' => 'La imagen no puede superar 2MB',
-                'estado.required' => 'El estado es requerido',
-                'tipo_bien.required' => 'El tipo de bien es requerido',
-                'fecha_registro.required' => 'La fecha de registro es requerida',
-                'fecha_registro.date' => 'La fecha de registro debe ser una fecha válida',
-            ]
-        );
+            'descripcion' => ['required', 'string', 'max:255'],
+            'precio' => ['required', 'numeric', 'min:0'],
+            'fotografia' => ['nullable', 'image', 'max:2048'],
+            'ubicacion' => ['nullable', 'string', 'max:255'],
+            'estado' => ['required', Rule::enum(EstadoBien::class)],
+            'tipo_bien' => ['required', Rule::enum(TipoBien::class)],
+            'fecha_registro' => ['required', 'date'],
+        ]);
 
         if ($request->hasFile('fotografia')) {
             $foto = $this->procesarFotografia($request);
-            if ($foto) {
-                $validated['fotografia'] = $foto;
-            }
+            if ($foto) $validated['fotografia'] = $foto;
         }
 
         $bien = Bien::create($validated);
-        $bien->setAttribute('_observaciones', 'Registro inicial del bien en el sistema');
 
-        return redirect()
-            ->route('bienes.index')
-            ->with('success', 'Bien creado correctamente.');
+        // Lógica de observación si es un bien huérfano (sin dependencia)
+        if (!$request->filled('dependencia_id')) {
+            $bien->update(['ubicacion' => $request->ubicacion ?? 'Almacén Central / Tránsito']);
+        }
+
+        return redirect()->route('bienes.index')->with('success', 'Bien creado correctamente.');
     }
 
     /**
@@ -253,8 +242,18 @@ class BienController extends Controller
     public function update(Request $request, Bien $bien)
     {
         $validated = $request->validate([
-            'dependencia_id' => ['sometimes', 'exists:dependencias,id'],
-            'codigo' => ['sometimes', 'string', 'max:50', Rule::unique('bienes', 'codigo')->ignore($bien->getKey())],
+            'dependencia_id' => ['nullable', 'exists:dependencias,id'],
+            'codigo' => [
+                'sometimes',
+                'string',
+                'size:8',
+                function ($attribute, $value, $fail) use ($bien) {
+                    if (CodigoUnicoService::codigoExiste($value, 'bienes', $bien->id)) {
+                        $info = CodigoUnicoService::obtenerUbicacionCodigo($value);
+                        $fail("Código en uso por " . $info['tabla']);
+                    }
+                }
+            ],
             'descripcion' => ['sometimes', 'string', 'max:255'],
             'precio' => ['sometimes', 'numeric', 'min:0'],
             'fotografia' => ['nullable', 'image', 'max:2048'],
@@ -266,31 +265,16 @@ class BienController extends Controller
 
         if ($request->hasFile('fotografia')) {
             $foto = $this->procesarFotografia($request, $bien);
-            if ($foto)
-                $validated['fotografia'] = $foto;
+            if ($foto) $validated['fotografia'] = $foto;
         }
-
-        $originalDependencia = $bien->dependencia_id;
-        $originalEstado = $bien->estado;
 
         $bien->update($validated);
-        $observaciones = [];
-
-        if (isset($validated['dependencia_id']) && $validated['dependencia_id'] != $originalDependencia) {
-            $newDep = Dependencia::find($validated['dependencia_id']);
-            $observaciones[] = "Transferencia de dependencia a: " . ($newDep->nombre ?? 'N/A');
-        }
-
-        if (isset($validated['estado']) && $validated['estado'] != $originalEstado) {
-            $observaciones[] = "Cambio de estado detectado";
-        }
-
-        if (!empty($observaciones)) {
-            $bien->setAttribute('_observaciones', implode(' | ', $observaciones));
-        }
-
-        return redirect()->route('bienes.index')->with('success', 'Bien actualizado correctamente.');
+        return redirect()->route('bienes.index')->with('success', 'Bien actualizado.');
     }
+
+    // ... el resto de métodos (show, destroy, etc.) se mantienen ...
+
+
 
     public function edit(Bien $bien)
     {

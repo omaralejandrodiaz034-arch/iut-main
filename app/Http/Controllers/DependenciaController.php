@@ -9,7 +9,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-
+use App\Services\CodigoUnicoService;
 class DependenciaController extends Controller
 {
     public function index(Request $request)
@@ -38,30 +38,33 @@ class DependenciaController extends Controller
 
     public function store(Request $request)
     {
-        // Forzar el formato de 8 dígitos antes de la validación
-        if ($request->has('codigo') && !empty($request->codigo)) {
-            $request->merge([
-                'codigo' => str_pad($request->codigo, 8, '0', STR_PAD_LEFT)
-            ]);
-        }
-
         $validated = $request->validate([
             'unidad_administradora_id' => ['required', 'exists:unidades_administradoras,id'],
-            'codigo' => ['required', 'string', 'size:8', 'unique:dependencias,codigo'],
+            'codigo' => [
+                'required',
+                'string',
+                'size:8',
+                'regex:/^[0-9]+$/',
+                function ($attribute, $value, $fail) {
+                    // Verificación global de código
+                    if (CodigoUnicoService::codigoExiste($value)) {
+                        $info = CodigoUnicoService::obtenerUbicacionCodigo($value);
+                        $fail("Este código ya está registrado en: " . $info['tabla'] . " (" . $info['nombre'] . ")");
+                    }
+                }
+            ],
             'nombre' => ['required', 'string', 'max:255'],
             'responsable_id' => ['nullable', 'exists:responsables,id'],
         ], [
             'unidad_administradora_id.required' => 'Debe seleccionar una unidad administradora.',
             'codigo.required' => 'El código es obligatorio.',
-            'codigo.unique' => 'Este código ya ha sido asignado a otra dependencia.',
             'codigo.size' => 'El código debe tener exactamente 8 dígitos.',
             'nombre.required' => 'El nombre es obligatorio.',
         ]);
 
         Dependencia::create($validated);
 
-        return redirect()->route('dependencias.index')
-            ->with('success', 'Dependencia creada correctamente');
+        return redirect()->route('dependencias.index')->with('success', 'Dependencia creada correctamente');
     }
 
     public function create()
@@ -69,10 +72,8 @@ class DependenciaController extends Controller
         $unidades = UnidadAdministradora::all();
         $responsables = Responsable::all();
 
-        // Cálculo secuencial para sugerir el próximo código
-        $ultimo = Dependencia::max('codigo');
-        $siguienteNumero = $ultimo ? (int) $ultimo + 1 : 1;
-        $proximoCodigo = str_pad($siguienteNumero, 8, '0', STR_PAD_LEFT);
+        // CAMBIO: Sugerencia basada en el inventario GLOBAL
+        $proximoCodigo = CodigoUnicoService::obtenerSiguienteCodigo();
 
         return view('dependencias.create', compact('unidades', 'responsables', 'proximoCodigo'));
     }
@@ -94,19 +95,20 @@ class DependenciaController extends Controller
 
     public function update(Request $request, Dependencia $dependencia)
     {
-        if ($request->has('codigo')) {
-            $request->merge([
-                'codigo' => str_pad($request->codigo, 8, '0', STR_PAD_LEFT)
-            ]);
-        }
-
         $validated = $request->validate([
             'unidad_administradora_id' => ['sometimes', 'exists:unidades_administradoras,id'],
             'codigo' => [
                 'sometimes',
                 'string',
                 'size:8',
-                Rule::unique('dependencias', 'codigo')->ignore($dependencia->id),
+                'regex:/^[0-9]+$/',
+                function ($attribute, $value, $fail) use ($dependencia) {
+                    // Validar globalmente ignorando el ID actual
+                    if (CodigoUnicoService::codigoExiste($value, 'dependencias', $dependencia->id)) {
+                        $info = CodigoUnicoService::obtenerUbicacionCodigo($value);
+                        $fail("Código no disponible. Ya existe en: " . $info['tabla']);
+                    }
+                },
             ],
             'nombre' => ['sometimes', 'string', 'max:255'],
             'responsable_id' => ['nullable', 'exists:responsables,id'],
@@ -114,8 +116,7 @@ class DependenciaController extends Controller
 
         $dependencia->update($validated);
 
-        return redirect()->route('dependencias.index')
-            ->with('success', 'Dependencia actualizada correctamente');
+        return redirect()->route('dependencias.index')->with('success', 'Dependencia actualizada correctamente');
     }
 
     public function edit(Dependencia $dependencia)
