@@ -12,6 +12,7 @@
             @csrf
             @method('PATCH')
 
+            {{-- Selección de Organismo --}}
             <div class="px-2">
                 <label for="organismo_id" class="block text-sm font-bold text-slate-700 mb-2">Organismo</label>
                 <select name="organismo_id" id="organismo_id"
@@ -28,28 +29,48 @@
                 @enderror
             </div>
 
+            {{-- Código de Unidad --}}
             <div class="px-2">
                 <label for="codigo" class="block text-sm font-bold text-slate-700 mb-2">Código de Unidad</label>
                 <input type="text" name="codigo" id="codigo" value="{{ old('codigo', $unidadAdministradora->codigo) }}"
                        maxlength="8" inputmode="numeric" autocomplete="off"
                        class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono">
+                
+                {{-- NUEVO: Recomendación de recuperación --}}
+                <div id="recuperar-contenedor" class="hidden mt-2 flex items-center gap-2 bg-blue-50/50 p-2 rounded-md border border-blue-100">
+                    <span class="text-blue-800 text-[11px] font-medium">⚠️ El código es distinto al guardado:</span>
+                    <button type="button" id="btnRecuperar" 
+                            data-original="{{ $unidadAdministradora->codigo }}"
+                            class="text-blue-600 text-[11px] font-bold hover:text-blue-800 underline flex items-center gap-1">
+                        Restaurar código: {{ $unidadAdministradora->codigo }}
+                    </button>
+                </div>
+
                 @error('codigo')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
+                <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">Solo se permiten números.</p>
                 <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Solo 8 números. Se completará con ceros automáticamente.</p>
             </div>
 
+            {{-- Nombre de la Unidad --}}
             <div class="px-2">
                 <label for="nombre" class="block text-sm font-bold text-slate-700 mb-2">Nombre de la Unidad</label>
                 <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $unidadAdministradora->nombre) }}" 
-                       maxlength="30" autocomplete="off"
+                       maxlength="40" autocomplete="off"
                        class="w-full px-4 py-3 border @error('nombre') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                
                 @error('nombre')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
+<<<<<<< HEAD
                 {{-- Alerta visual para el usuario --}}
                 <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten letras y espacios.</p>
                 <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 30 caracteres (solo letras y espacios).</p>
+=======
+                <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">Solo se permiten letras.</p>
+                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 40 caracteres (solo letras).</p>
+>>>>>>> 44fa59c4714a6fbc0641edd2b17c64cc51d1efc7
             </div>
 
             <div class="pt-6 flex justify-center items-center gap-8 border-t border-gray-50">
@@ -72,40 +93,78 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const codigoInput = document.getElementById('codigo');
+        const errorCodigo = document.getElementById('error-codigo');
+        const recuperarContenedor = document.getElementById('recuperar-contenedor');
+        const btnRecuperar = document.getElementById('btnRecuperar');
+        const valorOriginalBD = btnRecuperar.getAttribute('data-original');
+
         const nombreInput = document.getElementById('nombre');
         const errorNombre = document.getElementById('error-nombre');
         const form = document.getElementById('editUnidadForm');
 
-        // 1. BLOQUEO TOTAL DE LETRAS Y GUIONES (SOLO NÚMEROS)
+        // 1. LÓGICA DE CÓDIGO CON RECOMENDACIÓN
         codigoInput.addEventListener('input', function(e) {
-            let val = e.target.value.replace(/[^0-9]/g, '');
-            e.target.value = val.slice(0, 8);
-        });
+            let currentVal = e.target.value;
+            let filteredValue = currentVal.replace(/[^0-9]/g, '');
 
-        // AUTORELLENO CON CEROS AL SALIR DEL CAMPO (BLUR)
-        codigoInput.addEventListener('blur', function(e) {
-            if (e.target.value.length > 0) {
-                e.target.value = e.target.value.padStart(8, '0');
+            // Aviso si escribe algo no numérico
+            if (currentVal !== filteredValue) {
+                errorCodigo.classList.remove('hidden');
+                setTimeout(() => errorCodigo.classList.add('hidden'), 2000);
+            }
+
+            e.target.value = filteredValue.slice(0, 8);
+
+            // Mostrar recomendación si el valor actual difiere del original
+            if (e.target.value !== valorOriginalBD) {
+                recuperarContenedor.classList.remove('hidden');
+            } else {
+                recuperarContenedor.classList.add('hidden');
             }
         });
 
-        // 2. RESTRICCIÓN ESTRICTA DE NÚMEROS Y CARACTERES ESPECIALES
+        // Restaurar código original al hacer clic
+        btnRecuperar.addEventListener('click', function() {
+            codigoInput.value = valorOriginalBD;
+            recuperarContenedor.classList.add('hidden');
+            
+            // Efecto visual de restauración
+            codigoInput.classList.add('ring-2', 'ring-green-400', 'bg-green-50');
+            setTimeout(() => {
+                codigoInput.classList.remove('ring-2', 'ring-green-400', 'bg-green-50');
+            }, 800);
+        });
+
+        codigoInput.addEventListener('blur', function(e) {
+            if (e.target.value.length > 0) {
+                e.target.value = e.target.value.padStart(8, '0');
+                // Re-verificar tras el padStart
+                if (e.target.value === valorOriginalBD) {
+                    recuperarContenedor.classList.add('hidden');
+                }
+            }
+        });
+
+        // 2. RESTRICCIÓN DE NOMBRE (Límite 40 caracteres)
         nombreInput.addEventListener('input', function(e) {
             let originalValue = e.target.value;
-            // Expresión: Solo permite letras de la A a la Z (incluye tildes y ñ) y espacios
             let filteredValue = originalValue.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
 
             if (originalValue !== filteredValue) {
-                // Muestra el error si se intenta ingresar algo prohibido
                 errorNombre.classList.remove('hidden');
                 setTimeout(() => errorNombre.classList.add('hidden'), 2500);
             }
 
-            e.target.value = filteredValue.slice(0, 30);
+            // Aplicamos el límite de 40
+            e.target.value = filteredValue.slice(0, 40);
         });
 
         // 3. ESTADO DE CARGA AL ENVIAR
-        form.addEventListener('submit', function() {
+        form.addEventListener('submit', function(e) {
+            if (nombreInput.value.trim() === "" || codigoInput.value.trim() === "") {
+                return;
+            }
+
             const btn = document.getElementById('btnGuardar');
             const icon = document.getElementById('btnIcon');
             const text = document.getElementById('btnText');

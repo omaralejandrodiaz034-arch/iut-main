@@ -13,7 +13,7 @@
 {{-- Filtros Avanzados --}}
 <div class="bg-white shadow-md rounded-lg p-6 mb-6">
     <h2 class="text-lg font-semibold text-gray-800 mb-4">🔍 Filtrar Usuarios</h2>
-    <form action="{{ route('usuarios.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <form action="{{ route('usuarios.index') }}" method="GET" id="filterForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
             <label for="buscar" class="block text-sm font-semibold text-gray-700 mb-2">Búsqueda General</label>
             <input type="text" name="buscar" id="buscar" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -21,13 +21,18 @@
         </div>
         <div>
             <label for="cedula" class="block text-sm font-semibold text-gray-700 mb-2">Cédula</label>
-            <input type="text" name="cedula" id="cedula" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                   placeholder="V-XX.XXX.XXX" value="{{ $validated['cedula'] ?? '' }}">
+            <input type="text" name="cedula" id="cedula" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                   placeholder="V-25.123.123" value="{{ $validated['cedula'] ?? '' }}">
+            <p id="error-cedula" class="text-red-500 text-[10px] mt-1 hidden font-bold">Solo se permiten números.</p>
         </div>
         <div>
             <label for="correo" class="block text-sm font-semibold text-gray-700 mb-2">Correo</label>
-            <input type="email" name="correo" id="correo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <input type="email" name="correo" id="correo" 
+                   maxlength="40"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                    placeholder="correo@ejemplo.com" value="{{ $validated['correo'] ?? '' }}">
+            <p id="error-correo" class="text-red-500 text-[10px] mt-1 hidden font-bold">Formato de correo inválido.</p>
         </div>
         <div>
             <label for="rol_id" class="block text-sm font-semibold text-gray-700 mb-2">Rol</label>
@@ -59,6 +64,7 @@
     </form>
 </div>
 
+{{-- Tabla de resultados --}}
 <div class="bg-white shadow rounded-lg overflow-hidden">
     <table class="w-full">
         <thead class="bg-gray-50">
@@ -74,6 +80,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
             @forelse($usuarios as $usuario)
+<<<<<<< HEAD
                 <tr class="hover:bg-blue-50/30 transition-colors">
                     <td class="px-6 py-4 text-sm font-semibold text-blue-600 font-mono">{{ $usuario->cedula }}</td>
                     <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{ $usuario->nombre_completo }}</td>
@@ -87,6 +94,14 @@
                         @endif
                     </td>
                     <td class="px-6 py-4 text-sm">
+=======
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm text-gray-900 font-mono">{{ $usuario->cedula }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">{{ $usuario->nombre_completo }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">{{ $usuario->correo }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">{{ $usuario->rol->nombre ?? 'N/A' }}</td>
+                    <td class="px-6 py-4 text-sm">
+>>>>>>> 44fa59c4714a6fbc0641edd2b17c64cc51d1efc7
                         @if($usuario->activo)
                             <span class="px-2.5 py-1 text-xs font-bold text-green-800 bg-green-100 rounded-full">Activo</span>
                         @else
@@ -98,7 +113,7 @@
                             'resource' => 'usuarios',
                             'model' => $usuario,
                             'canDelete' => auth()->user()->canDeleteUser($usuario),
-                            'confirm' => '¿Estás seguro? No podrás deshacer esta acción.',
+                            'confirm' => '¿Estás seguro?',
                             'label' => $usuario->nombre_completo
                         ])
                     </td>
@@ -112,9 +127,70 @@
     </table>
 </div>
 
-@if($usuarios->hasPages())
-    <div class="mt-6">
-        {{ $usuarios->links() }}
-    </div>
-@endif
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const cedulaInput = document.getElementById('cedula');
+        const errorCedula = document.getElementById('error-cedula');
+        const correoInput = document.getElementById('correo');
+        const errorCorreo = document.getElementById('error-correo');
+        const filterForm = document.getElementById('filterForm');
+
+        // Lógica de Máscara de Cédula V-00.000.000
+        cedulaInput.addEventListener('input', function (e) {
+            let value = e.target.value;
+            
+            // Extraer solo los dígitos
+            let digits = value.replace(/\D/g, '');
+            
+            // Mostrar error si el usuario intentó meter letras
+            if (value.replace(/[Vv\-\.]/g, '').match(/\D/)) {
+                errorCedula.classList.remove('hidden');
+                setTimeout(() => errorCedula.classList.add('hidden'), 2000);
+            }
+
+            // Limitar a 8 dígitos de cédula
+            digits = digits.slice(0, 8);
+
+            // Construir el formato
+            let formatted = "";
+            if (digits.length > 0) {
+                formatted = "V-";
+                if (digits.length <= 2) {
+                    formatted += digits;
+                } else if (digits.length <= 5) {
+                    formatted += digits.slice(0, 2) + "." + digits.slice(2);
+                } else {
+                    formatted += digits.slice(0, 2) + "." + digits.slice(2, 5) + "." + digits.slice(5);
+                }
+            }
+            
+            e.target.value = formatted;
+        });
+
+        // Correo: Validación y Máximo 40
+        correoInput.addEventListener('blur', function (e) {
+            const emailValue = e.target.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (emailValue !== "" && !emailRegex.test(emailValue)) {
+                errorCorreo.classList.remove('hidden');
+                correoInput.classList.add('border-red-500');
+            } else {
+                errorCorreo.classList.add('hidden');
+                correoInput.classList.remove('border-red-500');
+            }
+        });
+
+        // Prevenir envío con errores
+        filterForm.addEventListener('submit', function (e) {
+            const emailValue = correoInput.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (emailValue !== "" && !emailRegex.test(emailValue)) {
+                e.preventDefault();
+                errorCorreo.classList.remove('hidden');
+            }
+        });
+    });
+</script>
 @endsection
