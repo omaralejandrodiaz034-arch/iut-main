@@ -724,7 +724,7 @@ class BienController extends Controller
         );
 
         // Registrar movimiento con la ruta del acta
-        \App\Models\Movimiento::create([
+        $movimiento = \App\Models\Movimiento::create([
             'bien_id'    => $bien->id,
             'usuario_id' => auth()->id(),
             'tipo'       => 'TRASLADO',
@@ -733,6 +733,6 @@ class BienController extends Controller
             'acta_path'  => $actaPath,
         ]);
 
-        return redirect()->route('bienes.index')->with('success', 'Traslado registrado exitosamente. El acta ha sido generada y guardada.');
+        return redirect()->route('movimientos.show', $movimiento)->with('success', 'Traslado registrado exitosamente. El acta de traslado ha sido generada y guardada.');
     }
 }

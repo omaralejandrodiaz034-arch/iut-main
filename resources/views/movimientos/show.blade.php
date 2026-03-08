@@ -115,6 +115,15 @@
             </div>
         @endif
 
+        <!-- Acta de Traslado -->
+        @if ($movimiento->tipo === 'TRASLADO' && $movimiento->acta_path)
+            <div class="col-span-1 md:col-span-2">
+                <h2 class="text-lg font-bold text-gray-800">Acta de Traslado</h2>
+                <a href="{{ Storage::disk('public')->url($movimiento->acta_path) }}" target="_blank"
+                   class="text-blue-600 hover:underline">Ver Acta de Traslado</a>
+            </div>
+        @endif
+
         <!-- Historial de cambios -->
         @if($movimiento->tipo === 'Actualización' && $movimiento->historialMovimientos && $movimiento->historialMovimientos->isNotEmpty())
             <div class="border border-gray-200 rounded-lg p-4">

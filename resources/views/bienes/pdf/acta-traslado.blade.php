@@ -88,8 +88,26 @@
 <body>
 
     <div class="encabezado">
-        <img src="https://www.uptos.edu.ve/wp-content/uploads/2026/02/cropped-cropped-WhatsApp-Image-2026-02-11-at-10.17.38-PM-1.jpeg"
-             class="logo" alt="Escudo UPTOS">
+        {{-- incrustar logo como base64 (DomPDF lee sin problemas) --}}
+        @php
+            // buscar logo en diferentes formatos; el usuario agregó logo.gif
+            $possible = ['logo-uptos.png', 'logo.gif', 'logo.png'];
+            $logoPath = null;
+            foreach ($possible as $name) {
+                $path = public_path('images/'.$name);
+                if (file_exists($path)) {
+                    $logoPath = $path;
+                    break;
+                }
+            }
+            $logoData = '';
+            if ($logoPath && file_exists($logoPath)) {
+                $type = pathinfo($logoPath, PATHINFO_EXTENSION);
+                $data = file_get_contents($logoPath);
+                $logoData = 'data:image/' . $type . ';base64,' . base64_encode($data);
+            }
+        @endphp
+        <img src="{{ $logoData ?: '' }}" class="logo" alt="Escudo UPTOS">
         <div class="titulo">REPÚBLICA BOLIVARIANA DE VENEZUELA</div>
         <div class="subtitulo">UNIVERSIDAD POLITÉCNICA TERRITORIAL DEL OESTE DE SUCRE</div>
         <div>"CLODOSBALDO RUSSIÁN"</div>

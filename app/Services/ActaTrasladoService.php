@@ -11,6 +11,12 @@ class ActaTrasladoService
 {
     public function generar(Bien $bien, string $motivo, $usuario, $dependenciaAnterior, $dependenciaNueva)
     {
+        if (! extension_loaded('gd')) {
+            // lanzar excepción con instrucción clara para desarrolladores/administradores
+            throw new \RuntimeException("La extensión PHP GD es necesaria para generar el acta. \n" .
+                "Active 'extension=gd' en el php.ini del servidor web y reinicie Apache/Tomcat.");
+        }
+
         $folio = 'TRAS-' . now()->format('Y') . '-' . str_pad($bien->id, 6, '0', STR_PAD_LEFT);
 
         $data = [
@@ -26,8 +32,11 @@ class ActaTrasladoService
 
         $pdf = Pdf::loadView('bienes.pdf.acta-traslado', $data);
 
-        // Guardar en storage
+        // Asegurar que el directorio existe
         $path = "actas/traslado/{$folio}.pdf";
+        Storage::disk('public')->makeDirectory(dirname($path));
+
+        // Guardar en storage
         Storage::disk('public')->put($path, $pdf->output());
 
         // Retornar URL para guardar en movimiento
