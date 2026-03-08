@@ -3,6 +3,9 @@
 @section('title', 'Reportes')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Reportes']]" />
+@endpush
 <div class="max-w-6xl mx-auto space-y-8">
     <div class="flex items-center justify-between">
         <div>

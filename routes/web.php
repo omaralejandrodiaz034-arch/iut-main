@@ -1,8 +1,12 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AuditoriaController;
 use App\Http\Controllers\BienController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DependenciaController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\HistorialMovimientoController;
 use App\Http\Controllers\MovimientoController;
 use App\Http\Controllers\OrganismoController;
@@ -24,9 +28,9 @@ Route::get('/', function () {
     return view('welcome');
 })->name('welcome')->middleware('prevent-back');
 
-Route::get('/dashboard', function () {
-    return Auth::check() ? redirect()->route('welcome') : redirect()->route('login');
-})->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->name('dashboard')
+    ->middleware(['auth', 'prevent-back']);
 
 /*
 |--------------------------------------------------------------------------
@@ -54,6 +58,23 @@ Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // ────────────────────────────────────────────────
+    // PERFIL
+    // ────────────────────────────────────────────────
+    Route::get('/perfil', [ProfileController::class, 'show'])->name('perfil.show');
+    Route::patch('/perfil', [ProfileController::class, 'updateProfile'])->name('perfil.update');
+    Route::patch('/perfil/password', [ProfileController::class, 'updatePassword'])->name('perfil.password');
+
+    // ────────────────────────────────────────────────
+    // BÚSQUEDA GLOBAL
+    // ────────────────────────────────────────────────
+    Route::get('/buscar', [SearchController::class, 'global'])->name('buscar.global');
+
+    // ────────────────────────────────────────────────
+    // AUDITORÍA (solo admin)
+    // ────────────────────────────────────────────────
+    Route::get('/auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index');
+
+    // ────────────────────────────────────────────────
     // BIENES
     // ────────────────────────────────────────────────
     Route::prefix('bienes')->name('bienes.')->group(function () {
@@ -65,6 +86,10 @@ Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () 
         // Desincorporación (GET → formulario, POST → procesar y descargar acta)
         Route::get('{bien}/desincorporar',    [BienController::class, 'showDesincorporarForm'])->name('desincorporar.form');
         Route::post('{bien}/desincorporar',   [BienController::class, 'desincorporar'])       ->name('desincorporar');
+
+        // Transferencia entre dependencias
+        Route::get('{bien}/transferir',  [BienController::class, 'showTransferirForm'])->name('transferir.form');
+        Route::patch('{bien}/transferir',[BienController::class, 'transferir'])        ->name('transferir');
     });
 
     // Resource completo para bienes (índex, create, store, show, edit, update, destroy)

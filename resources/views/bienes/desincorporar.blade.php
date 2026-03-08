@@ -3,6 +3,9 @@
 @section('title', 'Desincorporar Bien')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Bienes', 'url' => route('bienes.index')], ['label' => $bien->codigo, 'url' => route('bienes.show', $bien)], ['label' => 'Desincorporar']]" />
+@endpush
 <div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
 
     <!-- Advertencia clara -->

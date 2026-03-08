@@ -3,6 +3,9 @@
 @section('title', 'Registros Eliminados')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Registros Eliminados']]" />
+@endpush
 <div class="w-full">
     <div class="bg-white shadow rounded-lg p-6">
         <h1 class="text-2xl font-bold mb-4">

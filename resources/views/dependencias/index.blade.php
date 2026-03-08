@@ -3,6 +3,9 @@
 @section('title', 'Dependencias')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Dependencias']]" />
+@endpush
 <div class="space-y-6 md:space-y-8">
     <!-- Encabezado con título y botones de acción -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">

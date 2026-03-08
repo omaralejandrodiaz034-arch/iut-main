@@ -3,6 +3,9 @@
 @section('title', 'Registrar Bien')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Bienes', 'url' => route('bienes.index')], ['label' => 'Nuevo Bien']]" />
+@endpush
     <div class="max-w-4xl mx-auto">
         <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
             {{-- Encabezado --}}
@@ -131,7 +134,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Adquisición</label>
-                        <input type="date" name="fecha_registro" id="fecha_registro" 
+                        <input type="date" name="fecha_registro" id="fecha_registro"
                             min="2000-01-01" max="{{ now()->format('Y-m-d') }}"
                             value="{{ old('fecha_registro', now()->format('Y-m-d')) }}"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
@@ -352,7 +355,7 @@
                 const tipo = tipoBienSelect.value;
                 const estado = document.getElementById('estado')?.value || '';
                 const dependenciaSel = depSelect.value;
-                
+
                 // Validación de Fecha (A partir del año 2000)
                 const fechaInput = document.getElementById('fecha_registro');
                 const fechaSeleccionada = new Date(fechaInput.value);

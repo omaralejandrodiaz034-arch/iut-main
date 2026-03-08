@@ -3,9 +3,12 @@
 @section('title', 'Crear Unidad')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Unidades Administradoras', 'url' => route('unidades.index')], ['label' => 'Nueva Unidad']]" />
+@endpush
 <div class="max-w-2xl mx-auto mt-10">
     <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
-        
+
         {{-- ENCABEZADO CON ESTILO (Igual a Organismo) --}}
         <div class="bg-gradient-to-r from-blue-700 to-blue-900 px-8 py-5">
             <h1 class="text-xl font-bold text-white flex items-center gap-2">
@@ -49,7 +52,7 @@
                         class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono bg-blue-50/20">
 
                     {{-- Botón Requerido --}}
-                    <button type="button" 
+                    <button type="button"
                             class="absolute right-3 top-3 text-[10px] bg-red-100 text-red-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider border border-red-200 cursor-default">
                         Requerido
                     </button>
@@ -58,7 +61,7 @@
                 {{-- Aviso de recuperación (Igual a Organismo) --}}
                 <div id="recuperar-contenedor" class="hidden mt-2 flex items-center gap-2 bg-red-50/50 p-2 rounded-md border border-red-100">
                     <span class="text-red-800 text-[11px] font-medium">⚠️ Este código es requerido:</span>
-                    <button type="button" id="btnRecuperar" 
+                    <button type="button" id="btnRecuperar"
                             class="text-red-600 text-[11px] font-bold hover:text-red-800 underline flex items-center gap-1">
                         Restaurar valor requerido ({{ $siguienteCodigo ?? '' }})
                     </button>
@@ -67,11 +70,11 @@
                 @error('codigo')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
-                
+
                 {{-- Mensajes de error dinámicos --}}
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten números.</p>
                 <p id="error-ceros" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ El código no puede ser solo ceros; debe tener un valor real.</p>
-                
+
                 <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Campo obligatorio de 8 dígitos numéricos.</p>
             </div>
 
@@ -82,7 +85,7 @@
                        maxlength="40" autocomplete="off"
                        placeholder="Ej: Recursos Humanos"
                        class="w-full px-4 py-3 border @error('nombre') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                
+
                 @error('nombre')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
@@ -115,11 +118,11 @@
         const codigoInput = document.getElementById('codigo');
         const recuperarContenedor = document.getElementById('recuperar-contenedor');
         const errorCeros = document.getElementById('error-ceros');
-        
+
         codigoInput.value = sugerenciaInicial;
         recuperarContenedor.classList.add('hidden');
         errorCeros.classList.add('hidden');
-        
+
         codigoInput.classList.add('ring-2', 'ring-green-400', 'bg-green-50');
         setTimeout(() => {
             codigoInput.classList.remove('ring-2', 'ring-green-400', 'bg-green-50');
@@ -198,15 +201,15 @@
             // Validaciones de bloqueo
             if (codVal.length < 8 || esTodoCeros || nombreVal === "" || organismoVal === "") {
                 e.preventDefault();
-                
+
                 if (esTodoCeros) {
                     errorCeros.classList.remove('hidden');
                     codigoInput.focus();
                 }
-                
+
                 // Si el nombre está vacío y no hay error de servidor, se podría disparar un alert o focus
                 if(nombreVal === "") nombreInput.focus();
-                
+
                 return;
             }
 

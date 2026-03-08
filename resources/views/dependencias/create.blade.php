@@ -3,6 +3,9 @@
 @section('title', 'Nueva Dependencia')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Dependencias', 'url' => route('dependencias.index')], ['label' => 'Nueva Dependencia']]" />
+@endpush
 <div class="max-w-2xl mx-auto mt-10">
     <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
 
@@ -50,7 +53,7 @@
                         placeholder="00000001"
                         class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono bg-blue-50/20">
 
-                    <button type="button" 
+                    <button type="button"
                             class="absolute right-3 top-3 text-[10px] bg-red-100 text-red-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider border border-red-200 cursor-default">
                         Requerido
                     </button>

@@ -3,10 +3,13 @@
 @section('title', 'Editar Dependencia')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Dependencias', 'url' => route('dependencias.index')], ['label' => $dependencia->nombre, 'url' => route('dependencias.show', $dependencia)], ['label' => 'Editar']]" />
+@endpush
 <div class="max-w-2xl mx-auto mt-10">
     {{-- Contenedor Principal --}}
     <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
-        
+
         {{-- ENCABEZADO CON GRADIENTE --}}
         <div class="bg-gradient-to-r from-slate-700 to-slate-900 px-8 py-5">
             <h1 class="text-xl font-bold text-white flex items-center gap-2">
@@ -46,14 +49,14 @@
             <div class="px-2">
                 <label for="codigo" class="block text-sm font-bold text-slate-700 mb-2">Código de Dependencia</label>
                 <div class="relative">
-                    <input type="text" name="codigo" id="codigo" 
+                    <input type="text" name="codigo" id="codigo"
                            value="{{ old('codigo', $dependencia->codigo) }}"
                            maxlength="8" inputmode="numeric" autocomplete="off"
                            placeholder="00000000"
                            class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono bg-blue-50/10 text-gray-600">
-                    
+
                     {{-- Botón Estilo Organismo --}}
-                    <button type="button" 
+                    <button type="button"
                             class="absolute right-3 top-3 text-[10px] bg-red-100 text-red-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider border border-red-200 cursor-default">
                         Requerido
                     </button>
@@ -62,7 +65,7 @@
                 {{-- Aviso de recuperación (Estilo Organismo) --}}
                 <div id="recuperar-contenedor" class="hidden mt-2 flex items-center gap-2 bg-red-50/50 p-2 rounded-md border border-red-100">
                     <span class="text-red-800 text-[11px] font-medium">⚠️ Este código es requerido:</span>
-                    <button type="button" id="btnRecuperar" 
+                    <button type="button" id="btnRecuperar"
                             class="text-red-600 text-[11px] font-bold hover:text-red-800 underline flex items-center gap-1">
                         Restaurar código original ({{ $dependencia->codigo }})
                     </button>
@@ -71,11 +74,11 @@
                 @error('codigo')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
-                
+
                 {{-- Errores de JS --}}
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten números.</p>
                 <p id="error-ceros" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ El código no puede estar vacío ni ser solo ceros; debe tener un valor real.</p>
-                
+
                 <p class="text-gray-400 text-[11px] mt-2">Código único de la dependencia (8 números).</p>
             </div>
 
@@ -114,17 +117,17 @@
 
             {{-- Botones de Acción (Estilo Organismo) --}}
             <div class="pt-6 flex justify-center items-center gap-8 border-t border-gray-50">
-                <a href="{{ route('dependencias.index') }}" 
+                <a href="{{ route('dependencias.index') }}"
                    class="flex items-center gap-2 text-slate-600 font-bold transition-opacity hover:opacity-70">
                     <span class="text-xl">✕</span>
                     <span>Cancelar</span>
                 </a>
-                
-                <button type="submit" id="btnGuardar" 
+
+                <button type="submit" id="btnGuardar"
                         class="flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-3 rounded-lg font-bold w-64 shadow-lg hover:bg-blue-700 transition-all active:scale-95">
                     <span id="btnIcon">✓</span>
                     <span id="btnText">Actualizar Dependencia</span>
-                    
+
                     <div id="spinner" class="hidden">
                         <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -144,11 +147,11 @@
         const codigoInput = document.getElementById('codigo');
         const recuperarContenedor = document.getElementById('recuperar-contenedor');
         const errorCeros = document.getElementById('error-ceros');
-        
+
         codigoInput.value = codigoOriginal;
         recuperarContenedor.classList.add('hidden');
         errorCeros.classList.add('hidden');
-        
+
         codigoInput.classList.add('ring-2', 'ring-green-500', 'bg-green-50');
         setTimeout(() => {
             codigoInput.classList.remove('ring-2', 'ring-green-500', 'bg-green-50');
@@ -168,7 +171,7 @@
         // 1. Lógica de entrada de Código
         codigoInput.addEventListener('input', function(e) {
             let val = e.target.value.replace(/[^0-9]/g, '');
-            
+
             if (e.target.value !== val) {
                 errorCodigo.classList.remove('hidden');
                 setTimeout(() => errorCodigo.classList.add('hidden'), 2000);

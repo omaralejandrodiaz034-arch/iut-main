@@ -3,6 +3,9 @@
 @section('title', 'Detalles del Organismo')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Organismos', 'url' => route('organismos.index')], ['label' => $organismo->nombre]]" />
+@endpush
 @php
 use Illuminate\Support\Str;
 @endphp

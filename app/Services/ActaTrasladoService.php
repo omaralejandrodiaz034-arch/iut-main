@@ -7,11 +7,11 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
-class ActaDesincorporacionService
+class ActaTrasladoService
 {
-    public function generar(Bien $bien, string $motivo, $usuario)
+    public function generar(Bien $bien, string $motivo, $usuario, $dependenciaAnterior, $dependenciaNueva)
     {
-        $folio = 'DES-' . now()->format('Y') . '-' . str_pad($bien->id, 6, '0', STR_PAD_LEFT);
+        $folio = 'TRAS-' . now()->format('Y') . '-' . str_pad($bien->id, 6, '0', STR_PAD_LEFT);
 
         $data = [
             'bien'        => $bien,
@@ -19,24 +19,24 @@ class ActaDesincorporacionService
             'fecha'       => Carbon::now()->format('d/m/Y'),
             'hora'        => Carbon::now()->format('H:i'),
             'usuario'     => $usuario->nombre_completo ?? $usuario->name ?? auth()->user()?->nombre_completo ?? 'Usuario del sistema',
-            'responsable' => $bien->dependencia?->responsable?->nombre_completo ?? '—',
-            'dependencia' => $bien->dependencia?->nombre ?? '—',
+            'dependencia_anterior' => $dependenciaAnterior,
+            'dependencia_nueva'    => $dependenciaNueva,
             'folio'       => $folio,
         ];
 
-        $pdf = Pdf::loadView('bienes.pdf.acta-desincorporacion', $data);
+        $pdf = Pdf::loadView('bienes.pdf.acta-traslado', $data);
 
         // Guardar en storage
-        $path = "actas/desincorporacion/{$folio}.pdf";
+        $path = "actas/traslado/{$folio}.pdf";
         Storage::disk('public')->put($path, $pdf->output());
 
         // Retornar URL para guardar en movimiento
         return $path;
     }
 
-    public function descargar(Bien $bien, string $motivo, $usuario)
+    public function descargar(Bien $bien, string $motivo, $usuario, $dependenciaAnterior, $dependenciaNueva)
     {
-        $folio = 'DES-' . now()->format('Y') . '-' . str_pad($bien->id, 6, '0', STR_PAD_LEFT);
+        $folio = 'TRAS-' . now()->format('Y') . '-' . str_pad($bien->id, 6, '0', STR_PAD_LEFT);
 
         $data = [
             'bien'        => $bien,
@@ -44,13 +44,13 @@ class ActaDesincorporacionService
             'fecha'       => Carbon::now()->format('d/m/Y'),
             'hora'        => Carbon::now()->format('H:i'),
             'usuario'     => $usuario->nombre_completo ?? $usuario->name ?? auth()->user()?->nombre_completo ?? 'Usuario del sistema',
-            'responsable' => $bien->dependencia?->responsable?->nombre_completo ?? '—',
-            'dependencia' => $bien->dependencia?->nombre ?? '—',
+            'dependencia_anterior' => $dependenciaAnterior,
+            'dependencia_nueva'    => $dependenciaNueva,
             'folio'       => $folio,
         ];
 
-        $pdf = Pdf::loadView('bienes.pdf.acta-desincorporacion', $data);
+        $pdf = Pdf::loadView('bienes.pdf.acta-traslado', $data);
 
-        return $pdf->download('acta-desincorporacion-' . $bien->codigo . '.pdf');
+        return $pdf->download('acta-traslado-' . $bien->codigo . '.pdf');
     }
 }

@@ -3,6 +3,9 @@
 @section('title', 'Editar Bien')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Bienes', 'url' => route('bienes.index')], ['label' => $bien->codigo, 'url' => route('bienes.show', $bien)], ['label' => 'Editar']]" />
+@endpush
     <div class="max-w-4xl mx-auto">
         <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
             {{-- Encabezado idéntico a Create --}}
@@ -28,9 +31,13 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label for="dependencia_id" class="block text-sm font-bold text-gray-700 mb-2">Dependencia</label>
-                            <select name="dependencia_id" id="dependencia_id"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">
+                            <label for="dependencia_id" class="block text-sm font-bold text-gray-700 mb-2">
+                                Dependencia
+                                <span class="text-xs font-normal text-gray-500">(solo editable via Traslado)</span>
+                            </label>
+                            {{-- Campo deshabilitado: el traslado de dependencia solo se hace via el botón "Transferir" --}}
+                            <select name="dependencia_id" id="dependencia_id" disabled
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed">
                                 <option value="">Sin asignar (Almacén Central)</option>
                                 @foreach($dependencias as $dep)
                                     <option value="{{ $dep->id }}" {{ old('dependencia_id', $bien->dependencia_id) == $dep->id ? 'selected' : '' }}>
@@ -38,6 +45,8 @@
                                     </option>
                                 @endforeach
                             </select>
+                            {{-- Hidden input para preservar el valor al enviar --}}
+                            <input type="hidden" name="dependencia_id" value="{{ $bien->dependencia_id }}">
                         </div>
 
                         <div>
@@ -243,7 +252,7 @@
 
         const valoresExistentes = @json($bien);
         const oldValues = @json(old());
-        
+
         tipoBienSelect.addEventListener('change', function () {
             const tipo = this.value;
             container.innerHTML = '';
@@ -316,7 +325,7 @@
                 const descripcion = document.getElementById('descripcion').value.trim();
                 const tipo = tipoBienSelect.value;
                 const estado = document.getElementById('estado')?.value || '';
-                
+
                 // Validación de Fecha (Mismo cambio solicitado)
                 const fechaInput = document.getElementById('fecha_registro');
                 const fechaSeleccionada = new Date(fechaInput.value);

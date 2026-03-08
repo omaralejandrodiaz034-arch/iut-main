@@ -118,7 +118,7 @@
 
 @once
     {{-- Modal para confirmación/el mensaje de no permiso (incluido una sola vez por página) con estilos y animación Tailwind --}}
-    <div id="delete-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50 transition-opacity duration-200 ease-out">
+    <div id="delete-modal-backdrop" class="modal-overlay hidden" aria-hidden="true">
         <div id="delete-modal" class="bg-white rounded-lg shadow-2xl max-w-xl w-full mx-4 p-6 transform transition-all duration-200 ease-out scale-95 opacity-0">
             <div class="flex items-start space-x-4">
                 <div id="delete-modal-icon" class="flex-shrink-0">
@@ -156,21 +156,17 @@
             let currentForm = null;
 
             function showBackdrop(){
-                // make backdrop a flex container so the modal is centered
+                backdrop.setAttribute('aria-hidden', 'false');
                 backdrop.classList.remove('hidden');
                 backdrop.classList.add('flex');
-                // animate opacity
-                requestAnimationFrame(()=>{
-                    backdrop.classList.remove('opacity-0');
-                    backdrop.classList.add('opacity-100');
-                });
+                document.body.classList.add('overflow-hidden');
             }
 
             function hideBackdrop(){
-                backdrop.classList.remove('opacity-100');
-                backdrop.classList.add('opacity-0');
-                // after transition: hide and remove flex to restore layout
-                setTimeout(()=>{ backdrop.classList.remove('flex'); backdrop.classList.add('hidden'); }, 200);
+                backdrop.setAttribute('aria-hidden', 'true');
+                backdrop.classList.remove('flex');
+                backdrop.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
             }
 
             function openModal({title, message, showConfirm = true, denied = false}){

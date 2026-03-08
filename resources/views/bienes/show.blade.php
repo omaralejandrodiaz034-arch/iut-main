@@ -3,6 +3,9 @@
 @section('title', 'Detalles del Bien')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Bienes', 'url' => route('bienes.index')], ['label' => $bien->codigo]]" />
+@endpush
 @php
 use Illuminate\Support\Str;
 @endphp
@@ -38,6 +41,14 @@ use Illuminate\Support\Str;
                 Bien: {{ $bien->codigo }} — {{ Str::limit($bien->descripcion, 80) }}
             </h1>
             <div class="flex flex-wrap gap-2 md:justify-end">
+                {{-- Botón Transferir --}}
+                @if($bien->estado?->value === 'ACTIVO')
+                <a href="{{ route('bienes.transferir.form', $bien) }}"
+                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1">
+                    <x-heroicon-o-arrows-right-left class="w-4 h-4 mr-1.5" />
+                    Transferir
+                </a>
+                @endif
                 @include('components.show-actions', ['resource' => 'bienes', 'model' => $bien])
             </div>
         </div>

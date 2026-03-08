@@ -1,4 +1,4 @@
-<nav class="bg-[#510817] text-white shadow-lg border-b border-[#6D1426]">
+<nav class="bg-[#510817] dark:bg-slate-950 text-white shadow-lg border-b border-[#6D1426]">
     <div class="max-w-7xl mx-auto px-6">
         <div class="flex items-center h-16">
 
@@ -11,8 +11,32 @@
             </div>
 
             @auth
+            {{-- Búsqueda Global AJAX --}}
+            <div class="relative hidden md:block mx-4 flex-1 max-w-xs" id="global-search-wrap">
+                <input id="global-search-input" type="text" placeholder="Buscar bienes, usuarios…"
+                    autocomplete="off"
+                    class="w-full pl-9 pr-3 py-1.5 rounded-lg bg-slate-700/60 text-white placeholder-slate-400 text-sm border border-slate-600 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 transition">
+                <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+                </svg>
+                <div id="global-search-results"
+                    class="absolute top-full mt-1 left-0 right-0 bg-white shadow-xl rounded-xl border border-gray-100 z-50 hidden overflow-hidden max-h-80 overflow-y-auto">
+                </div>
+            </div>
+
             {{-- Enlaces de Navegación --}}
-            <div class="hidden md:flex flex-1 justify-center items-center space-x-2 text-sm font-medium">
+            <div class="hidden md:flex items-center space-x-1 text-sm font-medium">
+
+                {{-- Dashboard --}}
+                <a href="{{ route('dashboard') }}"
+                   class="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-slate-800 hover:text-indigo-300"
+                   @class(['bg-slate-800 text-indigo-400 shadow-inner' => request()->routeIs('dashboard')])>
+                    <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                    </svg>
+                    <span>Panel</span>
+                </a>
 
                 <a href="{{ url('/') }}"
                    class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-slate-800 hover:text-indigo-300"
@@ -89,25 +113,63 @@
             @endauth
 
             {{-- Sección de Usuario / Acciones --}}
-            <div class="flex items-center gap-4 whitespace-nowrap ml-auto">
+            <div class="flex items-center gap-2 whitespace-nowrap ml-auto">
+
+                {{-- Dark Mode Toggle (visible for all) --}}
+                <button id="dark-mode-btn" title="Modo oscuro"
+                    class="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition">
+                    <svg id="dark-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+
                 @auth
-                    <div class="hidden sm:flex items-center gap-2 text-sm font-medium border-r border-slate-700 pr-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 14a4 4 0 10-8 0v2a4 4 0 004 4h0a4 4 0 004-4v-2zM12 7a3 3 0 110-6 3 3 0 010 6z"/>
-                        </svg>
-                        <span class="text-slate-300 max-w-[200px] truncate">
-                            {{ auth()->user()->nombre_completo ?? auth()->user()->nombre }}
-                        </span>
+                    {{-- Menú perfil/auditoría --}}
+                    <div class="relative" id="user-menu-wrap">
+                        <button id="user-menu-btn"
+                            class="hidden sm:flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg hover:bg-slate-700 transition border border-slate-600">
+                            <svg class="h-4 w-4 text-indigo-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 14a4 4 0 10-8 0v2a4 4 0 004 4h0a4 4 0 004-4v-2zM12 7a3 3 0 110-6 3 3 0 010 6z"/>
+                            </svg>
+                            <span class="text-slate-300 max-w-[140px] truncate">
+                                {{ auth()->user()->nombre_completo ?? auth()->user()->nombre }}
+                            </span>
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="user-menu-dropdown"
+                            class="hidden absolute right-0 top-full mt-2 w-48 dark:bg-slate-800 rounded-xl shadow-xl border dark:border-slate-700 z-50 overflow-hidden py-1">
+                            <a href="{{ route('perfil.show') }}"
+                                class="flex items-center gap-2 px-4 py-2.5 text-sm dark:text-gray-200 dark:hover:bg-slate-700 text-gray-700 hover:bg-gray-50 transition">
+                                👤 Mi Perfil
+                            </a>
+                            <a href="{{ route('dashboard') }}"
+                                class="flex items-center gap-2 px-4 py-2.5 text-sm dark:text-gray-200 dark:hover:bg-slate-700 text-gray-700 hover:bg-gray-50 transition">
+                                📊 Dashboard
+                            </a>
+                            @if(auth()->user()->isAdmin())
+                            <a href="{{ route('auditoria.index') }}"
+                                class="flex items-center gap-2 px-4 py-2.5 text-sm dark:text-gray-200 dark:hover:bg-slate-700 text-gray-700 hover:bg-gray-50 transition">
+                                🔍 Auditoría
+                            </a>
+                            @endif
+                            <hr class="my-1 dark:border-slate-700 border-gray-100">
+                            <form method="POST" action="{{ route('logout') }}" class="m-0">
+                                @csrf
+                                <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm dark:text-red-400 text-red-600 dark:hover:bg-slate-700 hover:bg-red-50 transition">
+                                    🚪 Cerrar Sesión
+                                </button>
+                            </form>
+                        </div>
                     </div>
 
-                    <form method="POST" action="{{ route('logout') }}" class="m-0">
+                    {{-- Fallback logout para móvil --}}
+                    <form method="POST" action="{{ route('logout') }}" class="sm:hidden m-0">
                         @csrf
                         <button type="submit"
-                            class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:ring-offset-slate-900">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 9a2 2 0 01-2-2V5a2 2 0 012-2h6a2 2 0 012 2v14a2 2 0 01-2 2h-6z"/>
-                            </svg>
-                            <span class="hidden sm:inline">Cerrar sesión</span>
+                            class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+                            Salir
                         </button>
                     </form>
                 @else

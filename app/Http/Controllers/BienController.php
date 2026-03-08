@@ -386,31 +386,30 @@ class BienController extends Controller
 {
     $validated = $request->validate([
         'motivo' => 'required|string|min:10|max:2000',
-        // ya no: 'acta_desincorporacion' => ...
     ]);
 
-    // Ya no guardamos archivo subido
-    // $rutaActaFisica = ... → eliminar esta línea
-
-    $bien->estado = \App\Enums\EstadoBien::DESINCORPORADO; // o el valor que uses
+    $bien->estado = \App\Enums\EstadoBien::DESINCORPORADO;
     $bien->save();
 
-    // Registrar movimiento (sin archivo)
-    $bien->movimientos()->create([
-        'tipo'          => 'DESINCORPORACION',
-        'observaciones' => $request->motivo,
-        'user_id'       => auth()->id(),
-        // 'archivo'       => $rutaActaFisica,  ← eliminar o poner null
-    ]);
-
-    // Generar y descargar el acta automática
+    // Generar y guardar el acta de desincorporación
     $service = new \App\Services\ActaDesincorporacionService();
-
-    return $service->generar(
+    $actaPath = $service->generar(
         bien: $bien,
         motivo: $request->motivo,
         usuario: auth()->user()
     );
+
+    // Registrar movimiento con la ruta del acta
+    \App\Models\Movimiento::create([
+        'bien_id'     => $bien->id,
+        'usuario_id'  => auth()->id(),
+        'tipo'        => 'DESINCORPORACION',
+        'observaciones' => $request->motivo,
+        'fecha'       => now(),
+        'acta_path'   => $actaPath,
+    ]);
+
+    return redirect()->route('bienes.index')->with('success', 'Desincorporación registrada exitosamente. El acta ha sido generada y guardada.');
 }
 
     /**
@@ -535,28 +534,205 @@ class BienController extends Controller
             'search' => ['nullable', 'string', 'max:255'],
             'dependencias' => ['nullable', 'array'],
             'estado' => ['nullable', 'array'],
+            'tipo_bien' => ['nullable', 'string'],
+            'organismo_id' => ['nullable', 'integer'],
+            'unidad_id' => ['nullable', 'integer'],
             'fecha_desde' => ['nullable', 'date'],
             'fecha_hasta' => ['nullable', 'date'],
         ]);
 
         $query = Bien::with(['dependencia.responsable', 'dependencia.unidadAdministradora.organismo']);
 
+        // Aplicar filtros
         if (!empty($validated['search']))
             $query->search($validated['search']);
-        if (!empty($validated['estado']))
-            $query->whereIn('estado', $validated['estado']);
-        if (!empty($validated['dependencias']))
-            $query->whereIn('dependencia_id', $validated['dependencias']);
+        if (!empty($validated['estado'])) {
+            $estados = is_array($validated['estado']) ? $validated['estado'] : [$validated['estado']];
+            $query->whereIn('estado', $estados);
+        }
+        if (!empty($validated['dependencias'])) {
+            $deps = is_array($validated['dependencias']) ? $validated['dependencias'] : [$validated['dependencias']];
+            $query->whereIn('dependencia_id', $deps);
+        }
+        if (!empty($validated['tipo_bien']))
+            $query->where('tipo_bien', $validated['tipo_bien']);
+        if (!empty($validated['organismo_id'])) {
+            $query->whereHas('dependencia.unidadAdministradora', function($q) use ($validated) {
+                $q->where('organismo_id', $validated['organismo_id']);
+            });
+        }
+        if (!empty($validated['unidad_id'])) {
+            $query->whereHas('dependencia', function($q) use ($validated) {
+                $q->where('unidad_administradora_id', $validated['unidad_id']);
+            });
+        }
+        if (!empty($validated['fecha_desde']))
+            $query->whereDate('fecha_registro', '>=', $validated['fecha_desde']);
+        if (!empty($validated['fecha_hasta']))
+            $query->whereDate('fecha_registro', '<=', $validated['fecha_hasta']);
 
         $bienes = $query->get();
         $reporteService = new \App\Services\FpdfReportService();
 
-        return $reporteService->downloadBienesListado(
-            'reporte_bienes_' . now()->format('dmY_His') . '.pdf',
-            'REPORTE DE BIENES E INVENTARIO',
-            'Listado filtrado de bienes institucionales',
-            now()->format('d/m/Y H:i'),
-            $bienes
+        // Determinar el tipo de reporte según el filtro aplicado
+        $tipoReporte = $this->determinarTipoReporte($validated);
+        $titulo = 'REPORTE DE BIENES E INVENTARIO';
+
+        switch ($tipoReporte) {
+            case 'dependencia':
+                $titulo = 'REPORTE DE BIENES POR DEPENDENCIA';
+                return $reporteService->generarPorDependencia(
+                    'reporte_bienes_por_dependencia_' . now()->format('dmY_His') . '.pdf',
+                    $titulo,
+                    'Listado de bienes agrupados por dependencia',
+                    now()->format('d/m/Y H:i'),
+                    $bienes
+                );
+            case 'unidad':
+                $titulo = 'REPORTE DE BIENES POR UNIDAD ADMINISTRADORA';
+                return $reporteService->generarPorUnidad(
+                    'reporte_bienes_por_unidad_' . now()->format('dmY_His') . '.pdf',
+                    $titulo,
+                    'Listado de bienes agrupados por unidad administradora',
+                    now()->format('d/m/Y H:i'),
+                    $bienes
+                );
+            case 'organismo':
+                $titulo = 'REPORTE DE BIENES POR ORGANISMO';
+                return $reporteService->generarPorOrganismo(
+                    'reporte_bienes_por_organismo_' . now()->format('dmY_His') . '.pdf',
+                    $titulo,
+                    'Listado de bienes agrupados por organismo',
+                    now()->format('d/m/Y H:i'),
+                    $bienes
+                );
+            case 'tipo_bien':
+                $titulo = 'REPORTE DE BIENES POR TIPO';
+                return $reporteService->generarPorTipo(
+                    'reporte_bienes_por_tipo_' . now()->format('dmY_His') . '.pdf',
+                    $titulo,
+                    'Listado de bienes agrupados por tipo de bien',
+                    now()->format('d/m/Y H:i'),
+                    $bienes
+                );
+            case 'estado':
+                $titulo = 'REPORTE DE BIENES POR ESTADO';
+                return $reporteService->generarPorEstado(
+                    'reporte_bienes_por_estado_' . now()->format('dmY_His') . '.pdf',
+                    $titulo,
+                    'Listado de bienes agrupados por estado',
+                    now()->format('d/m/Y H:i'),
+                    $bienes
+                );
+            case 'fecha':
+                $titulo = 'REPORTE DE BIENES POR RANGO DE FECHA';
+                return $reporteService->generarPorFecha(
+                    'reporte_bienes_por_fecha_' . now()->format('dmY_His') . '.pdf',
+                    $titulo,
+                    'Listado de bienes en rango de fecha: ' .
+                        ($validated['fecha_desde'] ?? 'Inicio') . ' - ' . ($validated['fecha_hasta'] ?? 'Fin'),
+                    now()->format('d/m/Y H:i'),
+                    $bienes
+                );
+            default:
+                return $reporteService->downloadBienesListado(
+                    'reporte_bienes_' . now()->format('dmY_His') . '.pdf',
+                    $titulo,
+                    'Listado general de bienes institucionales',
+                    now()->format('d/m/Y H:i'),
+                    $bienes
+                );
+        }
+    }
+
+    /**
+     * Determina el tipo de reporte según el filtro aplicado
+     */
+    private function determinarTipoReporte(array $filtros): string
+    {
+        // Prioridad: dependencia > unidad > organismo > tipo_bien > estado > fecha
+        if (!empty($filtros['dependencias'])) {
+            $deps = is_array($filtros['dependencias']) ? $filtros['dependencias'] : [$filtros['dependencias']];
+            if (count($deps) > 0) {
+                return 'dependencia';
+            }
+        }
+        if (!empty($filtros['unidad_id'])) {
+            return 'unidad';
+        }
+        if (!empty($filtros['organismo_id'])) {
+            return 'organismo';
+        }
+        if (!empty($filtros['tipo_bien'])) {
+            return 'tipo_bien';
+        }
+        if (!empty($filtros['estado'])) {
+            $estados = is_array($filtros['estado']) ? $filtros['estado'] : [$filtros['estado']];
+            if (count($estados) > 0) {
+                return 'estado';
+            }
+        }
+        if (!empty($filtros['fecha_desde']) || !empty($filtros['fecha_hasta'])) {
+            return 'fecha';
+        }
+        return 'general';
+    }
+
+    /**
+     * Mostrar formulario de transferencia de bien.
+     */
+    public function showTransferirForm(Bien $bien)
+    {
+        $bien->load('dependencia.unidadAdministradora.organismo');
+        $dependencias = Dependencia::with('unidadAdministradora.organismo')
+            ->where('id', '!=', $bien->dependencia_id)
+            ->orderBy('nombre')
+            ->get();
+
+        return view('bienes.transferir', compact('bien', 'dependencias'));
+    }
+
+    /**
+     * Ejecutar la transferencia del bien a otra dependencia.
+     */
+    public function transferir(\Illuminate\Http\Request $request, Bien $bien)
+    {
+        $request->validate([
+            'dependencia_id' => ['required', 'exists:dependencias,id', 'different:' . $bien->dependencia_id],
+            'motivo'         => ['required', 'string', 'max:500'],
+        ], [
+            'dependencia_id.required'  => 'Debe seleccionar la dependencia de destino.',
+            'dependencia_id.different' => 'La dependencia de destino debe ser diferente a la actual.',
+            'motivo.required'          => 'El motivo de la transferencia es requerido.',
+        ]);
+
+        $dependenciaAnteriorId = $bien->dependencia_id;
+        $dependenciaAnteriorNombre = optional($bien->dependencia)->nombre;
+
+        $bien->update(['dependencia_id' => $request->dependencia_id]);
+
+        $destino = Dependencia::find($request->dependencia_id);
+
+        // Generar y guardar el acta de traslado
+        $service = new \App\Services\ActaTrasladoService();
+        $actaPath = $service->generar(
+            bien: $bien,
+            motivo: $request->motivo,
+            usuario: auth()->user(),
+            dependenciaAnterior: $dependenciaAnteriorNombre,
+            dependenciaNueva: $destino->nombre
         );
+
+        // Registrar movimiento con la ruta del acta
+        \App\Models\Movimiento::create([
+            'bien_id'    => $bien->id,
+            'usuario_id' => auth()->id(),
+            'tipo'       => 'TRASLADO',
+            'descripcion'=> "Traslado desde [{$dependenciaAnteriorNombre}] a [{$destino->nombre}]. Motivo: {$request->motivo}",
+            'fecha'      => now(),
+            'acta_path'  => $actaPath,
+        ]);
+
+        return redirect()->route('bienes.index')->with('success', 'Traslado registrado exitosamente. El acta ha sido generada y guardada.');
     }
 }

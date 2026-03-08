@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolSeeder::class,
             TipoResponsableSeeder::class,
+            DatosDemoSeeder::class,
         ]);
     }
 }

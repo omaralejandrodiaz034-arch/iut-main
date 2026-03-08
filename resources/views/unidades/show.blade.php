@@ -3,6 +3,9 @@
 @section('title', 'Detalles de la Unidad Administradora')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Unidades Administradoras', 'url' => route('unidades.index')], ['label' => $unidad->nombre]]" />
+@endpush
 @php
 use Illuminate\Support\Str;
 @endphp
