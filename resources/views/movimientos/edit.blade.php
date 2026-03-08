@@ -3,6 +3,9 @@
 @section('title', 'Editar Movimiento')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Movimientos', 'url' => route('movimientos.index')], ['label' => 'Movimiento #'.$movimiento->id, 'url' => route('movimientos.show', $movimiento)], ['label' => 'Editar']]" />
+@endpush
 <div class="max-w-2xl mx-auto">
     <div class="bg-white shadow rounded-lg p-6">
         <h1 class="text-2xl font-bold mb-4">Editar Movimiento #{{ $movimiento->id }}</h1>

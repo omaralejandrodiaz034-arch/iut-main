@@ -3,6 +3,9 @@
 @section('title', 'Crear Usuario')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Usuarios', 'url' => route('usuarios.index')], ['label' => 'Nuevo Usuario']]" />
+@endpush
     <div class="max-w-2xl mx-auto">
         <div class="bg-white shadow rounded-lg p-6">
             <h1 class="text-2xl font-bold text-gray-800 mb-6">Crear Nuevo Usuario</h1>

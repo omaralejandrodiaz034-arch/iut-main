@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('bienes_desincorporados', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('bien_id')->constrained('bienes')->cascadeOnDelete();
+            $table->foreignId('bien_id')->constrained('bienes')->cascadeOnDelete()->cascadeOnUpdate();
             $table->text('motivo_desincorporacion');
             $table->string('acta_desincorporacion');
             $table->timestamps();
+            $table->unique('bien_id');
         });
     }
 

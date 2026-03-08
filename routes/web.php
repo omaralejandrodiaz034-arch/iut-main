@@ -1,8 +1,12 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AuditoriaController;
 use App\Http\Controllers\BienController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DependenciaController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\HistorialMovimientoController;
 use App\Http\Controllers\MovimientoController;
 use App\Http\Controllers\OrganismoController;
@@ -12,108 +16,134 @@ use App\Http\Controllers\UnidadAdministradoraController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Usuario;
 use App\Http\Controllers\Api\ResponsableController as ApiResponsableController;
 use App\Http\Controllers\Api\UsuarioImportController as ApiUsuarioImportController;
 
 /*
 |--------------------------------------------------------------------------
-| Rutas Públicas (Visibles sin Login)
+| Rutas Públicas (sin autenticación)
 |--------------------------------------------------------------------------
 */
-
-// La movemos aquí para que cargue siempre, pero con 'prevent-back' para el historial
 Route::get('/', function () {
     return view('welcome');
 })->name('welcome')->middleware('prevent-back');
 
-Route::get('/dashboard', function () {
-    if (Auth::check()) {
-        return redirect()->route('welcome');
-    }
-    return redirect()->route('login');
-})->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->name('dashboard')
+    ->middleware(['auth', 'prevent-back']);
 
 /*
 |--------------------------------------------------------------------------
-| Rutas para Invitados (Solo si NO estás logueado)
+| Rutas de autenticación (solo invitados)
 |--------------------------------------------------------------------------
 */
 Route::middleware('guest')->group(function () {
-    // Login tradicional
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
 
-    // ESTAS RUTAS DEBEN ESTAR AQUÍ (Fuera del middleware auth)
-    // Porque el usuario del API aún no está autenticado localmente
-
-    // ... otras rutas como login ...
-
-    // Esta ruta resuelve el error "auth.set_password.form not defined"
     Route::get('/configurar-password', [AuthController::class, 'showSetPasswordForm'])
         ->name('auth.set_password.form');
 
-    // Esta ruta resuelve el error "auth.set_password.store not defined"
     Route::post('/configurar-password', [AuthController::class, 'setPassword'])
         ->name('auth.set_password.store');
 });
 
-
 /*
 |--------------------------------------------------------------------------
-| Rutas Protegidas (Solo con Login)
+| Rutas protegidas (requieren autenticación)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () {
-    // Elimina las rutas de configurar-password de aquí adentro
+
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // ... el resto de tus rutas (bienes, dependencias, etc.)
+    // ────────────────────────────────────────────────
+    // PERFIL
+    // ────────────────────────────────────────────────
+    Route::get('/perfil', [ProfileController::class, 'show'])->name('perfil.show');
+    Route::patch('/perfil', [ProfileController::class, 'updateProfile'])->name('perfil.update');
+    Route::patch('/perfil/password', [ProfileController::class, 'updatePassword'])->name('perfil.password');
 
-    // --- BIENES ---
-    // 1. Rutas específicas (DEBEN ir primero para evitar conflictos)
-    Route::get('/bienes/reporte', [BienController::class, 'generarReporte'])->name('bienes.reporte');
-    Route::get('/bienes/galeria-completa', [BienController::class, 'galeriaCompleta'])->name('bienes.galeria');
-    Route::get('bienes/{bien}/pdf', [BienController::class, 'exportPdf'])->name('bienes.pdf');
+    // ────────────────────────────────────────────────
+    // BÚSQUEDA GLOBAL
+    // ────────────────────────────────────────────────
+    Route::get('/buscar', [SearchController::class, 'global'])->name('buscar.global');
 
-    // Ruta para desincorporar un bien
-    Route::get('/bienes/{bien}/desincorporar', [BienController::class, 'showDesincorporarForm'])->name('bienes.desincorporar.form');
-    Route::post('/bienes/{bien}/desincorporar', [BienController::class, 'desincorporar'])->name('bienes.desincorporar');
+    // ────────────────────────────────────────────────
+    // AUDITORÍA (solo admin)
+    // ────────────────────────────────────────────────
+    Route::get('/auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index');
 
-    // 2. Ruta de recurso (Genera las rutas automáticas como bienes.index, bienes.show, etc.)
+    // ────────────────────────────────────────────────
+    // BIENES
+    // ────────────────────────────────────────────────
+    Route::prefix('bienes')->name('bienes.')->group(function () {
+        // Rutas específicas (deben ir antes del resource para que tengan prioridad)
+        Route::get('reporte',        [BienController::class, 'generarReporte'])     ->name('reporte');
+        Route::get('galeria-completa', [BienController::class, 'galeriaCompleta'])->name('galeria');
+        Route::get('{bien}/pdf',     [BienController::class, 'exportPdf'])         ->name('pdf');
+
+        // Desincorporación (GET → formulario, POST → procesar y descargar acta)
+        Route::get('{bien}/desincorporar',    [BienController::class, 'showDesincorporarForm'])->name('desincorporar.form');
+        Route::post('{bien}/desincorporar',   [BienController::class, 'desincorporar'])       ->name('desincorporar');
+
+        // Transferencia entre dependencias
+        Route::get('{bien}/transferir',  [BienController::class, 'showTransferirForm'])->name('transferir.form');
+        Route::patch('{bien}/transferir',[BienController::class, 'transferir'])        ->name('transferir');
+    });
+
+    // Resource completo para bienes (índex, create, store, show, edit, update, destroy)
     Route::resource('bienes', BienController::class)->parameters(['bienes' => 'bien']);
-    // --- DEPENDENCIAS ---
-    Route::resource('dependencias', DependenciaController::class)->parameters(['dependencias' => 'dependencia']);
-    Route::get('dependencias/{dependencia}/pdf', [DependenciaController::class, 'exportPdf'])->name('dependencias.pdf');
 
-    // --- MOVIMIENTOS ---
-    Route::resource('historial-movimientos', HistorialMovimientoController::class);
-    Route::resource('movimientos', MovimientoController::class);
-    Route::get('movimientos/{movimiento}/pdf', [MovimientoController::class, 'pdf'])->name('movimientos.pdf');
-    Route::get('movimientos/eliminados', [MovimientoController::class, 'eliminados'])->name('movimientos.eliminados');
-    Route::post('movimientos/eliminados/{eliminado}/restore', [MovimientoController::class, 'restoreEliminado'])->name('movimientos.eliminados.restore');
-    Route::patch('movimientos/reintegrar/{bien}', [MovimientoController::class, 'reintegrar'])->name('movimientos.reintegrar');
+    // ────────────────────────────────────────────────
+    // Otras entidades con sus rutas PDF
+    // ────────────────────────────────────────────────
+    Route::resource('dependencias', DependenciaController::class)
+        ->parameters(['dependencias' => 'dependencia']);
+    Route::get('dependencias/{dependencia}/pdf', [DependenciaController::class, 'exportPdf'])
+        ->name('dependencias.pdf');
 
-    // --- RESPONSABLES ---
-    Route::resource('responsables', ResponsableController::class);
-    Route::post('responsables/buscar', [ApiResponsableController::class, 'buscar'])->name('responsables.buscar');
-
-    // --- ORGANISMOS ---
     Route::resource('organismos', OrganismoController::class);
-    Route::get('organismos/{organismo}/pdf', [OrganismoController::class, 'exportPdf'])->name('organismos.pdf');
+    Route::get('organismos/{organismo}/pdf', [OrganismoController::class, 'exportPdf'])
+        ->name('organismos.pdf');
 
-    // --- REPORTES Y GRÁFICAS ---
+    Route::resource('unidades', UnidadAdministradoraController::class)
+        ->parameters(['unidades' => 'unidadAdministradora']);
+    Route::get('unidades/{unidadAdministradora}/pdf', [UnidadAdministradoraController::class, 'exportPdf'])
+        ->name('unidades.pdf');
+
+    Route::resource('responsables', ResponsableController::class);
+    Route::post('responsables/buscar', [ApiResponsableController::class, 'buscar'])
+        ->name('responsables.buscar');
+
+    Route::resource('usuarios', UsuarioController::class)->parameters(['usuarios' => 'usuario']);
+    Route::get('usuarios/{usuario}/pdf', [UsuarioController::class, 'exportPdf'])
+        ->name('usuarios.pdf');
+    Route::post('usuarios/importar', [ApiUsuarioImportController::class, 'importarPorCedula'])
+        ->name('usuarios.importar');
+
+    // ────────────────────────────────────────────────
+    // Movimientos e historial
+    // ────────────────────────────────────────────────
+    Route::resource('movimientos', MovimientoController::class);
+    Route::get('movimientos/{movimiento}/pdf', [MovimientoController::class, 'pdf'])
+        ->name('movimientos.pdf');
+
+    Route::get('movimientos/eliminados', [MovimientoController::class, 'eliminados'])
+        ->name('movimientos.eliminados');
+    Route::post('movimientos/eliminados/{eliminado}/restore', [MovimientoController::class, 'restoreEliminado'])
+        ->name('movimientos.eliminados.restore');
+
+    Route::patch('movimientos/reintegrar/{bien}', [MovimientoController::class, 'reintegrar'])
+        ->name('movimientos.reintegrar');
+
+    Route::resource('historial-movimientos', HistorialMovimientoController::class);
+
+    // ────────────────────────────────────────────────
+    // Reportes y gráficas
+    // ────────────────────────────────────────────────
     Route::resource('reportes', ReporteController::class);
     Route::get('reportes/pdf/{tipo}', [ReporteController::class, 'generarPdf'])->name('reportes.pdf');
     Route::get('graficas', [ReporteController::class, 'graficas'])->name('graficas');
-
-    // --- UNIDADES ADMINISTRADORAS ---
-    Route::resource('unidades', UnidadAdministradoraController::class)->parameters(['unidades' => 'unidadAdministradora']);
-    Route::get('unidades/{unidadAdministradora}/pdf', [UnidadAdministradoraController::class, 'exportPdf'])->name('unidades.pdf');
-
-    // --- USUARIOS ---
-    Route::resource('usuarios', UsuarioController::class)->parameters(['usuarios' => 'usuario']);
-    Route::get('usuarios/{usuario}/pdf', [UsuarioController::class, 'exportPdf'])->name('usuarios.pdf');
-    // Importar usuario desde API (por cédula)
-    Route::post('usuarios/importar', [ApiUsuarioImportController::class, 'importarPorCedula'])->name('usuarios.importar');
+    Route::get('graficas/pdf', [ReporteController::class, 'graficasPdf'])->name('graficas.pdf');
 });

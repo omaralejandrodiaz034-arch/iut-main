@@ -3,202 +3,273 @@
 @section('title', 'Usuarios')
 
 @section('content')
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold text-gray-800">👥 Usuarios</h1>
-    <a href="{{ route('usuarios.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-        + Nuevo Usuario
-    </a>
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Usuarios']]" />
+@endpush
+<div class="space-y-6 md:space-y-8">
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-3">
+            <span class="text-4xl drop-shadow-sm">👥</span>
+            Usuarios del Sistema
+        </h1>
+
+        <a href="{{ route('usuarios.create') }}"
+           class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl shadow-sm transition-all hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Nuevo Usuario
+        </a>
+    </div>
+
+    <!-- Mensaje de éxito (si existiera) -->
+    @if(session('success'))
+    <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl shadow-sm">
+        {{ session('success') }}
+    </div>
+    @endif
+
+    <!-- Panel de filtros avanzados -->
+    <div class="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden">
+        <div class="p-6 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-800">Filtros de búsqueda</h2>
+        </div>
+
+        <form action="{{ route('usuarios.index') }}" method="GET" id="filterForm" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <!-- Búsqueda general -->
+            <div>
+                <label for="buscar" class="block text-sm font-medium text-gray-700 mb-1.5">Búsqueda general</label>
+                <input type="text" name="buscar" id="buscar"
+                       value="{{ request('buscar') ?? '' }}"
+                       placeholder="Nombre, apellido, cédula..."
+                       class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200/50 transition-all filtro-auto">
+            </div>
+
+            <!-- Cédula -->
+            <div>
+                <label for="cedula" class="block text-sm font-medium text-gray-700 mb-1.5">Cédula</label>
+                <input type="text" name="cedula" id="cedula"
+                       value="{{ request('cedula') ?? '' }}"
+                       placeholder="V-12.345.678 o E-..."
+                       class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200/50 transition-all font-mono filtro-auto">
+                <p id="error-cedula" class="mt-1.5 text-xs text-red-600 font-medium hidden">
+                    Solo números y formato V-/E- permitido
+                </p>
+            </div>
+
+            <!-- Correo -->
+            <div>
+                <label for="correo" class="block text-sm font-medium text-gray-700 mb-1.5">Correo electrónico</label>
+                <input type="email" name="correo" id="correo" maxlength="40"
+                       value="{{ request('correo') ?? '' }}"
+                       placeholder="correo@ejemplo.com"
+                       class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200/50 transition-all filtro-auto">
+                <p id="error-correo" class="mt-1.5 text-xs text-red-600 font-medium hidden">
+                    Formato de correo inválido
+                </p>
+            </div>
+
+            <!-- Rol -->
+            <div>
+                <label for="rol_id" class="block text-sm font-medium text-gray-700 mb-1.5">Rol</label>
+                <select name="rol_id" id="rol_id"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200/50 transition-all filtro-auto">
+                    <option value="">Todos los roles</option>
+                    @foreach($roles as $rol)
+                        <option value="{{ $rol->id }}" {{ request('rol_id') == $rol->id ? 'selected' : '' }}>
+                            {{ $rol->nombre }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Estado -->
+            <div class="md:col-span-2 lg:col-span-1">
+                <label for="activo" class="block text-sm font-medium text-gray-700 mb-1.5">Estado</label>
+                <select name="activo" id="activo"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-2.5 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200/50 transition-all filtro-auto">
+                    <option value="">Todos</option>
+                    <option value="1" {{ request('activo') === '1' ? 'selected' : '' }}>Activos</option>
+                    <option value="0" {{ request('activo') === '0' ? 'selected' : '' }}>Inactivos</option>
+                </select>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="md:col-span-2 lg:col-span-4 flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
+                <button type="submit"
+                        class="px-8 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2">
+                    Buscar
+                </button>
+                <a href="{{ route('usuarios.index') }}"
+                   class="px-8 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-center">
+                    Limpiar filtros
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de usuarios -->
+    <div class="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Cédula</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nombre y Apellido</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Correo</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rol</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 bg-white">
+                    @forelse($usuarios as $usuario)
+                        <tr class="hover:bg-indigo-50/30 transition-colors duration-150">
+                            <td class="px-6 py-5 text-sm font-mono font-semibold text-indigo-700">
+                                {{ $usuario->cedula }}
+                            </td>
+                            <td class="px-6 py-5 text-sm font-medium text-gray-900">
+                                {{ $usuario->nombre_completo }}
+                            </td>
+                            <td class="px-6 py-5 text-sm text-gray-700 truncate max-w-xs">
+                                {{ $usuario->correo }}
+                            </td>
+                            <td class="px-6 py-5 text-sm text-gray-700">
+                                {{ $usuario->rol?->nombre ?? 'Sin rol' }}
+                            </td>
+                            <td class="px-6 py-5 whitespace-nowrap">
+                                @if($usuario->is_admin)
+                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                                        Administrador
+                                    </span>
+                                @else
+                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                                        Usuario
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-5 whitespace-nowrap">
+                                @if($usuario->activo)
+                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                        Activo
+                                    </span>
+                                @else
+                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-rose-100 text-rose-800 border border-rose-200">
+                                        Inactivo
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-5 text-right whitespace-nowrap space-x-2">
+                                @include('components.action-buttons', [
+                                    'resource' => 'usuarios',
+                                    'model' => $usuario,
+                                    'canDelete' => auth()->user()->canDeleteUser($usuario),
+                                    'confirm' => '¿Estás seguro de eliminar a ' . $usuario->nombre_completo . '?',
+                                    'label' => $usuario->nombre_completo
+                                ])
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="px-6 py-16 text-center text-gray-500 italic text-base">
+                                No se encontraron usuarios con los criterios seleccionados.
+                                <p class="mt-2 text-sm text-gray-400">
+                                    Prueba ajustando los filtros o registra un nuevo usuario.
+                                </p>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Paginación (si la tienes implementada) -->
+    <div class="mt-6 flex justify-center">
+        {{ $usuarios->links('pagination::tailwind') }}
+    </div>
 </div>
+@endsection
 
-{{-- Filtros Avanzados --}}
-<div class="bg-white shadow-md rounded-lg p-6 mb-6">
-    <h2 class="text-lg font-semibold text-gray-800 mb-4">🔍 Filtrar Usuarios</h2>
-    <form action="{{ route('usuarios.index') }}" method="GET" id="filterForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-            <label for="buscar" class="block text-sm font-semibold text-gray-700 mb-2">Búsqueda General</label>
-            <input type="text" name="buscar" id="buscar" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                   placeholder="Nombre, cédula..." value="{{ $validated['buscar'] ?? '' }}">
-        </div>
-        <div>
-            <label for="cedula" class="block text-sm font-semibold text-gray-700 mb-2">Cédula</label>
-            <input type="text" name="cedula" id="cedula"
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                   placeholder="V-25.123.123" value="{{ $validated['cedula'] ?? '' }}">
-            <p id="error-cedula" class="text-red-500 text-[10px] mt-1 hidden font-bold">Solo se permiten números.</p>
-        </div>
-        <div>
-            <label for="correo" class="block text-sm font-semibold text-gray-700 mb-2">Correo</label>
-            <input type="email" name="correo" id="correo"
-                   maxlength="40"
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                   placeholder="correo@ejemplo.com" value="{{ $validated['correo'] ?? '' }}">
-            <p id="error-correo" class="text-red-500 text-[10px] mt-1 hidden font-bold">Formato de correo inválido.</p>
-        </div>
-        <div>
-            <label for="rol_id" class="block text-sm font-semibold text-gray-700 mb-2">Rol</label>
-            <select name="rol_id" id="rol_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Todos los roles</option>
-                @foreach($roles as $rol)
-                    <option value="{{ $rol->id }}" {{ isset($validated['rol_id']) && $validated['rol_id'] == $rol->id ? 'selected' : '' }}>
-                        {{ $rol->nombre }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div>
-            <label for="activo" class="block text-sm font-semibold text-gray-700 mb-2">Estado</label>
-            <select name="activo" id="activo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Todos</option>
-                <option value="1" {{ isset($validated['activo']) && $validated['activo'] === true ? 'selected' : '' }}>Activos</option>
-                <option value="0" {{ isset($validated['activo']) && $validated['activo'] === false ? 'selected' : '' }}>Inactivos</option>
-            </select>
-        </div>
-        <div class="md:col-span-4 flex gap-2">
-            <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
-                🔎 Buscar
-            </button>
-            <a href="{{ route('usuarios.index') }}" class="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400">
-                ✕ Limpiar
-            </a>
-        </div>
-    </form>
-</div>
-
-{{-- Tabla de resultados --}}
-<div class="bg-white shadow rounded-lg overflow-hidden">
-    <table class="w-full">
-        <thead class="bg-gray-50">
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cédula</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre y Apellido</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correo</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-            </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-            @forelse($usuarios as $usuario)
-                <tr class="hover:bg-blue-50/30 transition-colors">
-                    <td class="px-6 py-4 text-sm font-semibold text-blue-600 font-mono">{{ $usuario->cedula }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{ $usuario->nombre_completo }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-700">{{ $usuario->correo }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-700">{{ $usuario->rol->nombre ?? 'N/A' }}</td>
-                    <td class="px-6 py-4 text-sm">
-                        @if($usuario->is_admin)
-                            <span class="px-2.5 py-1 text-xs font-bold text-purple-800 bg-purple-100 rounded-full">Administrador</span>
-                        @else
-                            <span class="px-2.5 py-1 text-xs font-bold text-blue-800 bg-blue-100 rounded-full">Usuario</span>
-                        @endif
-                    </td>
-                    <td class="px-6 py-4 text-sm">
-
-                        @if($usuario->activo)
-                            <span class="px-2.5 py-1 text-xs font-bold text-green-800 bg-green-100 rounded-full">Activo</span>
-                        @else
-                            <span class="px-2.5 py-1 text-xs font-bold text-red-800 bg-red-100 rounded-full">Inactivo</span>
-                        @endif
-                    </td>
-                    <td class="px-6 py-4 text-sm text-right space-x-2">
-                        @include('components.action-buttons', [
-                            'resource' => 'usuarios',
-                            'model' => $usuario,
-                            'canDelete' => auth()->user()->canDeleteUser($usuario),
-                            'confirm' => '¿Estás seguro?',
-                            'label' => $usuario->nombre_completo
-                        ])
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-500 italic">No hay usuarios registrados</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
-
+@push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+// Validación y formateo de cédula (V- o E- + puntos)
+document.addEventListener('DOMContentLoaded', () => {
     const cedulaInput = document.getElementById('cedula');
     const errorCedula = document.getElementById('error-cedula');
     const correoInput = document.getElementById('correo');
     const errorCorreo = document.getElementById('error-correo');
-    const filterForm = document.getElementById('filterForm');
+    const form = document.getElementById('filterForm');
 
-    // 1. Lógica de Cédula (V-00.000.000)
-    cedulaInput.addEventListener('input', function (e) {
-        let cursorPosition = e.target.selectionStart;
-        let value = e.target.value.toUpperCase();
+    if (cedulaInput) {
+        cedulaInput.addEventListener('input', function(e) {
+            let pos = this.selectionStart;
+            let val = this.value.toUpperCase().replace(/[^VE0-9-]/gi, '');
 
-        // Solo permitir V o E al inicio (por si acaso tienes extranjeros)
-        if (value.length > 0 && !value.startsWith('V-') && !value.startsWith('E-')) {
-            value = 'V-' + value.replace(/[^0-9]/g, '');
-        }
-
-        let digits = value.replace(/[^0-9]/g, '').slice(0, 8);
-
-        // Feedback visual de error si mete letras
-        if (/[a-zA-Z]/.test(e.data) && !['V','E'].includes(e.data?.toUpperCase())) {
-            errorCedula.classList.remove('hidden');
-            setTimeout(() => errorCedula.classList.add('hidden'), 2000);
-        }
-
-        // Formateo dinámico según la longitud
-        let formatted = "";
-        if (digits.length > 0) {
-            let prefix = value.startsWith('E-') ? 'E-' : 'V-';
-            formatted = prefix;
-
-            if (digits.length <= 2) {
-                formatted += digits;
-            } else if (digits.length <= 5) {
-                formatted += digits.slice(0, 2) + "." + digits.slice(2);
-            } else {
-                // Maneja tanto 7 como 8 dígitos correctamente
-                let part1 = digits.length === 7 ? digits.slice(0, 1) : digits.slice(0, 2);
-                let part2 = digits.length === 7 ? digits.slice(1, 4) : digits.slice(2, 5);
-                let part3 = digits.length === 7 ? digits.slice(4) : digits.slice(5);
-
-                // Si prefieres mantener el formato fijo de 8 aunque sean 7:
-                formatted += digits.slice(0, 2) + "." + digits.slice(2, 5) + "." + digits.slice(5);
+            // Forzar prefijo V- o E-
+            if (val && !val.match(/^[VE]-/)) {
+                val = 'V-' + val.replace(/[^0-9]/g, '');
             }
-        }
 
-        e.target.value = formatted;
+            let digits = val.replace(/[^0-9]/g, '').slice(0, 8);
+            let formatted = digits ? (val.startsWith('E-') ? 'E-' : 'V-') : '';
 
-        // Devolver el cursor a su sitio para permitir edición interna
-        e.target.setSelectionRange(cursorPosition, cursorPosition);
-    });
+            if (digits.length > 0) {
+                if (digits.length <= 2) {
+                    formatted += digits;
+                } else if (digits.length <= 5) {
+                    formatted += digits.slice(0,2) + '.' + digits.slice(2);
+                } else {
+                    formatted += digits.slice(0,2) + '.' + digits.slice(2,5) + '.' + digits.slice(5);
+                }
+            }
 
-    // 2. Correo: Límite y Validación
-    correoInput.setAttribute('maxlength', '40'); // Aseguramos el límite físico
+            this.value = formatted;
 
-    const validarEmail = () => {
-        const emailValue = correoInput.value.trim();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            // Restaurar posición del cursor
+            let diff = val.length - formatted.length;
+            this.setSelectionRange(pos - diff, pos - diff);
 
-        if (emailValue !== "" && !emailRegex.test(emailValue)) {
-            errorCorreo.classList.remove('hidden');
-            correoInput.classList.add('border-red-500');
-            return false;
-        } else {
-            errorCorreo.classList.add('hidden');
-            correoInput.classList.remove('border-red-500');
-            return true;
-        }
-    };
+            // Feedback de error si intenta letras inválidas
+            if (e.inputType === 'insertText' && /[a-zA-Z]/.test(e.data) && !['V','E','-'].includes(e.data.toUpperCase())) {
+                if (errorCedula) {
+                    errorCedula.classList.remove('hidden');
+                    setTimeout(() => errorCedula.classList.add('hidden'), 2200);
+                }
+            }
+        });
+    }
 
-    correoInput.addEventListener('blur', validarEmail);
+    if (correoInput) {
+        const validarCorreo = () => {
+            const val = correoInput.value.trim();
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    // 3. Prevenir envío
-    filterForm.addEventListener('submit', function (e) {
-        if (!validarEmail()) {
-            e.preventDefault();
-            correoInput.focus();
-        }
-    });
+            if (val && !regex.test(val)) {
+                errorCorreo?.classList.remove('hidden');
+                correoInput.classList.add('border-red-500', 'focus:border-red-500');
+            } else {
+                errorCorreo?.classList.add('hidden');
+                correoInput.classList.remove('border-red-500');
+            }
+        };
+
+        correoInput.addEventListener('input', validarCorreo);
+        correoInput.addEventListener('blur', validarCorreo);
+    }
+
+    if (form) {
+        form.addEventListener('submit', e => {
+            // Validar correo antes de enviar
+            if (correoInput?.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoInput.value.trim())) {
+                e.preventDefault();
+                errorCorreo?.classList.remove('hidden');
+                correoInput?.focus();
+            }
+        });
+    }
 });
 </script>
-@endsection
+@endpush

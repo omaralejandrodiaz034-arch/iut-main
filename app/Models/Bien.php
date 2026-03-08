@@ -86,4 +86,9 @@ class Bien extends Model
     {
         return $this->hasOne(BienOtro::class, 'bien_id');
     }
+
+    public function desincorporado()
+    {
+        return $this->hasOne(\App\Models\BienDesincorporado::class, 'bien_id');
+    }
 }

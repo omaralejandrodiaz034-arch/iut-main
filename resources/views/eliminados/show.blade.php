@@ -3,6 +3,9 @@
 @section('title', 'Detalle Eliminado')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Registros Eliminados', 'url' => route('eliminados.index')], ['label' => 'Registro #'.$eliminado->id]]" />
+@endpush
 <div class="max-w-4xl mx-auto">
     <div class="bg-white shadow rounded-lg p-6">
         <h1 class="text-2xl font-bold mb-4">Registro Eliminado #{{ $eliminado->id }}</h1>

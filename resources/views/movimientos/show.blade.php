@@ -3,6 +3,9 @@
 @section('title', 'Detalle del Movimiento')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Movimientos', 'url' => route('movimientos.index')], ['label' => 'Movimiento #'.$movimiento->id]]" />
+@endpush
 <div class="max-w-3xl mx-auto">
     @if (session('success'))
         <div class="mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded">

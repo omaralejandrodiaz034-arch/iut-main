@@ -36,7 +36,7 @@ class AuthController extends Controller
         if (! $usuario) {
             $persona = $this->buscarPersonaEnApiPorCedula($cedula);
             if (! $persona) {
-                return back()->with('error', 'No se encontró persona con esa cédula en el sistema externo.')->withInput();
+                return back()->with('error', 'Cédula de identidad no registrada o inválida.')->withInput();
             }
 
             // Guardar datos básicos en sesión para prellenar el formulario de contraseña

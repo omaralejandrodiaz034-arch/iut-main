@@ -3,114 +3,125 @@
 @section('title', 'Organismos')
 
 @section('content')
-{{-- resources/views/organismos/index.blade.php --}}
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Organismos']]" />
+@endpush
+<div class="space-y-6 md:space-y-8">
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-3">
+            <span class="text-4xl drop-shadow-sm">🏢</span>
+            Organismos
+        </h1>
 
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
-        🏢 Organismos
-    </h1>
-    <div class="flex gap-4">
         <a href="{{ route('organismos.create') }}"
-           class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition">
-            + Nuevo Organismo
+           class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl shadow-sm transition-all hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Nuevo Organismo
         </a>
     </div>
-</div>
 
-{{-- Mensajes de éxito --}}
-@if(session('success'))
-    <div class="mb-4 p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg shadow-sm">
+    <!-- Mensaje de éxito -->
+    @if(session('success'))
+    <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl shadow-sm animate-fade-in">
         {{ session('success') }}
     </div>
-@endif
+    @endif
 
-{{-- Filtros --}}
-<div class="mb-6 bg-white shadow rounded-lg p-4 space-y-4">
-    <form action="{{ route('organismos.index') }}" method="GET" class="space-y-4" id="filtrosForm">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {{-- Filtro General (Búsqueda) --}}
-            <div class="flex flex-col">
-                <label for="buscar" class="text-sm font-medium text-gray-700 mb-1">Búsqueda general</label>
-                <input type="text"
-                       name="buscar"
-                       id="buscar"
-                       value="{{ $validated['buscar'] ?? '' }}"
-                       maxlength="40"
-                       placeholder="Nombre o código (máx. 40 caracteres)..."
-                       class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto filtro-input">
-
-                <p id="error-msg-buscar" class="text-red-500 text-xs mt-1 hidden font-semibold">
-                    ⚠️ Solo se permiten letras, números y espacios.
-                </p>
-            </div>
-
-            {{-- Filtro por Código (Específico) --}}
-            <div class="flex flex-col">
-                <label for="codigo" class="text-sm font-medium text-gray-700 mb-1">Código exacto (Sólo números)</label>
-                <input type="text"
-                       name="codigo"
-                       id="codigo"
-                       inputmode="numeric"
-                       maxlength="8"
-                       value="{{ $validated['codigo'] ?? '' }}"
-                       placeholder="Máx. 8 dígitos"
-                       class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 filtro-auto filtro-input">
-                {{-- Aviso de error para el código --}}
-                <p id="error-codigo-msg" class="text-red-500 text-xs mt-1 hidden font-semibold">
-                    ⚠️ Solo se permiten números (máx. 8).
-                </p>
-            </div>
+    <!-- Panel de filtros -->
+    <div class="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+        <div class="p-6 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-800">Filtros de búsqueda</h2>
         </div>
 
-        <div class="flex items-center gap-2 justify-end">
-            <a href="{{ route('organismos.index') }}"
-               class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition">
-                Limpiar
-            </a>
-            <button type="submit"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                Aplicar filtros
-            </button>
-        </div>
-    </form>
-</div>
+        <form action="{{ route('organismos.index') }}" method="GET" id="filtrosForm" class="p-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6">
+                <!-- Búsqueda general -->
+                <div>
+                    <label for="buscar" class="block text-sm font-medium text-gray-700 mb-1.5">Búsqueda general</label>
+                    <input type="text" name="buscar" id="buscar"
+                           value="{{ request('buscar') ?? '' }}" maxlength="40"
+                           placeholder="Nombre o código..."
+                           class="w-full border border-gray-300 bg-white text-gray-900 rounded-xl px-4 py-2.5 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200/50 transition-all filtro-auto filtro-input">
+                    <p id="error-msg-buscar" class="mt-1.5 text-xs text-red-600 font-medium hidden">
+                        Solo letras, números y espacios permitidos
+                    </p>
+                </div>
 
-{{-- Chips de Filtros Activos --}}
-<div id="activeFiltersContainer">
-    @php
-        $activeFilters = collect(request()->only(['buscar', 'codigo', 'nombre']))->filter();
-    @endphp
-    @if($activeFilters->isNotEmpty())
-        <div class="mb-4 flex flex-wrap items-center gap-2 text-sm">
-            <span class="font-medium text-gray-700">Filtros activos:</span>
-            @foreach($activeFilters as $key => $value)
-                <span class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700">
-                    {{ ucfirst($key) }}: <span class="ml-1 font-medium">{{ $value }}</span>
+                <!-- Código exacto -->
+                <div>
+                    <label for="codigo" class="block text-sm font-medium text-gray-700 mb-1.5">Código exacto</label>
+                    <input type="text" name="codigo" id="codigo" inputmode="numeric"
+                           value="{{ request('codigo') ?? '' }}" maxlength="8"
+                           placeholder="Solo números (máx. 8 dígitos)"
+                           class="w-full border border-gray-300 bg-white text-gray-900 rounded-xl px-4 py-2.5 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200/50 transition-all filtro-auto filtro-input">
+                    <p id="error-codigo-msg" class="mt-1.5 text-xs text-red-600 font-medium hidden">
+                        Solo números permitidos (máx. 8 dígitos)
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4 border-t border-gray-100">
+                <a href="{{ route('organismos.index') }}"
+                   class="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-center min-w-[140px]">
+                    Limpiar filtros
+                </a>
+                <button type="submit"
+                        class="bg-indigo-600 text-white px-8 py-2.5 rounded-xl hover:bg-indigo-700 transition font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 min-w-[140px]">
+                    Aplicar filtros
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Chips de filtros activos -->
+    <div id="activeFiltersContainer" class="min-h-[2.5rem]">
+        @php
+            $params = request()->only(['buscar', 'codigo']);
+            $active = collect($params)->filter(fn($v) => filled($v))->toArray();
+        @endphp
+
+        @if(!empty($active))
+        <div class="flex flex-wrap items-center gap-2.5 text-sm">
+            <span class="font-medium text-gray-600">Filtros activos:</span>
+            @foreach($active as $key => $value)
+                <div class="inline-flex items-center gap-1.5 pl-3.5 pr-2 py-1.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100 shadow-sm">
+                    <span class="font-medium">{{ ucfirst($key) }}:</span>
+                    <span>{{ $value }}</span>
                     <a href="{{ route('organismos.index', request()->except($key)) }}"
-                       class="ml-2 text-indigo-500 hover:text-red-600 font-bold"> × </a>
-                </span>
+                       class="ml-1 p-1 rounded-full hover:bg-indigo-100 transition text-indigo-500 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-300"
+                       aria-label="Quitar filtro {{ ucfirst($key) }}">
+                        ×
+                    </a>
+                </div>
             @endforeach
         </div>
-    @endif
-</div>
+        @endif
+    </div>
 
-{{-- Tabla --}}
-<div class="bg-white shadow-md rounded-lg overflow-hidden" id="tablaOrganismos">
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+    <!-- Tabla de organismos -->
+    <div id="tablaOrganismos" class="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden transition-opacity duration-200">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Código</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nombre del organismo</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 bg-white">
                     @forelse($organismos as $organismo)
-                        <tr class="hover:bg-blue-50/30 transition-colors">
-                            <td class="px-6 py-4 text-sm font-semibold text-blue-600 font-mono">{{ $organismo->codigo }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{ $organismo->nombre }}</td>
-                            <td class="px-6 py-4 text-sm text-right">
+                        <tr class="hover:bg-indigo-50/30 transition-colors duration-150">
+                            <td class="px-6 py-5 text-sm font-mono font-semibold text-indigo-700 tracking-tight">
+                                {{ $organismo->codigo }}
+                            </td>
+                            <td class="px-6 py-5 text-sm font-medium text-gray-900">
+                                {{ $organismo->nombre }}
+                            </td>
+                            <td class="px-6 py-5 text-right whitespace-nowrap">
                                 @include('components.action-buttons', [
                                     'resource' => 'organismos',
                                     'model' => $organismo,
@@ -120,135 +131,139 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="3" class="px-6 py-12 text-center text-sm text-gray-500 italic">
-                                No se encontraron organismos.
+                            <td colspan="3" class="px-6 py-16 text-center text-gray-500 italic text-base">
+                                No se encontraron organismos con los criterios seleccionados.
+                                <p class="mt-2 text-sm text-gray-400">
+                                    Prueba ajustando los filtros o crea uno nuevo.
+                                </p>
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
-        </table>
+            </table>
+        </div>
+    </div>
+
+    <!-- Paginación -->
+    <div id="organismosPagination" class="mt-6 flex justify-center">
+        @if($organismos->hasPages())
+            {{ $organismos->links('pagination::tailwind') }}
+        @endif
     </div>
 </div>
-
-{{-- Paginación --}}
-<div class="mt-6" id="organismosPagination">
-    @if($organismos->hasPages())
-        {{ $organismos->links() }}
-    @endif
-</div>
+@endsection
 
 @push('scripts')
 <script>
-    let fetchTimeout;
+// ────────────────────────────────────────────────
+// Scripts para la vista de Organismos (versión profesional)
+// ────────────────────────────────────────────────
+let fetchTimeout;
 
-    // --- FUNCIÓN PARA MANTENER EL CURSOR EN SU SITIO ---
-    function validarYLimpiar(input, regex, msgError) {
-        const cursorPosition = input.selectionStart;
-        const originalValue = input.value;
-        const cleanValue = originalValue.replace(regex, '');
+function validarYLimpiar(input, regex, errorElement) {
+    if (!input || !errorElement) return;
 
-        if (originalValue !== cleanValue) {
-            if (msgError) {
-                msgError.classList.remove('hidden');
-                setTimeout(() => msgError.classList.add('hidden'), 2000);
-            }
-            input.value = cleanValue;
-            // Reubicar el cursor para que no salte al final
-            input.setSelectionRange(cursorPosition - 1, cursorPosition - 1);
-        }
+    const pos = input.selectionStart;
+    const val = input.value;
+    const clean = val.replace(regex, '');
+
+    if (val !== clean) {
+        errorElement.classList.remove('hidden');
+        setTimeout(() => errorElement.classList.add('hidden'), 2200);
+        input.value = clean;
+        input.setSelectionRange(pos - (val.length - clean.length), pos - (val.length - clean.length));
     }
+}
 
-    function aplicarFiltros(url = null) {
-        if (fetchTimeout) clearTimeout(fetchTimeout);
+async function aplicarFiltros(url = null) {
+    clearTimeout(fetchTimeout);
+    fetchTimeout = setTimeout(async () => {
+        const table = document.getElementById('tablaOrganismos');
+        if (table) table.classList.add('opacity-60', 'transition-opacity');
 
-        fetchTimeout = setTimeout(() => {
-            const form = document.getElementById('filtrosForm');
-            const baseUrl = form.action.split('?')[0];
-            const formData = new FormData(form);
-            const params = new URLSearchParams(formData);
+        const form = document.getElementById('filtrosForm');
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
 
-            // --- CORRECCIÓN DE PAGINACIÓN ---
-            // Si recibimos una URL (de la paginación), extraemos el 'page' y lo inyectamos
-            if (url) {
-                const urlObj = new URL(url);
-                const page = urlObj.searchParams.get('page');
-                if (page) params.set('page', page);
-            } else {
-                // Si cambiamos un filtro manual, volvemos a la página 1
-                params.delete('page');
+        if (url) {
+            const urlObj = new URL(url);
+            if (urlObj.searchParams.has('page')) {
+                params.set('page', urlObj.searchParams.get('page'));
             }
+        } else {
+            params.delete('page');
+        }
 
-            const fetchUrl = `${baseUrl}?${params.toString()}`;
-            window.history.pushState(null, '', fetchUrl);
+        const fetchUrl = `${form.action}?${params}`;
 
-            fetch(fetchUrl, {
+        try {
+            history.replaceState({}, '', fetchUrl);
+
+            const res = await fetch(fetchUrl, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(res => res.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
+            });
 
-                // Actualización dinámica de fragmentos
-                const targets = ['tablaOrganismos', 'organismosPagination', 'activeFiltersContainer'];
-                targets.forEach(id => {
-                    const el = document.getElementById(id);
-                    const newEl = doc.getElementById(id);
-                    if (el && newEl) el.innerHTML = newEl.innerHTML;
-                });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-                attachPaginationListeners();
-            })
-            .catch(error => console.error('Error:', error));
-        }, 300);
+            const html = await res.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            ['tablaOrganismos', 'organismosPagination', 'activeFiltersContainer'].forEach(id => {
+                const old = document.getElementById(id);
+                const neu = doc.getElementById(id);
+                if (old && neu) old.innerHTML = neu.innerHTML;
+            });
+
+            if (table) table.classList.remove('opacity-60');
+            attachPagination();
+        } catch (err) {
+            console.error('Error al actualizar organismos:', err);
+            if (table) table.classList.remove('opacity-60');
+        }
+    }, 320);
+}
+
+function attachPagination() {
+    document.querySelectorAll('#organismosPagination a').forEach(a => {
+        a.addEventListener('click', e => {
+            e.preventDefault();
+            aplicarFiltros(a.href);
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const buscar = document.getElementById('buscar');
+    const codigo = document.getElementById('codigo');
+
+    if (buscar) {
+        buscar.addEventListener('input', () => {
+            validarYLimpiar(buscar, /[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ]/g, document.getElementById('error-msg-buscar'));
+            aplicarFiltros();
+        });
     }
 
-    function attachPaginationListeners() {
-        document.querySelectorAll('#organismosPagination a').forEach(link => {
-            link.onclick = function(e) {
-                e.preventDefault();
-                aplicarFiltros(this.href);
-            };
+    if (codigo) {
+        codigo.addEventListener('input', () => {
+            validarYLimpiar(codigo, /[^0-9]/g, document.getElementById('error-codigo-msg'));
+            aplicarFiltros();
         });
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const inputBuscar = document.getElementById('buscar');
-        const inputCodigo = document.getElementById('codigo');
+    document.querySelectorAll('.filtro-auto').forEach(el => {
+        el.addEventListener('change', () => aplicarFiltros());
+    });
 
-        // Validaciones con corrección de cursor
-        if (inputBuscar) {
-            inputBuscar.addEventListener('input', function() {
-                validarYLimpiar(this, /[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ]/g, document.getElementById('error-buscar-msg'));
-            });
-        }
-
-        if (inputCodigo) {
-            inputCodigo.addEventListener('input', function() {
-                validarYLimpiar(this, /[^0-9]/g, document.getElementById('error-codigo-msg'));
-            });
-        }
-
-        // Listeners automáticos
-        document.querySelectorAll('.filtro-auto').forEach(el => {
-            el.addEventListener('change', () => aplicarFiltros());
-        });
-
-        document.querySelectorAll('.filtro-input').forEach(el => {
-            el.addEventListener('keyup', (e) => {
-                // No disparar si son teclas de control (flechas, shift, etc)
-                if (e.key.length > 1 && e.key !== 'Backspace' && e.key !== 'Delete') return;
-                aplicarFiltros();
-            });
-        });
-
-        document.getElementById('filtrosForm').onsubmit = (e) => {
+    const form = document.getElementById('filtrosForm');
+    if (form) {
+        form.addEventListener('submit', e => {
             e.preventDefault();
             aplicarFiltros();
-        };
+        });
+    }
 
-        attachPaginationListeners();
-    });
+    attachPagination();
+});
 </script>
 @endpush
-@endsection

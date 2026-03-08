@@ -3,6 +3,9 @@
 @section('title', 'Editar Usuario')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Usuarios', 'url' => route('usuarios.index')], ['label' => $usuario->nombre.' '.$usuario->apellido, 'url' => route('usuarios.show', $usuario)], ['label' => 'Editar']]" />
+@endpush
     <div class="max-w-2xl mx-auto">
         <div class="bg-white shadow rounded-lg p-6">
             <h1 class="text-2xl font-bold text-gray-800 mb-6">Editar Usuario</h1>
@@ -130,23 +133,18 @@
     </div>
 
     {{-- Modal de Resultado --}}
-    <div id="resultado-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-        style="display: none;">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
-            <div id="modal-header" class="px-6 py-4 border-b">
-                <h2 id="modal-title" class="text-xl font-bold"></h2>
-            </div>
-            <div class="px-6 py-6">
-                <div class="flex items-center gap-4">
-                    <div id="modal-icon" class="flex-shrink-0"></div>
-                    <p id="modal-message" class="text-gray-700"></p>
-                </div>
-            </div>
-            <div class="px-6 py-4 border-t flex justify-end">
-                <button id="modal-btn" class="px-4 py-2 rounded-lg text-white font-medium"></button>
-            </div>
+    <x-modal id="resultado-modal">
+        <div id="modal-header" class="-mx-6 -mt-4 px-6 py-4 border-b mb-4">
+            <h2 id="modal-title" class="text-xl font-bold"></h2>
         </div>
-    </div>
+        <div class="flex items-center gap-4">
+            <div id="modal-icon" class="flex-shrink-0 text-2xl"></div>
+            <p id="modal-message" class="text-gray-700"></p>
+        </div>
+        <x-slot name="footer">
+            <button id="modal-btn" class="px-4 py-2 rounded-lg text-white font-medium"></button>
+        </x-slot>
+    </x-modal>
 @endsection
 
 {{-- AQUI ESTÁ EL CAMBIO CLAVE: Abrir el push scripts --}}
@@ -228,7 +226,6 @@
             });
 
             function mostrarModal(tipo, titulo, mensaje) {
-                const modal = document.getElementById('resultado-modal');
                 const modalTitle = document.getElementById('modal-title');
                 const modalIcon = document.getElementById('modal-icon');
                 const modalMessage = document.getElementById('modal-message');
@@ -240,18 +237,18 @@
 
                 if (tipo === 'success') {
                     modalIcon.innerHTML = '✅';
-                    modalHeader.className = 'px-6 py-4 border-b bg-green-50';
+                    modalHeader.className = '-mx-6 -mt-4 px-6 py-4 border-b mb-4 bg-green-50';
                     modalBtn.textContent = 'Ver Detalles';
                     modalBtn.className = 'px-4 py-2 bg-green-600 text-white rounded-lg';
                     modalBtn.onclick = () => window.location.href = '{{ route("usuarios.show", $usuario->id) }}';
                 } else {
                     modalIcon.innerHTML = '❌';
-                    modalHeader.className = 'px-6 py-4 border-b bg-red-50';
+                    modalHeader.className = '-mx-6 -mt-4 px-6 py-4 border-b mb-4 bg-red-50';
                     modalBtn.textContent = 'Cerrar';
                     modalBtn.className = 'px-4 py-2 bg-gray-600 text-white rounded-lg';
-                    modalBtn.onclick = () => modal.style.display = 'none';
+                    modalBtn.onclick = () => window.closeModal('resultado-modal');
                 }
-                modal.style.display = 'flex';
+                window.openModal('resultado-modal');
             }
         });
     </script>
