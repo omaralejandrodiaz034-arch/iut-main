@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Traits\AuditableTrait;
 use App\Traits\GeneratesMovimiento;
+use Illuminate\Database\Eloquent\Model;
 
 class Responsable extends Model
 {
-    use GeneratesMovimiento;
+    use GeneratesMovimiento, AuditableTrait;
 
     protected $table = 'responsables';
 

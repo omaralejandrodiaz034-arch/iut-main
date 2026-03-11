@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\AuditableTrait;
+use App\Traits\GeneratesMovimiento;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use App\Traits\GeneratesMovimiento;
 
 class Usuario extends Authenticatable
 {
-    use HasFactory, GeneratesMovimiento;
+    use HasFactory, GeneratesMovimiento, AuditableTrait;
 
     protected $table = 'usuarios';
 

@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Model;
 
 class Movimiento extends Model
 {
+    use AuditableTrait;
     protected $table = 'movimientos';
 
     public $timestamps = false;

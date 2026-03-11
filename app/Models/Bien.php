@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EstadoBien;
 use App\Enums\TipoBien;
+use App\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Bien extends Model
 {
-    use HasFactory;
+    use HasFactory, AuditableTrait;
 
     // Tabla asociada
     protected $table = 'bienes';
