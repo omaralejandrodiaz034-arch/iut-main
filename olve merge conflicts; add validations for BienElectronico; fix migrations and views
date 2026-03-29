@@ -1,0 +1,1222 @@
+[1mdiff --git a/app/Http/Controllers/AuthController.php b/app/Http/Controllers/AuthController.php[m
+[1mindex 0c50ef6..4cc806c 100644[m
+[1m--- a/app/Http/Controllers/AuthController.php[m
+[1m+++ b/app/Http/Controllers/AuthController.php[m
+[36m@@ -21,23 +21,24 @@[m [mclass AuthController extends Controller[m
+     public function login(Request $request)[m
+     {[m
+         $validated = $request->validate([[m
+[31m-            'cedula'   => ['required', 'string'],[m
+[31m-            'password' => ['nullable', 'string', 'min:8'],[m
+[31m-            'remember' => ['sometimes', 'boolean'],[m
+[31m-        ]);[m
+[31m-[m
+[31m-        // Normalizar cédula a solo dígitos para evitar fallos con formatos (V-xx.xxx.xxx)[m
+[31m-        $cedula = $this->normalizeCedulaDigits($validated['cedula']);[m
+[31m-[m
+[31m-        // 1) Buscar usuario local por cédula y activo[m
+[31m-        $usuario = Usuario::where('cedula', $cedula)->where('activo', true)->first();[m
+[31m-[m
+[31m-        // 2) Si no existe localmente, intentar obtenerlo del API (mock JSON) y redirigir a set password[m
+[31m-        if (! $usuario) {[m
+[31m-            $persona = $this->buscarPersonaEnApiPorCedula($cedula);[m
+[31m-            if (! $persona) {[m
+[31m-                return back()->with('error', 'No se encontró persona con esa cédula en el sistema externo.')->withInput();[m
+[31m-            }[m
+[32m+[m[32m        'cedula'   => ['required', 'string'],[m
+[32m+[m[32m        'password' => ['required', 'string', 'min:8'], // Cambiado de nullable a required si es login[m
+[32m+[m[32m        'remember' => ['sometimes', 'boolean'],[m
+[32m+[m[32m    ]);[m
+[32m+[m
+[32m+[m[32m    $cedulaOriginal = $request->input('cedula'); // Guardamos como lo escribió el usuario[m
+[32m+[m[32m    $cedulaNormalizada = $this->normalizeCedulaDigits($cedulaOriginal);[m
+[32m+[m
+[32m+[m[32m    $usuario = Usuario::where('cedula', $cedulaNormalizada)->where('activo', true)->first();[m
+[32m+[m
+[32m+[m[32m    if (! $usuario) {[m
+[32m+[m[32m        $persona = $this->buscarPersonaEnApiPorCedula($cedulaNormalizada);[m
+[32m+[m[32m        if (! $persona) {[m
+[32m+[m[32m            // Importante: withInput() devuelve TODO lo que vino en el request[m
+[32m+[m[32m            return back()[m
+[32m+[m[32m                ->with('error', 'No se encontró persona con esa cédula en el sistema externo.')[m
+[32m+[m[32m                ->withInput();[m
+[32m+[m[32m        }[m
+ [m
+             // Guardar datos básicos en sesión para prellenar el formulario de contraseña[m
+             session([[m
+* Unmerged path app/Http/Controllers/BienController.php
+[1mdiff --git a/app/Http/Controllers/ReporteController.php b/app/Http/Controllers/ReporteController.php[m
+[1mindex 04282d4..6060169 100644[m
+[1m--- a/app/Http/Controllers/ReporteController.php[m
+[1m+++ b/app/Http/Controllers/ReporteController.php[m
+[36m@@ -226,64 +226,145 @@[m [mclass ReporteController extends Controller[m
+             ->toArray();[m
+ [m
+         // =====================================================[m
+[31m-        // 3. Bienes por Registro (Progresivo)[m
+[32m+[m[32m        // 3. Bienes por Registro (Progresivo) con granularidad[m
+         // =====================================================[m
+[32m+[m[32m        $granularity = $request->get('granularity', 'monthly'); // daily|weekly|monthly[m
+[32m+[m
+         $q3 = Bien::query();[m
+         $applyFilters($q3);[m
+[31m-        $bienesPorRegistro = (clone $q3)->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as mes, COUNT(*) as count')[m
+[31m-            ->groupBy('mes')[m
+[31m-            ->orderBy('mes')[m
+[31m-            ->get()[m
+[31m-            ->mapWithKeys(fn($item) => [(string) $item->mes => (int) $item->count])[m
+[31m-            ->toArray();[m
+ [m
+[32m+[m[32m        // Obtiene las fechas y agrupa en PHP para ser DB-agnóstico[m
+[32m+[m[32m        $createdDates = (clone $q3)->select('created_at')->get()->pluck('created_at')->filter();[m
+[32m+[m
+[32m+[m[32m        $grouped = $createdDates->map(function ($d) use ($granularity) {[m
+[32m+[m[32m            if (!$d) return null;[m
+[32m+[m[32m            $dt = \Illuminate\Support\Carbon::parse($d);[m
+[32m+[m[32m            return match ($granularity) {[m
+[32m+[m[32m                'daily' => $dt->format('Y-m-d'),[m
+[32m+[m[32m                'weekly' => $dt->copy()->startOfWeek()->format('Y-m-d'), // week bucket by start date[m
+[32m+[m[32m                default => $dt->format('Y-m'),[m
+[32m+[m[32m            };[m
+[32m+[m[32m        })->filter()->countBy()->sortKeys();[m
+[32m+[m
+[32m+[m[32m        // Construir acumulado progresivo[m
+         $acumulado = [];[m
+         $total = 0;[m
+[31m-        foreach ($bienesPorRegistro as $mes => $count) {[m
+[32m+[m[32m        foreach ($grouped as $period => $count) {[m
+             $total += $count;[m
+[31m-            $acumulado[$mes] = $total;[m
+[32m+[m[32m            $acumulado[(string) $period] = (int) $total;[m
+         }[m
+         $bienesPorRegistro = $acumulado;[m
+ [m
+         // =====================================================[m
+[31m-        // 4. Bienes Desincorporados[m
+[32m+[m[32m        // 4. Bienes Desincorporados (progresivo según granularidad)[m
+         // =====================================================[m
+[31m-        $bienesDesincorporados = Eliminado::selectRaw('DATE_FORMAT(deleted_at, "%Y-%m") as mes, COUNT(*) as count')[m
+[31m-            ->groupBy('mes')[m
+[31m-            ->orderBy('mes')[m
+[31m-            ->get()[m
+[31m-            ->mapWithKeys(fn($item) => [(string) $item->mes => (int) $item->count])[m
+[31m-            ->toArray();[m
+[32m+[m[32m        $deletedDates = Eliminado::select('deleted_at')->get()->pluck('deleted_at')->filter();[m
+[32m+[m[32m        $groupedDeleted = $deletedDates->map(function ($d) use ($granularity) {[m
+[32m+[m[32m            if (!$d) return null;[m
+[32m+[m[32m            $dt = Carbon::parse($d);[m
+[32m+[m[32m            return match ($granularity) {[m
+[32m+[m[32m                'daily' => $dt->format('Y-m-d'),[m
+[32m+[m[32m                'weekly' => $dt->copy()->startOfWeek()->format('Y-m-d'),[m
+[32m+[m[32m                default => $dt->format('Y-m'),[m
+[32m+[m[32m            };[m
+[32m+[m[32m        })->filter()->countBy()->sortKeys();[m
+[32m+[m
+[32m+[m[32m        $acumDel = [];[m
+[32m+[m[32m        $t = 0;[m
+[32m+[m[32m        foreach ($groupedDeleted as $period => $count) {[m
+[32m+[m[32m            $t += $count;[m
+[32m+[m[32m            $acumDel[(string) $period] = (int) $t;[m
+[32m+[m[32m        }[m
+[32m+[m[32m        $bienesDesincorporados = $acumDel;[m
+ [m
+         // =====================================================[m
+[31m-        // 5. Bienes por Dependencia (DIRECTO)[m
+[32m+[m[32m        // Series de registro de entidades (organismos, unidades, dependencias)[m
+[32m+[m[32m        // Agrupar por granularidad y construir acumulados[m
+         // =====================================================[m
+[32m+[m[32m        $collectAndAccumulate = function ($model, $dateColumn = 'created_at') use ($granularity) {[m
+[32m+[m[32m            $dates = $model::select($dateColumn)->get()->pluck($dateColumn)->filter();[m
+[32m+[m[32m            $grouped = $dates->map(function ($d) use ($granularity) {[m
+[32m+[m[32m                if (!$d) return null;[m
+[32m+[m[32m                $dt = Carbon::parse($d);[m
+[32m+[m[32m                return match ($granularity) {[m
+[32m+[m[32m                    'daily' => $dt->format('Y-m-d'),[m
+[32m+[m[32m                    'weekly' => $dt->copy()->startOfWeek()->format('Y-m-d'),[m
+[32m+[m[32m                    default => $dt->format('Y-m'),[m
+[32m+[m[32m                };[m
+[32m+[m[32m            })->filter()->countBy()->sortKeys();[m
+[32m+[m
+[32m+[m[32m            $acc = [];[m
+[32m+[m[32m            $s = 0;[m
+[32m+[m[32m            foreach ($grouped as $p => $c) {[m
+[32m+[m[32m                $s += $c;[m
+[32m+[m[32m                $acc[(string) $p] = (int) $s;[m
+[32m+[m[32m            }[m
+[32m+[m[32m            return $acc;[m
+[32m+[m[32m        };[m
+ [m
+[32m+[m[32m        $registroOrganismos = $collectAndAccumulate(Organismo::class, 'created_at');[m
+[32m+[m[32m        $registroUnidades = $collectAndAccumulate(UnidadAdministradora::class, 'created_at');[m
+[32m+[m[32m        $registroDependencias = $collectAndAccumulate(Dependencia::class, 'created_at');[m
+ [m
+[31m-        // --- Registro de Organismos ---[m
+[31m-        $registroOrganismos = Organismo::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as mes, COUNT(*) as count')[m
+[31m-            ->groupBy('mes')[m
+[31m-            ->orderBy('mes')[m
+[32m+[m[32m        // =====================================================[m
+[32m+[m[32m        // Métricas adicionales recomendadas[m
+[32m+[m[32m        // =====================================================[m
+[32m+[m[32m        // 1) Valor total por Estado[m
+[32m+[m[32m        $qValorEstado = Bien::query();[m
+[32m+[m[32m        $applyFilters($qValorEstado);[m
+[32m+[m[32m        $valorPorEstado = (clone $qValorEstado)[m
+[32m+[m[32m            ->selectRaw('estado, SUM(precio) as total')[m
+[32m+[m[32m            ->groupBy('estado')[m
+             ->get()[m
+[31m-            ->mapWithKeys(fn($item) => [(string) $item->mes => (int) $item->count])[m
+[31m-            ->toArray();[m
+[32m+[m[32m            ->mapWithKeys(function ($item) {[m
+[32m+[m[32m                $estado = $item->estado instanceof \App\Enums\EstadoBien[m
+[32m+[m[32m                    ? $item->estado[m
+[32m+[m[32m                    : \App\Enums\EstadoBien::tryFrom($item->estado);[m
+ [m
+[31m-        // --- Registro de Unidades Administradoras ---[m
+[31m-        $registroUnidades = UnidadAdministradora::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as mes, COUNT(*) as count')[m
+[31m-            ->groupBy('mes')[m
+[31m-            ->orderBy('mes')[m
+[31m-            ->get()[m
+[31m-            ->mapWithKeys(fn($item) => [(string) $item->mes => (int) $item->count])[m
+[32m+[m[32m                $label = $estado[m
+[32m+[m[32m                    ? $estado->label()[m
+[32m+[m[32m                    : ((string) $item->estado);[m
+[32m+[m
+[32m+[m[32m                return [(string) $label => (float) $item->total];[m
+[32m+[m[32m            })[m
+             ->toArray();[m
+ [m
+[31m-        // --- Registro de Dependencias ---[m
+[31m-        $registroDependencias = Dependencia::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as mes, COUNT(*) as count')[m
+[31m-            ->groupBy('mes')[m
+[31m-            ->orderBy('mes')[m
+[32m+[m[32m        // 2) Top 10 Dependencias por Valor[m
+[32m+[m[32m        $qTopDeps = Bien::query();[m
+[32m+[m[32m        $applyFilters($qTopDeps);[m
+[32m+[m[32m        $topDependenciasValor = (clone $qTopDeps)[m
+[32m+[m[32m            ->whereNotNull('dependencia_id')[m
+[32m+[m[32m            ->join('dependencias', 'dependencias.id', '=', 'bienes.dependencia_id')[m
+[32m+[m[32m            ->selectRaw('dependencias.nombre as nombre, COUNT(*) as count, SUM(precio) as total')[m
+[32m+[m[32m            ->groupBy('dependencias.nombre')[m
+[32m+[m[32m            ->orderByDesc('total')[m
+[32m+[m[32m            ->limit(10)[m
+             ->get()[m
+[31m-            ->mapWithKeys(fn($item) => [(string) $item->mes => (int) $item->count])[m
+[32m+[m[32m            ->mapWithKeys(fn($item) => [(string) $item->nombre => (float) $item->total])[m
+             ->toArray();[m
+ [m
+[32m+[m[32m        // 3) Porcentaje de bienes con/sin fotografía[m
+[32m+[m[32m        $qFoto = Bien::query();[m
+[32m+[m[32m        $applyFilters($qFoto);[m
+[32m+[m[32m        $totalBienes = (clone $qFoto)->count();[m
+[32m+[m[32m        $withFoto = (clone $qFoto)->whereNotNull('fotografia')->count();[m
+[32m+[m[32m        $withoutFoto = max(0, $totalBienes - $withFoto);[m
+[32m+[m[32m        $fotoCoverage = [[m
+[32m+[m[32m            'Con fotografía' => $withFoto,[m
+[32m+[m[32m            'Sin fotografía' => $withoutFoto,[m
+[32m+[m[32m        ];[m
+[32m+[m
+[32m+[m[32m        // 4) Bienes sin movimientos en los últimos 12 meses (útil para auditoría)[m
+[32m+[m[32m        $since = Carbon::now()->subYear();[m
+[32m+[m[32m        $qMov = Bien::query();[m
+[32m+[m[32m        $applyFilters($qMov);[m
+[32m+[m[32m        $sinMovimientos = (clone $qMov)->whereDoesntHave('movimientos', fn($q) => $q->where('fecha', '>=', $since))->count();[m
+[32m+[m[32m        $conMovimientos = max(0, $totalBienes - $sinMovimientos);[m
+[32m+[m[32m        $movimientoCoverage = [[m
+[32m+[m[32m            'Con movimientos 12m' => $conMovimientos,[m
+[32m+[m[32m            'Sin movimientos 12m' => $sinMovimientos,[m
+[32m+[m[32m        ];[m
+[32m+[m
+ [m
+         return view('reportes.graficas', compact([m
+             'bienesPorTipo',[m
+[36m@@ -292,9 +373,156 @@[m [mclass ReporteController extends Controller[m
+             'bienesDesincorporados',[m
+             'registroOrganismos',[m
+             'registroUnidades',[m
+[31m-            'registroDependencias'[m
+[31m-        ));[m
+[32m+[m[32m            'registroDependencias',[m
+[32m+[m[32m            // Nuevas métricas[m
+[32m+[m[32m            'valorPorEstado',[m
+[32m+[m[32m            'topDependenciasValor',[m
+[32m+[m[32m            'fotoCoverage',[m
+[32m+[m[32m            'movimientoCoverage'[m
+[32m+[m[32m        , 'granularity'));[m
+[32m+[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    /**[m
+[32m+[m[32m     * Generar PDF con los datos de una gráfica específica.[m
+[32m+[m[32m     * Parámetros: chart (nombre lógico), mantiene los filtros de la UI.[m
+[32m+[m[32m     */[m
+[32m+[m[32m    public function graficasPdf(Request $request)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        $chart = $request->get('chart');[m
+[32m+[m[32m        $granularity = $request->get('granularity', 'monthly');[m
+[32m+[m
+[32m+[m[32m        // Helper para aplicar filtros como en graficas()[m
+[32m+[m[32m        $applyFilters = function ($q) use ($request) {[m
+[32m+[m[32m            if ($request->filled('search')) {[m
+[32m+[m[32m                $q->where(function($sub) use ($request) {[m
+[32m+[m[32m                    $term = '%'.$request->get('search').'%';[m
+[32m+[m[32m                    $sub->where('codigo', 'like', $term)[m
+[32m+[m[32m                        ->orWhere('descripcion', 'like', $term);[m
+[32m+[m[32m                });[m
+[32m+[m[32m            }[m
+[32m+[m[32m            if ($request->filled('tipo_bien')) $q->where('tipo_bien', $request->get('tipo_bien'));[m
+[32m+[m[32m            if ($request->filled('fecha_desde')) $q->whereDate('fecha_registro', '>=', $request->get('fecha_desde'));[m
+[32m+[m[32m            if ($request->filled('fecha_hasta')) $q->whereDate('fecha_registro', '<=', $request->get('fecha_hasta'));[m
+[32m+[m[32m            if ($request->filled('dependencias')) {[m
+[32m+[m[32m                $deps = $request->get('dependencias');[m
+[32m+[m[32m                if (is_array($deps)) $q->whereIn('dependencia_id', $deps);[m
+[32m+[m[32m            } elseif ($request->filled('unidad_id')) {[m
+[32m+[m[32m                $q->whereHas('dependencia', fn($sub) => $sub->where('unidad_administradora_id', $request->get('unidad_id')));[m
+[32m+[m[32m            } elseif ($request->filled('organismo_id')) {[m
+[32m+[m[32m                $q->whereHas('dependencia.unidadAdministradora', fn($sub) => $sub->where('organismo_id', $request->get('organismo_id')));[m
+[32m+[m[32m            }[m
+[32m+[m[32m            if ($request->filled('estado')) {[m
+[32m+[m[32m                $est = $request->get('estado'); if (is_array($est)) $q->whereIn('estado', $est);[m
+[32m+[m[32m            }[m
+[32m+[m[32m        };[m
+[32m+[m
+[32m+[m[32m        $data = [];[m
+[32m+[m[32m        $title = '';[m
+[32m+[m
+[32m+[m[32m        switch ($chart) {[m
+[32m+[m[32m            case 'valorPorEstado':[m
+[32m+[m[32m                $q = Bien::query(); $applyFilters($q);[m
+[32m+[m[32m                $items = $q->selectRaw('estado, SUM(precio) as total')->groupBy('estado')->get();[m
+[32m+[m[32m                foreach ($items as $it) {[m
+[32m+[m[32m                    $estado = $it->estado instanceof \App\Enums\EstadoBien ? $it->estado->label() : (string)$it->estado;[m
+[32m+[m[32m                    $data[$estado] = (float)$it->total;[m
+[32m+[m[32m                }[m
+[32m+[m[32m                $title = 'Valor total por Estado';[m
+[32m+[m[32m                break;[m
+[32m+[m[32m            case 'topDependencias':[m
+[32m+[m[32m                $q = Bien::query(); $applyFilters($q);[m
+[32m+[m[32m                $items = $q->whereNotNull('dependencia_id')[m
+[32m+[m[32m                    ->join('dependencias','dependencias.id','=','bienes.dependencia_id')[m
+[32m+[m[32m                    ->selectRaw('dependencias.nombre as nombre, SUM(precio) as total')[m
+[32m+[m[32m                    ->groupBy('dependencias.nombre')[m
+[32m+[m[32m                    ->orderByDesc('total')[m
+[32m+[m[32m                    ->limit(100)[m
+[32m+[m[32m                    ->get();[m
+[32m+[m[32m                foreach ($items as $it) $data[$it->nombre] = (float)$it->total;[m
+[32m+[m[32m                $title = 'Dependencias por Valor';[m
+[32m+[m[32m                break;[m
+[32m+[m[32m            case 'fotos':[m
+[32m+[m[32m                $q = Bien::query(); $applyFilters($q);[m
+[32m+[m[32m                $total = (clone $q)->count();[m
+[32m+[m[32m                $with = (clone $q)->whereNotNull('fotografia')->count();[m
+[32m+[m[32m                $data = ['Con fotografía' => $with, 'Sin fotografía' => max(0, $total - $with)];[m
+[32m+[m[32m                $title = 'Cobertura de Fotografías';[m
+[32m+[m[32m                break;[m
+[32m+[m[32m            case 'movimientos':[m
+[32m+[m[32m                $q = Bien::query(); $applyFilters($q);[m
+[32m+[m[32m                $total = (clone $q)->count();[m
+[32m+[m[32m                $since = \Illuminate\Support\Carbon::now()->subYear();[m
+[32m+[m[32m                $sin = (clone $q)->whereDoesntHave('movimientos', fn($q) => $q->where('fecha', '>=', $since))->count();[m
+[32m+[m[32m                $data = ['Con movimientos 12m' => max(0, $total - $sin), 'Sin movimientos 12m' => $sin];[m
+[32m+[m[32m                $title = 'Bienes con/sin movimientos 12m';[m
+[32m+[m[32m                break;[m
+[32m+[m[32m            case 'bienesPorRegistro':[m
+[32m+[m[32m                $q = Bien::query(); $applyFilters($q);[m
+[32m+[m[32m                $dates = (clone $q)->select('created_at')->get()->pluck('created_at')->filter();[m
+[32m+[m[32m                $grouped = $dates->map(function($d) use ($granularity) {[m
+[32m+[m[32m                    $dt = \Illuminate\Support\Carbon::parse($d);[m
+[32m+[m[32m                    return match ($granularity) {[m
+[32m+[m[32m                        'daily' => $dt->format('Y-m-d'),[m
+[32m+[m[32m                        'weekly' => $dt->copy()->startOfWeek()->format('Y-m-d'),[m
+[32m+[m[32m                        default => $dt->format('Y-m'),[m
+[32m+[m[32m                    };[m
+[32m+[m[32m                })->filter()->countBy()->sortKeys();[m
+[32m+[m[32m                $acc=[]; $s=0; foreach($grouped as $k=>$c){$s+=$c;$acc[$k]=(int)$s;} $data=$acc;[m
+[32m+[m[32m                $title = 'Registro progresivo de Bienes';[m
+[32m+[m[32m                break;[m
+[32m+[m[32m            case 'bienesDesincorporados':[m
+[32m+[m[32m                $dates = Eliminado::select('deleted_at')->get()->pluck('deleted_at')->filter();[m
+[32m+[m[32m                $grouped = $dates->map(function($d) use ($granularity) {[m
+[32m+[m[32m                    $dt = \Illuminate\Support\Carbon::parse($d);[m
+[32m+[m[32m                    return match ($granularity) {[m
+[32m+[m[32m                        'daily' => $dt->format('Y-m-d'),[m
+[32m+[m[32m                        'weekly' => $dt->copy()->startOfWeek()->format('Y-m-d'),[m
+[32m+[m[32m                        default => $dt->format('Y-m'),[m
+[32m+[m[32m                    };[m
+[32m+[m[32m                })->filter()->countBy()->sortKeys();[m
+[32m+[m[32m                $acc=[]; $s=0; foreach($grouped as $k=>$c){$s+=$c;$acc[$k]=(int)$s;} $data=$acc;[m
+[32m+[m[32m                $title = 'Bienes Desincorporados';[m
+[32m+[m[32m                break;[m
+[32m+[m[32m            case 'bienesPorTipo':[m
+[32m+[m[32m                $q = Bien::query(); $applyFilters($q);[m
+[32m+[m[32m                $items = (clone $q)->selectRaw('tipo_bien, COUNT(*) as count')->groupBy('tipo_bien')->get();[m
+[32m+[m[32m                foreach ($items as $it) {[m
+[32m+[m[32m                    $tipo = $it->tipo_bien instanceof \App\Enums\TipoBien[m
+[32m+[m[32m                        ? $it->tipo_bien[m
+[32m+[m[32m                        : \App\Enums\TipoBien::tryFrom($it->tipo_bien);[m
+[32m+[m
+[32m+[m[32m                    $label = $tipo ? $tipo->label() : ((string) $it->tipo_bien);[m
+[32m+[m[32m                    $data[(string)$label] = (int)$it->count;[m
+[32m+[m[32m                }[m
+[32m+[m[32m                $title = 'Bienes por Tipo';[m
+[32m+[m[32m                break;[m
+[32m+[m[32m            case 'bienesPorEstado':[m
+[32m+[m[32m                $q = Bien::query(); $applyFilters($q);[m
+[32m+[m[32m                $items = (clone $q)->selectRaw('estado, COUNT(*) as count')->groupBy('estado')->get();[m
+[32m+[m[32m                foreach ($items as $it) {[m
+[32m+[m[32m                    $estado = $it->estado instanceof \App\Enums\EstadoBien[m
+[32m+[m[32m                        ? $it->estado[m
+[32m+[m[32m                        : \App\Enums\EstadoBien::tryFrom($it->estado);[m
+[32m+[m
+[32m+[m[32m                    $label = $estado ? $estado->label() : ((string) $it->estado);[m
+[32m+[m[32m                    $data[(string)$label] = (int)$it->count;[m
+[32m+[m[32m                }[m
+[32m+[m[32m                $title = 'Bienes por Estado';[m
+[32m+[m[32m                break;[m
+[32m+[m[32m            default:[m
+[32m+[m[32m                abort(400, 'Parámetro "chart" inválido');[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        // Render a simple table PDF[m
+[32m+[m[32m        $pdf = Pdf::loadView('reportes.pdf_grafica', [[m
+[32m+[m[32m            'title' => $title,[m
+[32m+[m[32m            'data' => $data,[m
+[32m+[m[32m            'filters' => $request->all(),[m
+[32m+[m[32m        ])->setPaper('letter');[m
+ [m
+[32m+[m[32m        $fileName = 'grafica_' . ($chart ?? 'datos') . '_' . now()->format('Ymd_His') . '.pdf';[m
+[32m+[m[32m        return $pdf->download($fileName);[m
+     }[m
+ [m
+ [m
+[1mdiff --git a/resources/views/auth/login.blade.php b/resources/views/auth/login.blade.php[m
+[1mindex 65b6b68..be8c1ef 100644[m
+[1m--- a/resources/views/auth/login.blade.php[m
+[1m+++ b/resources/views/auth/login.blade.php[m
+[36m@@ -37,7 +37,7 @@[m
+                     <div>[m
+                         <label for="cedula" class="block text-sm font-bold text-gray-700 mb-2">Cédula de Identidad</label>[m
+                         <div class="relative">[m
+[31m-                            <input type="text" name="cedula" id="cedula" [m
+[32m+[m[32m                            <input type="text" name="cedula" id="cedula"[m
+                                    value="{{ old('cedula') }}"[m
+                                    class="w-full pl-4 pr-4 py-3.5 border-2 @error('cedula') border-red-500 @else border-gray-200 @enderror rounded-xl focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent transition-all duration-200 bg-gray-50"[m
+                                    placeholder="V-00.000.000" required autofocus>[m
+[36m@@ -52,16 +52,14 @@[m
+                     <div>[m
+                         <div class="flex justify-between items-center mb-2">[m
+                             <label for="password" class="block text-sm font-bold text-gray-700">Contraseña</label>[m
+[31m-                            <a href="#" class="text-xs font-bold hover:underline" style="color: #800020;">[m
+[31m-                                ¿Olvidó su clave?[m
+[31m-                            </a>[m
+[32m+[m
+                         </div>[m
+                        <div class="relative">[m
+     <input type="password" name="password" id="password"[m
+[31m-           maxlength="20" [m
+[32m+[m[32m           maxlength="20"[m
+            class="w-full pl-4 pr-12 py-3.5 border-2 @error('password') border-red-500 @else border-gray-200 @enderror rounded-xl focus:outline-none focus:ring-2 focus:ring-red-800 focus:border-transparent transition-all duration-200 bg-gray-50"[m
+            placeholder="••••••••">[m
+[31m-    [m
+[32m+[m
+     <button type="button" id="togglePassword" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-900 transition-colors">[m
+         <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">[m
+             <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />[m
+[36m@@ -77,7 +75,7 @@[m
+                     </div>[m
+ [m
+                     <div class="flex items-center">[m
+[31m-                        <input type="checkbox" name="remember" id="remember" [m
+[32m+[m[32m                        <input type="checkbox" name="remember" id="remember"[m
+                                class="w-5 h-5 text-red-800 border-gray-300 rounded focus:ring-red-700 cursor-pointer">[m
+                         <label for="remember" class="ml-2 text-sm text-gray-600 cursor-pointer select-none">Mantener sesión iniciada</label>[m
+                     </div>[m
+[36m@@ -111,10 +109,14 @@[m
+             mask: [[m
+                 { mask: 'V-00.000.000' },[m
+                 { mask: 'E-00.000.000' }[m
+[31m-            ][m
+[32m+[m[32m            ],[m
+[32m+[m[32m            lazy: false // Muestra la máscara siempre para que sea consistente[m
+         };[m
+[31m-        IMask(cedulaInput, maskOptions);[m
+[31m-[m
+[32m+[m[32m        const mask = IMask(cedulaInput, maskOptions)[m
+[32m+[m[32m        if (cedulaInput.value) {[m
+[32m+[m[32m            mask.unmaskedValue = cedulaInput.value.replace(/\D/g, ''); // Le pasamos solo los números[m
+[32m+[m[32m            mask.updateValue();[m
+[32m+[m[32m        }[m
+         // 2. VER CONTRASEÑA[m
+         const toggleBtn = document.getElementById('togglePassword');[m
+         const passwordInput = document.getElementById('password');[m
+[36m@@ -123,7 +125,7 @@[m
+         toggleBtn.addEventListener('click', () => {[m
+             const isPassword = passwordInput.type === 'password';[m
+             passwordInput.type = isPassword ? 'text' : 'password';[m
+[31m-            [m
+[32m+[m
+             // Cambiar icono (opcional: podrías cambiar el SVG aquí)[m
+             eyeIcon.style.color = isPassword ? '#800020' : '#9CA3AF';[m
+         });[m
+[36m@@ -138,11 +140,11 @@[m
+             // Deshabilitar botón para evitar múltiples clics[m
+             btnSubmit.disabled = true;[m
+             btnSubmit.classList.add('opacity-70', 'cursor-not-allowed');[m
+[31m-            [m
+[32m+[m
+             // Cambiar texto y mostrar spinner[m
+             btnText.innerText = 'VERIFICANDO...';[m
+             btnSpinner.classList.remove('hidden');[m
+         });[m
+     </script>[m
+ </body>[m
+[31m-</html>[m
+\ No newline at end of file[m
+[32m+[m[32m</html>[m
+[1mdiff --git a/resources/views/bienes/create.blade.php b/resources/views/bienes/create.blade.php[m
+[1mindex 61d90ba..45fd5e9 100644[m
+[1m--- a/resources/views/bienes/create.blade.php[m
+[1m+++ b/resources/views/bienes/create.blade.php[m
+[36m@@ -27,17 +27,20 @@[m
+ [m
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">[m
+                         <div>[m
+[31m-                            <label for="dependencia_id" class="block text-sm font-bold text-gray-700 mb-2">Dependencia[m
+[31m-                                (Opcional)</label>[m
+[31m-                            <select name="dependencia_id" id="dependencia_id"[m
+[32m+[m[32m                            <label for="dependencia_id" class="block text-sm font-bold text-gray-700 mb-2">Dependencia <span class="text-red-500">*</span></label>[m
+[32m+[m[32m                            <select name="dependencia_id" id="dependencia_id" required[m
+                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">[m
+[31m-                                <option value="">Sin asignar (Almacén Central)</option>[m
+[32m+[m[32m                                <option value="" disabled {{ old('dependencia_id') ? '' : 'selected' }}>Seleccione dependencia...</option>[m
+                                 @foreach($dependencias as $dep)[m
+                                     <option value="{{ $dep->id }}" {{ old('dependencia_id') == $dep->id ? 'selected' : '' }}>[m
+                                         {{ $dep->nombre }}[m
+                                     </option>[m
+                                 @endforeach[m
+                             </select>[m
+[32m+[m
+[32m+[m[32m                            @error('dependencia_id')[m
+[32m+[m[32m                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>[m
+[32m+[m[32m                            @enderror[m
+                         </div>[m
+ [m
+                         <div>[m
+[36m@@ -292,6 +295,13 @@[m
+                     const descripcion = document.getElementById('descripcion').value.trim();[m
+                     const tipo = tipoBienSelect.value;[m
+                     const estado = document.getElementById('estado')?.value || '';[m
+[32m+[m[32m                    const dependenciaSel = depSelect.value;[m
+[32m+[m
+[32m+[m[32m                    if (!dependenciaSel) {[m
+[32m+[m[32m                        e.preventDefault();[m
+[32m+[m[32m                        alert('Debe asignar una dependencia antes de guardar el bien.');[m
+[32m+[m[32m                        return;[m
+[32m+[m[32m                    }[m
+ [m
+                     if (!codigo || codigo.length !== 8) {[m
+                         e.preventDefault();[m
+[1mdiff --git a/resources/views/reportes/graficas.blade.php b/resources/views/reportes/graficas.blade.php[m
+[1mindex 6928ab9..a598abd 100644[m
+[1m--- a/resources/views/reportes/graficas.blade.php[m
+[1m+++ b/resources/views/reportes/graficas.blade.php[m
+[36m@@ -14,27 +14,68 @@[m
+             </div>[m
+ [m
+             <div class="grid gap-8 md:grid-cols-2 xl:grid-cols-2">[m
+[32m+[m[32m                <!-- Valor total por Estado -->[m
+[32m+[m[32m                <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">[m
+[32m+[m[32m                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Valor total por Estado (Bs.)</h2>[m
+[32m+[m[32m                    <button data-chart="valorPorEstado" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>[m
+[32m+[m[32m                    <canvas id="chartValorEstado" class="w-full h-64"></canvas>[m
+[32m+[m[32m                </div>[m
+[32m+[m
+[32m+[m[32m                <!-- Top 10 Dependencias por Valor -->[m
+[32m+[m[32m                <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6 md:col-span-2">[m
+[32m+[m[32m                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Top 10 Dependencias por Valor (Bs.)</h2>[m
+[32m+[m[32m                    <button data-chart="topDependencias" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>[m
+[32m+[m[32m                    <canvas id="chartTopDeps" class="w-full h-64"></canvas>[m
+[32m+[m[32m                </div>[m
+[32m+[m
+[32m+[m[32m                <!-- Cobertura de Fotografías -->[m
+[32m+[m[32m                <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">[m
+[32m+[m[32m                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Cobertura de Fotografías</h2>[m
+[32m+[m[32m                    <button data-chart="fotos" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>[m
+[32m+[m[32m                    <canvas id="chartFotos" class="w-96 h-56"></canvas>[m
+[32m+[m[32m                </div>[m
+[32m+[m
+[32m+[m[32m                <!-- Bienes sin Movimientos 12 meses -->[m
+[32m+[m[32m                <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">[m
+[32m+[m[32m                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Bienes sin Movimientos (12 meses)</h2>[m
+[32m+[m[32m                    <button data-chart="movimientos" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>[m
+[32m+[m[32m                    <canvas id="chartMovimientos" class="w-96 h-56"></canvas>[m
+[32m+[m[32m                </div>[m
+                 <!-- Gráfico de Bienes por Tipo -->[m
+                 <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">[m
+                     <h2 class="text-xl font-semibold text-gray-800 mb-4">Bienes por Tipo</h2>[m
+[32m+[m[32m                    <button data-chart="bienesPorTipo" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>[m
+                     <canvas id="chartTipo" class="w-96 h-56"></canvas>[m
+                 </div>[m
+ [m
+                 <!-- Gráfico de Bienes por Estado -->[m
+                 <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">[m
+                     <h2 class="text-xl font-semibold text-gray-800 mb-4">Bienes por Estado</h2>[m
+[32m+[m[32m                    <button data-chart="bienesPorEstado" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>[m
+                     <canvas id="chartEstado" class="w-full h-64"></canvas>[m
+                 </div>[m
+ [m
+                 <!-- Gráfico de Bienes por Registro (Progresivo) -->[m
+                 <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6 md:col-span-2">[m
+[31m-                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Bienes por Registro (Progresivo)</h2>[m
+[32m+[m[32m                    <div class="flex items-center justify-between mb-4">[m
+[32m+[m[32m                        <h2 class="text-xl font-semibold text-gray-800">Bienes por Registro (Progresivo)</h2>[m
+[32m+[m[32m                        <button data-chart="bienesPorRegistro" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>[m
+[32m+[m[32m                        <div class="flex items-center gap-2">[m
+[32m+[m[32m                            <label class="text-sm text-gray-600">Granularidad:</label>[m
+[32m+[m[32m                            <select id="granularity" name="granularity" class="border-gray-300 rounded px-2 py-1 text-sm">[m
+[32m+[m[32m                                <option value="daily" @selected(request('granularity') == 'daily')>Diaria</option>[m
+[32m+[m[32m                                <option value="weekly" @selected(request('granularity') == 'weekly')>Semanal</option>[m
+[32m+[m[32m                                <option value="monthly" @selected(request('granularity', 'monthly') == 'monthly')>Mensual</option>[m
+[32m+[m[32m                            </select>[m
+[32m+[m[32m                        </div>[m
+[32m+[m[32m                    </div>[m
+                     <canvas id="chartRegistro" class="w-full h-64"></canvas>[m
+                 </div>[m
+ [m
+                 <!-- Gráfico de Bienes Desincorporados -->[m
+                 <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6 md:col-span-2">[m
+                     <h2 class="text-xl font-semibold text-gray-800 mb-4">Bienes Desincorporados</h2>[m
+[32m+[m[32m                    <button data-chart="bienesDesincorporados" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>[m
+                     <canvas id="chartDesincorporados" class="w-full h-64"></canvas>[m
+                 </div>[m
+ [m
+[36m@@ -42,18 +83,21 @@[m
+             <!-- Registro de Dependencias -->[m
+             <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">[m
+                 <h2 class="text-xl font-semibold text-gray-800 mb-4">Registro de Dependencias</h2>[m
+[32m+[m[32m                <button data-chart="registroDependencias" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>[m
+                 <canvas id="chartDependencia" class="w-96 h-56"></canvas>[m
+             </div>[m
+ [m
+             <!-- Registro de Unidades Administradoras -->[m
+             <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">[m
+                 <h2 class="text-xl font-semibold text-gray-800 mb-4">Registro de Unidades Administradoras</h2>[m
+[32m+[m[32m                <button data-chart="registroUnidades" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>[m
+                 <canvas id="chartUnidad" class="w-96 h-56"></canvas>[m
+             </div>[m
+ [m
+             <!-- Registro de Organismos -->[m
+             <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">[m
+                 <h2 class="text-xl font-semibold text-gray-800 mb-4">Registro de Organismos</h2>[m
+[32m+[m[32m                <button data-chart="registroOrganismos" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>[m
+                 <canvas id="chartOrganismo" class="w-96 h-56"></canvas>[m
+             </div>[m
+             </div>[m
+[36m@@ -62,222 +106,300 @@[m
+ [m
+         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>[m
+         <script>[m
+[31m-            // Bienes por Tipo[m
+[31m-            const dataTipo = @json($bienesPorTipo);[m
+[31m-            const labelsTipo = Object.keys(dataTipo);[m
+[31m-            const valuesTipo = Object.values(dataTipo);[m
+[32m+[m[32m            // Paleta y utilidades comunes para todas las gráficas[m
+[32m+[m[32m            const CHART_PALETTE = [[m
+[32m+[m[32m                '#3B82F6', // blue[m
+[32m+[m[32m                '#10B981', // green[m
+[32m+[m[32m                '#F59E0B', // amber[m
+[32m+[m[32m                '#EF4444', // red[m
+[32m+[m[32m                '#8B5CF6', // purple[m
+[32m+[m[32m                '#06B6D4', // cyan[m
+[32m+[m[32m                '#F97316', // orange[m
+[32m+[m[32m                '#6366F1'  // indigo[m
+[32m+[m[32m            ];[m
+ [m
+[31m-            new Chart(document.getElementById('chartTipo').getContext('2d'), {[m
+[31m-                type: 'pie',[m
+[31m-                data: {[m
+[31m-                    labels: labelsTipo,[m
+[31m-                    datasets: [{[m
+[31m-                        label: 'Cantidad',[m
+[31m-                        data: valuesTipo,[m
+[31m-                        backgroundColor: [[m
+[31m-                            'rgba(255, 99, 132, 0.2)',[m
+[31m-                            'rgba(54, 162, 235, 0.2)',[m
+[31m-                            'rgba(255, 205, 86, 0.2)',[m
+[31m-                            'rgba(75, 192, 192, 0.2)',[m
+[31m-                            'rgba(153, 102, 255, 0.2)',[m
+[31m-                            'rgba(255, 159, 64, 0.2)'[m
+[31m-                        ],[m
+[31m-                        borderColor: [[m
+[31m-                            'rgba(255, 99, 132, 1)',[m
+[31m-                            'rgba(54, 162, 235, 1)',[m
+[31m-                            'rgba(255, 205, 86, 1)',[m
+[31m-                            'rgba(75, 192, 192, 1)',[m
+[31m-                            'rgba(153, 102, 255, 1)',[m
+[31m-                            'rgba(255, 159, 64, 1)'[m
+[31m-                        ],[m
+[31m-                        borderWidth: 1[m
+[31m-                    }][m
+[32m+[m[32m            // Wrap canvases in a constrained container but preserve a usable height[m
+[32m+[m[32m            (function wrapCanvases() {[m
+[32m+[m[32m                document.querySelectorAll('canvas').forEach(c => {[m
+[32m+[m[32m                    const parent = c.parentElement;[m
+[32m+[m[32m                    if (!parent) return;[m
+[32m+[m[32m                    if (parent.classList.contains('chart-wrapper')) return;[m
+[32m+[m[32m                    const wrapper = document.createElement('div');[m
+[32m+[m[32m                    wrapper.className = 'chart-wrapper';[m
+[32m+[m[32m                    wrapper.style.width = '100%';[m
+[32m+[m[32m                    wrapper.style.overflow = 'auto';[m
+[32m+[m
+[32m+[m[32m                    // try to detect an initial canvas height; fall back to class heuristics or a sensible default[m
+[32m+[m[32m                    let origH = c.clientHeight || 0;[m
+[32m+[m[32m                    if (!origH) {[m
+[32m+[m[32m                        if (c.classList.contains('h-64')) origH = 256;[m
+[32m+[m[32m                        else if (c.classList.contains('h-56')) origH = 224;[m
+[32m+[m[32m                        else if (c.classList.contains('h-48')) origH = 192;[m
+[32m+[m[32m                        else origH = 300; // default[m
+[32m+[m[32m                    }[m
+[32m+[m
+[32m+[m[32m                    // enforce a minimum and maximum for the wrapper height[m
+[32m+[m[32m                    const minH = 320;[m
+[32m+[m[32m                    const maxH = 900;[m
+[32m+[m[32m                    const finalH = Math.max(minH, Math.min(origH, maxH));[m
+[32m+[m
+[32m+[m[32m                    wrapper.style.maxHeight = finalH + 'px';[m
+[32m+[m[32m                    wrapper.style.height = finalH + 'px';[m
+[32m+[m
+[32m+[m[32m                    parent.insertBefore(wrapper, c);[m
+[32m+[m[32m                    wrapper.appendChild(c);[m
+[32m+[m
+[32m+[m[32m                    // make canvas occupy the wrapper space[m
+[32m+[m[32m                    c.style.display = 'block';[m
+[32m+[m[32m                    c.style.width = '100%';[m
+[32m+[m[32m                    c.style.height = '100%';[m
+[32m+[m[32m                });[m
+[32m+[m[32m            })();[m
+[32m+[m
+[32m+[m[32m            const formatNumber = (v, currency = false) => {[m
+[32m+[m[32m                if (v === null || v === undefined) return '-';[m
+[32m+[m[32m                try {[m
+[32m+[m[32m                    if (currency) return (Number(v) || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Bs.';[m
+[32m+[m[32m                    return (Number(v) || 0).toLocaleString('es-VE');[m
+[32m+[m[32m                } catch (e) {[m
+[32m+[m[32m                    return v;[m
+[32m+[m[32m                }[m
+[32m+[m[32m            };[m
+[32m+[m
+[32m+[m[32m            const commonOptions = ({yLabel = '', currency = false, stacked = false, indexAxis = 'x'} = {}) => ({[m
+[32m+[m[32m                responsive: true,[m
+[32m+[m[32m                maintainAspectRatio: false,[m
+[32m+[m[32m                indexAxis,[m
+[32m+[m[32m                interaction: { intersect: false, mode: 'nearest' },[m
+[32m+[m[32m                elements: {[m
+[32m+[m[32m                    bar: { maxBarThickness: 60, borderWidth: 0 },[m
+[32m+[m[32m                    line: { tension: 0.25 }[m
+                 },[m
+[31m-                options: {[m
+[31m-                    responsive: false,[m
+[31m-                    maintainAspectRatio: false,[m
+[31m-                    plugins: {[m
+[31m-                        legend: { position: 'top' },[m
+[31m-                        title: { display: true, text: 'Distribución de Bienes por Tipo' }[m
+[32m+[m[32m                layout: { padding: 8 },[m
+[32m+[m[32m                scales: {[m
+[32m+[m[32m                    y: {[m
+[32m+[m[32m                        beginAtZero: true,[m
+[32m+[m[32m                        ticks: {[m
+[32m+[m[32m                            callback: val => currency ? formatNumber(val, true) : formatNumber(val, false),[m
+[32m+[m[32m                            maxTicksLimit: 8,[m
+[32m+[m[32m                            autoSkip: true[m
+[32m+[m[32m                        }[m
+[32m+[m[32m                    },[m
+[32m+[m[32m                    x: {[m
+[32m+[m[32m                        beginAtZero: true,[m
+[32m+[m[32m                        ticks: { maxRotation: 45, minRotation: 0, autoSkip: true }[m
+                     }[m
+[32m+[m[32m                },[m
+[32m+[m[32m                plugins: {[m
+[32m+[m[32m                    legend: { position: 'top' },[m
+[32m+[m[32m                    tooltip: {[m
+[32m+[m[32m                        callbacks: {[m
+[32m+[m[32m                            label: context => {[m
+[32m+[m[32m                                const v = context.raw;[m
+[32m+[m[32m                                return `${context.dataset.label || ''}: ${currency ? formatNumber(v, true) : formatNumber(v, false)}`;[m
+[32m+[m[32m                            }[m
+[32m+[m[32m                        }[m
+[32m+[m[32m                    },[m
+[32m+[m[32m                    title: { display: true }[m
+                 }[m
+             });[m
+[32m+[m[32m            // Bienes por Tipo[m
+[32m+[m[32m            const dataTipo = (Object.keys(@json($bienesPorTipo)).length ? @json($bienesPorTipo) : { 'Sin datos': 0 });[m
+[32m+[m[32m            const labelsTipo = Object.keys(dataTipo);[m
+[32m+[m[32m            const valuesTipo = Object.values(dataTipo);[m
+[32m+[m
+[32m+[m[32m            (function(){[m
+[32m+[m[32m                const opts = commonOptions({currency:false});[m
+[32m+[m[32m                opts.plugins.title.text = 'Distribución de Bienes por Tipo';[m
+[32m+[m[32m                const bg = labelsTipo.map((_,i)=> CHART_PALETTE[i % CHART_PALETTE.length]);[m
+[32m+[m[32m                new Chart(document.getElementById('chartTipo').getContext('2d'), {[m
+[32m+[m[32m                    type: 'pie',[m
+[32m+[m[32m                    data: { labels: labelsTipo, datasets:[{ data: valuesTipo, backgroundColor: bg }] },[m
+[32m+[m[32m                    options: opts[m
+[32m+[m[32m                });[m
+[32m+[m[32m            })();[m
+ [m
+             // Bienes por Estado[m
+[31m-            const dataEstado = @json($bienesPorEstado);[m
+[32m+[m[32m            const dataEstado = (Object.keys(@json($bienesPorEstado)).length ? @json($bienesPorEstado) : { 'Sin datos': 0 });[m
+             const labelsEstado = Object.keys(dataEstado);[m
+             const valuesEstado = Object.values(dataEstado);[m
+ [m
+[31m-            new Chart(document.getElementById('chartEstado').getContext('2d'), {[m
+[31m-                type: 'bar',[m
+[31m-                data: {[m
+[31m-                    labels: labelsEstado,[m
+[31m-                    datasets: [{[m
+[31m-                        label: 'Cantidad',[m
+[31m-                        data: valuesEstado,[m
+[31m-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',[m
+[31m-                        borderColor: 'rgba(54, 162, 235, 1)',[m
+[31m-                        borderWidth: 1[m
+[31m-                    }][m
+[31m-                },[m
+[31m-                options: {[m
+[31m-                    responsive: false,[m
+[31m-                    maintainAspectRatio: false,[m
+[31m-                    scales: { y: { beginAtZero: true } },[m
+[31m-                    plugins: {[m
+[31m-                        legend: { position: 'top' },[m
+[31m-                        title: { display: true, text: 'Bienes por Estado' }[m
+[31m-                    }[m
+[31m-                }[m
+[31m-            });[m
+[32m+[m[32m            (function(){[m
+[32m+[m[32m                const opts = commonOptions({currency:false});[m
+[32m+[m[32m                opts.plugins.title.text = 'Bienes por Estado';[m
+[32m+[m[32m                new Chart(document.getElementById('chartEstado').getContext('2d'), {[m
+[32m+[m[32m                    type: 'bar',[m
+[32m+[m[32m                            data: { labels: labelsEstado, datasets:[{ label:'Cantidad', data: valuesEstado, backgroundColor: CHART_PALETTE[0], maxBarThickness: 40, barThickness: 'flex' }] },[m
+[32m+[m[32m                    options: opts[m
+[32m+[m[32m                });[m
+[32m+[m[32m            })();[m
+ [m
+             // Bienes por Registro (Progresivo)[m
+[31m-            const dataRegistro = @json($bienesPorRegistro);[m
+[32m+[m[32m            const dataRegistro = (Object.keys(@json($bienesPorRegistro)).length ? @json($bienesPorRegistro) : { 'Sin datos': 0 });[m
+             const labelsRegistro = Object.keys(dataRegistro);[m
+             const valuesRegistro = Object.values(dataRegistro);[m
+ [m
+[31m-            new Chart(document.getElementById('chartRegistro').getContext('2d'), {[m
+[31m-                type: 'line',[m
+[31m-                data: {[m
+[31m-                    labels: labelsRegistro,[m
+[31m-                    datasets: [{[m
+[31m-                        label: 'Cantidad Acumulada',[m
+[31m-                        data: valuesRegistro,[m
+[31m-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',[m
+[31m-                        borderColor: 'rgba(75, 192, 192, 1)',[m
+[31m-                        borderWidth: 2,[m
+[31m-                        fill: true,[m
+[31m-                        tension: 0.3[m
+[31m-                    }][m
+[31m-                },[m
+[31m-                options: {[m
+[31m-                    responsive: false,[m
+[31m-                    maintainAspectRatio: false,[m
+[31m-                    scales: { y: { beginAtZero: true } },[m
+[31m-                    plugins: {[m
+[31m-                        legend: { position: 'top' },[m
+[31m-                        title: { display: true, text: 'Registro progresivo de Bienes por Mes' }[m
+[31m-                    }[m
+[31m-                }[m
+[31m-            });[m
+[32m+[m[32m            const granularity = @json($granularity ?? 'monthly');[m
+[32m+[m[32m            const granularityLabel = granularity === 'daily' ? 'Diaria' : (granularity === 'weekly' ? 'Semanal' : 'Mensual');[m
+[32m+[m
+[32m+[m[32m            (function(){[m
+[32m+[m[32m                const opts = commonOptions({currency:false});[m
+[32m+[m[32m                opts.plugins.title.text = `Registro progresivo de Bienes (${granularityLabel})`;[m
+[32m+[m[32m                new Chart(document.getElementById('chartRegistro').getContext('2d'), {[m
+[32m+[m[32m                    type: 'line',[m
+[32m+[m[32m                    data: { labels: labelsRegistro, datasets:[{ label:'Cantidad Acumulada', data: valuesRegistro, backgroundColor: CHART_PALETTE[1]+'33', borderColor: CHART_PALETTE[1], borderWidth:2, fill:true, tension:0.25, pointRadius:2 }] },[m
+[32m+[m[32m                    options: opts[m
+[32m+[m[32m                });[m
+[32m+[m[32m            })();[m
+ [m
+             // Bienes Desincorporados[m
+[31m-            const dataDesincorporados = @json($bienesDesincorporados);[m
+[32m+[m[32m            const dataDesincorporados = (Object.keys(@json($bienesDesincorporados)).length ? @json($bienesDesincorporados) : { 'Sin datos': 0 });[m
+             const labelsDesincorporados = Object.keys(dataDesincorporados);[m
+             const valuesDesincorporados = Object.values(dataDesincorporados);[m
+ [m
+[31m-            new Chart(document.getElementById('chartDesincorporados').getContext('2d'), {[m
+[31m-                type: 'line',[m
+[31m-                data: {[m
+[31m-                    labels: labelsDesincorporados,[m
+[31m-                    datasets: [{[m
+[31m-                        label: 'Cantidad Desincorporada',[m
+[31m-                        data: valuesDesincorporados,[m
+[31m-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',[m
+[31m-                        borderColor: 'rgba(255, 99, 132, 1)',[m
+[31m-                        borderWidth: 2,[m
+[31m-                        fill: true,[m
+[31m-                        tension: 0.3[m
+[31m-                    }][m
+[31m-                },[m
+[31m-                options: {[m
+[31m-                    responsive: false,[m
+[31m-                    maintainAspectRatio: false,[m
+[31m-                    scales: { y: { beginAtZero: true } },[m
+[31m-                    plugins: {[m
+[31m-                        legend: { position: 'top' },[m
+[31m-                        title: { display: true, text: 'Bienes Desincorporados por Mes' }[m
+[31m-                    }[m
+[31m-                }[m
+[31m-            });[m
+[32m+[m[32m            (function(){[m
+[32m+[m[32m                const opts = commonOptions({currency:false});[m
+[32m+[m[32m                opts.plugins.title.text = `Bienes Desincorporados (${granularityLabel})`;[m
+[32m+[m[32m                new Chart(document.getElementById('chartDesincorporados').getContext('2d'), {[m
+[32m+[m[32m                    type: 'line',[m
+[32m+[m[32m                    data: { labels: labelsDesincorporados, datasets:[{ label:'Cantidad Desincorporada', data: valuesDesincorporados, backgroundColor: CHART_PALETTE[3]+'33', borderColor: CHART_PALETTE[3], borderWidth:2, fill:true, tension:0.25, pointRadius:2 }] },[m
+[32m+[m[32m                    options: opts[m
+[32m+[m[32m                });[m
+[32m+[m[32m            })();[m
+             // Registro de Dependencias[m
+[31m-    const dataDependencia = @json($registroDependencias);[m
+[32m+[m[32m    const dataDependencia = (Object.keys(@json($registroDependencias)).length ? @json($registroDependencias) : { 'Sin datos': 0 });[m
+     const labelsDependencia = Object.keys(dataDependencia);[m
+     const valuesDependencia = Object.values(dataDependencia);[m
+ [m
+[31m-    new Chart(document.getElementById('chartDependencia').getContext('2d'), {[m
+[31m-        type: 'line',[m
+[31m-        data: {[m
+[31m-            labels: labelsDependencia,[m
+[31m-            datasets: [{[m
+[31m-                label: 'Dependencias Registradas',[m
+[31m-                data: valuesDependencia,[m
+[31m-                backgroundColor: 'rgba(153, 102, 255, 0.2)',[m
+[31m-                borderColor: 'rgba(153, 102, 255, 1)',[m
+[31m-                borderWidth: 2,[m
+[31m-                fill: true,[m
+[31m-                tension: 0.3[m
+[31m-            }][m
+[31m-        },[m
+[31m-        options: {[m
+[31m-            responsive: false,[m
+[31m-            maintainAspectRatio: false,[m
+[31m-            plugins: {[m
+[31m-                legend: { position: 'top' },[m
+[31m-                title: { display: true, text: 'Registro de Dependencias por Mes' }[m
+[31m-            },[m
+[31m-            scales: { y: { beginAtZero: true } }[m
+[31m-        }[m
+[32m+[m[32m    (function(){[m
+[32m+[m[32m        const opts = commonOptions({currency:false});[m
+[32m+[m[32m        opts.plugins.title.text = `Registro de Dependencias (${granularityLabel})`;[m
+[32m+[m[32m        new Chart(document.getElementById('chartDependencia').getContext('2d'), {[m
+[32m+[m[32m            type: 'line',[m
+[32m+[m[32m            data: { labels: labelsDependencia, datasets:[{ label:'Dependencias Registradas', data: valuesDependencia, backgroundColor: CHART_PALETTE[4]+'33', borderColor: CHART_PALETTE[4], borderWidth:2, fill:true, tension:0.25, pointRadius:2 }] },[m
+[32m+[m[32m            options: opts[m
+[32m+[m[32m        });[m
+[32m+[m[32m    })();[m
+[32m+[m
+[32m+[m[32m    // Listener para cambiar granularidad y recargar con el parámetro[m
+[32m+[m[32m    document.getElementById('granularity')?.addEventListener('change', function () {[m
+[32m+[m[32m        const g = this.value;[m
+[32m+[m[32m        const params = new URLSearchParams(window.location.search);[m
+[32m+[m[32m        params.set('granularity', g);[m
+[32m+[m[32m        // Mantener otros filtros[m
+[32m+[m[32m        window.location.search = params.toString();[m
+     });[m
+ [m
+     // Registro de Unidades Administradoras[m
+[31m-    const dataUnidad = @json($registroUnidades);[m
+[32m+[m[32m    const dataUnidad = (Object.keys(@json($registroUnidades)).length ? @json($registroUnidades) : { 'Sin datos': 0 });[m
+     const labelsUnidad = Object.keys(dataUnidad);[m
+     const valuesUnidad = Object.values(dataUnidad);[m
+ [m
+[31m-    new Chart(document.getElementById('chartUnidad').getContext('2d'), {[m
+[31m-        type: 'line',[m
+[31m-        data: {[m
+[31m-            labels: labelsUnidad,[m
+[31m-            datasets: [{[m
+[31m-                label: 'Unidades Registradas',[m
+[31m-                data: valuesUnidad,[m
+[31m-                backgroundColor: 'rgba(255, 159, 64, 0.2)',[m
+[31m-                borderColor: 'rgba(255, 159, 64, 1)',[m
+[31m-                borderWidth: 2,[m
+[31m-                fill: true,[m
+[31m-                tension: 0.3[m
+[31m-            }][m
+[31m-        },[m
+[31m-        options: {[m
+[31m-            responsive: false,[m
+[31m-            maintainAspectRatio: false,[m
+[31m-            plugins: {[m
+[31m-                legend: { position: 'top' },[m
+[31m-                title: { display: true, text: 'Registro de Unidades Administradoras por Mes' }[m
+[31m-            },[m
+[31m-            scales: { y: { beginAtZero: true } }[m
+[31m-        }[m
+[31m-    });[m
+[32m+[m[32m    (function(){[m
+[32m+[m[32m        const opts = commonOptions({currency:false});[m
+[32m+[m[32m        opts.plugins.title.text = `Registro de Unidades Administradoras (${granularityLabel})`;[m
+[32m+[m[32m        new Chart(document.getElementById('chartUnidad').getContext('2d'), {[m
+[32m+[m[32m            type: 'line',[m
+[32m+[m[32m            data: { labels: labelsUnidad, datasets:[{ label:'Unidades Registradas', data: valuesUnidad, backgroundColor: CHART_PALETTE[5]+'33', borderColor: CHART_PALETTE[5], borderWidth:2, fill:true, tension:0.25, pointRadius:2 }] },[m
+[32m+[m[32m            options: opts[m
+[32m+[m[32m        });[m
+[32m+[m[32m    })();[m
+ [m
+     // Registro de Organismos[m
+[31m-    const dataOrganismo = @json($registroOrganismos);[m
+[32m+[m[32m    const dataOrganismo = (Object.keys(@json($registroOrganismos)).length ? @json($registroOrganismos) : { 'Sin datos': 0 });[m
+     const labelsOrganismo = Object.keys(dataOrganismo);[m
+     const valuesOrganismo = Object.values(dataOrganismo);[m
+ [m
+[31m-    new Chart(document.getElementById('chartOrganismo').getContext('2d'), {[m
+[31m-        type: 'line',[m
+[31m-        data: {[m
+[31m-            labels: labelsOrganismo,[m
+[31m-            datasets: [{[m
+[31m-                label: 'Organismos Registrados',[m
+[31m-                data: valuesOrganismo,[m
+[31m-                backgroundColor: 'rgba(75, 192, 192, 0.2)',[m
+[31m-                borderColor: 'rgba(75, 192, 192, 1)',[m
+[31m-                borderWidth: 2,[m
+[31m-                fill: true,[m
+[31m-                tension: 0.3[m
+[31m-            }][m
+[31m-        },[m
+[31m-        options: {[m
+[31m-            responsive: false,[m
+[31m-            maintainAspectRatio: false,[m
+[31m-            plugins: {[m
+[31m-                legend: { position: 'top' },[m
+[31m-                title: { display: true, text: 'Registro de Organismos por Mes' }[m
+[31m-            },[m
+[31m-            scales: { y: { beginAtZero: true } }[m
+[31m-        }[m
+[32m+[m[32m    // --- Nuevos datasets desde el servidor ---[m
+[32m+[m[32m    const dataValorPorEstado = (Object.keys(@json($valorPorEstado ?? [])).length ? @json($valorPorEstado) : { 'Sin datos': 0 });[m
+[32m+[m[32m    const labelsValorPorEstado = Object.keys(dataValorPorEstado);[m
+[32m+[m[32m    const valuesValorPorEstado = Object.values(dataValorPorEstado);[m
+[32m+[m
+[32m+[m[32m    const dataTopDeps = (Object.keys(@json($topDependenciasValor ?? [])).length ? @json($topDependenciasValor) : { 'Sin datos': 0 });[m
+[32m+[m[32m    const labelsTopDeps = Object.keys(dataTopDeps);[m
+[32m+[m[32m    const valuesTopDeps = Object.values(dataTopDeps);[m
+[32m+[m
+[32m+[m[32m    const dataFotos = (Object.keys(@json($fotoCoverage ?? [])).length ? @json($fotoCoverage) : { 'Sin datos': 0 });[m
+[32m+[m[32m    const labelsFotos = Object.keys(dataFotos);[m
+[32m+[m[32m    const valuesFotos = Object.values(dataFotos);[m
+[32m+[m
+[32m+[m[32m    const dataMov = (Object.keys(@json($movimientoCoverage ?? [])).length ? @json($movimientoCoverage) : { 'Sin datos': 0 });[m
+[32m+[m[32m    const labelsMov = Object.keys(dataMov);[m
+[32m+[m[32m    const valuesMov = Object.values(dataMov);[m
+[32m+[m
+[32m+[m[32m    // Si por alguna razón se inyectó una tabla en esta vista, ocultarla[m
+[32m+[m[32m    document.addEventListener('DOMContentLoaded', function () {[m
+[32m+[m[32m        const tabla = document.getElementById('tablaBienesContainer');[m
+[32m+[m[32m        if (tabla) tabla.style.display = 'none';[m
+[32m+[m[32m    });[m
+[32m+[m
+[32m+[m[32m    (function(){[m
+[32m+[m[32m        const opts = commonOptions({currency:false});[m
+[32m+[m[32m        opts.plugins.title.text = `Registro de Organismos (${granularityLabel})`;[m
+[32m+[m[32m        new Chart(document.getElementById('chartOrganismo').getContext('2d'), {[m
+[32m+[m[32m            type: 'line',[m
+[32m+[m[32m            data: { labels: labelsOrganismo, datasets:[{ label:'Organismos Registrados', data: valuesOrganismo, backgroundColor: CHART_PALETTE[6]+'33', borderColor: CHART_PALETTE[6], borderWidth:2, fill:true, tension:0.25, pointRadius:2 }] },[m
+[32m+[m[32m            options: opts[m
+[32m+[m[32m        });[m
+[32m+[m[32m    })();[m
+[32m+[m
+[32m+[m[32m    // Valor total por Estado[m
+[32m+[m[32m    (function(){[m
+[32m+[m[32m        const opts = commonOptions({currency:true});[m
+[32m+[m[32m        opts.plugins.title.text = 'Valor total por Estado (Bs.)';[m
+[32m+[m[32m        new Chart(document.getElementById('chartValorEstado').getContext('2d'), {[m
+[32m+[m[32m            type: 'bar',[m
+[32m+[m[32m            data: { labels: labelsValorPorEstado, datasets:[{ label:'Valor (Bs.)', data: valuesValorPorEstado, backgroundColor: CHART_PALETTE[1], maxBarThickness: 60 }] },[m
+[32m+[m[32m            options: opts[m
+[32m+[m[32m        });[m
+[32m+[m[32m    })();[m
+[32m+[m
+[32m+[m[32m    // Top 10 Dependencias por Valor (horizontal bar)[m
+[32m+[m[32m    (function(){[m
+[32m+[m[32m        const opts = commonOptions({currency:true, indexAxis:'y'});[m
+[32m+[m[32m        opts.plugins.title.text = 'Top 10 Dependencias por Valor (Bs.)';[m
+[32m+[m[32m        new Chart(document.getElementById('chartTopDeps').getContext('2d'), {[m
+[32m+[m[32m            type: 'bar',[m
+[32m+[m[32m            data: { labels: labelsTopDeps, datasets:[{ label:'Valor (Bs.)', data: valuesTopDeps, backgroundColor: CHART_PALETTE[2], barThickness: 18, maxBarThickness: 40 }] },[m
+[32m+[m[32m            options: opts[m
+[32m+[m[32m        });[m
+[32m+[m[32m    })();[m
+[32m+[m
+[32m+[m[32m    // Cobertura de fotografías (doughnut)[m
+[32m+[m[32m    (function(){[m
+[32m+[m[32m        const opts = commonOptions({currency:false});[m
+[32m+[m[32m        opts.plugins.title.text = 'Cobertura de Fotografías';[m
+[32m+[m[32m        new Chart(document.getElementById('chartFotos').getContext('2d'), {[m
+[32m+[m[32m            type: 'doughnut',[m
+[32m+[m[32m            data: { labels: labelsFotos, datasets:[{ data: valuesFotos, backgroundColor: [CHART_PALETTE[1], CHART_PALETTE[3]], hoverOffset:6 }] },[m
+[32m+[m[32m            options: opts[m
+[32m+[m[32m        });[m
+[32m+[m[32m    })();[m
+[32m+[m
+[32m+[m[32m    // Bienes sin movimientos (12 meses)[m
+[32m+[m[32m    (function(){[m
+[32m+[m[32m        const opts = commonOptions({currency:false});[m
+[32m+[m[32m        opts.plugins.title.text = 'Bienes con/sin movimientos (12 meses)';[m
+[32m+[m[32m        new Chart(document.getElementById('chartMovimientos').getContext('2d'), {[m
+[32m+[m[32m            type: 'pie',[m
+[32m+[m[32m            data: { labels: labelsMov, datasets:[{ data: valuesMov, backgroundColor: [CHART_PALETTE[1], CHART_PALETTE[2]] }] },[m
+[32m+[m[32m            options: opts[m
+[32m+[m[32m        });[m
+[32m+[m[32m    })();[m
+[32m+[m
+[32m+[m[32m    // Descarga de PDFs por gráfica[m
+[32m+[m[32m    document.querySelectorAll('.download-btn').forEach(btn => {[m
+[32m+[m[32m        btn.addEventListener('click', function () {[m
+[32m+[m[32m            const chart = this.getAttribute('data-chart');[m
+[32m+[m[32m            const params = new URLSearchParams(window.location.search);[m
+[32m+[m[32m            if (chart) params.set('chart', chart);[m
+[32m+[m[32m            // Mantener granularity si existe en selector[m
+[32m+[m[32m            const g = document.getElementById('granularity')?.value;[m
+[32m+[m[32m            if (g) params.set('granularity', g);[m
+[32m+[m
+[32m+[m[32m            const url = `${window.location.pathname.replace(/\/graficas.*$/, '')}/graficas/pdf?${params.toString()}`;[m
+[32m+[m[32m            window.open(url, '_blank');[m
+[32m+[m[32m        });[m
+     });[m
+ [m
+ [m
+[1mdiff --git a/resources/views/reportes/pdf_grafica.blade.php b/resources/views/reportes/pdf_grafica.blade.php[m
+[1mnew file mode 100644[m
+[1mindex 0000000..03a9da0[m
+[1m--- /dev/null[m
+[1m+++ b/resources/views/reportes/pdf_grafica.blade.php[m
+[36m@@ -0,0 +1,85 @@[m
+[32m+[m[32m<!doctype html>[m
+[32m+[m[32m<html lang="es">[m
+[32m+[m[32m<head>[m
+[32m+[m[32m    <meta charset="utf-8">[m
+[32m+[m[32m    <meta name="viewport" content="width=device-width, initial-scale=1">[m
+[32m+[m[32m    <title>{{ $title ?? 'Datos de gráfica' }}</title>[m
+[32m+[m[32m    <style>[m
+[32m+[m[32m        body { font-family: DejaVu Sans, Arial, Helvetica, sans-serif; color: #222; font-size:12px; }[m
+[32m+[m[32m        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }[m
+[32m+[m[32m        .filters table { width:100%; border-collapse:collapse; font-size:11px; margin-top:6px; }[m
+[32m+[m[32m        .report-table { width:100%; border-collapse:collapse; font-size:12px; }[m
+[32m+[m[32m        .report-table thead tr { background:#f7fafc; }[m
+[32m+[m[32m        .report-table th, .report-table td { padding:8px 10px; border-bottom:1px solid #e6edf3; }[m
+[32m+[m[32m        .report-table tbody tr:nth-child(even) { background:#fbfdff; }[m
+[32m+[m[32m        .total-row { background:#f1f5f9; font-weight:700; }[m
+[32m+[m[32m    </style>[m
+[32m+[m[32m</head>[m
+[32m+[m[32m<body>[m
+[32m+[m[32m@php[m
+[32m+[m[32m    use Illuminate\Support\Carbon;[m
+[32m+[m[32m    $generatedAt = Carbon::now()->format('d/m/Y H:i');[m
+[32m+[m[32m    $isCurrency = isset($title) && (stripos($title, 'valor') !== false || stripos($title, 'bs') !== false || stripos($title, 'boliva') !== false);[m
+[32m+[m[32m    $numericValues = array_filter($data, fn($v) => is_numeric($v));[m
+[32m+[m[32m    $totalNumeric = array_sum($numericValues);[m
+[32m+[m[32m    $format = function($v) use ($isCurrency) {[m
+[32m+[m[32m        if (!is_numeric($v)) return $v;[m
+[32m+[m[32m        if ($isCurrency) return number_format($v, 2, ',', '.') . ' Bs.';[m
+[32m+[m[32m        return (intval($v) == $v) ? number_format($v, 0, ',', '.') : number_format($v, 2, ',', '.');[m
+[32m+[m[32m    };[m
+[32m+[m[32m@endphp[m
+[32m+[m
+[32m+[m[32m<div>[m
+[32m+[m[32m    <div class="header">[m
+[32m+[m[32m        <div>[m
+[32m+[m[32m            <div style="font-size:16px; font-weight:700;">Sistema IUT - Reportes</div>[m
+[32m+[m[32m            <div style="font-size:11px; color:#555;">Generado: {{ $generatedAt }}</div>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m        <div style="text-align:right; font-size:12px; color:#333;">{{ $title }}</div>[m
+[32m+[m[32m    </div>[m
+[32m+[m
+[32m+[m[32m    @if(!empty($filters))[m
+[32m+[m[32m        <div class="filters" style="margin-bottom:10px;">[m
+[32m+[m[32m            <strong>Filtros aplicados:</strong>[m
+[32m+[m[32m            <table>[m
+[32m+[m[32m                @foreach($filters as $k => $v)[m
+[32m+[m[32m                    <tr>[m
+[32m+[m[32m                        <td style="width:30%; padding:4px 6px; vertical-align:top; color:#444;"><strong>{{ $k }}</strong></td>[m
+[32m+[m[32m                        <td style="padding:4px 6px; color:#333;">@if(is_array($v)) {{ implode(', ', $v) }} @else {{ $v }} @endif</td>[m
+[32m+[m[32m                    </tr>[m
+[32m+[m[32m                @endforeach[m
+[32m+[m[32m            </table>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m    @endif[m
+[32m+[m
+[32m+[m[32m    <div style="border:1px solid #e2e8f0; border-radius:6px; overflow:hidden;">[m
+[32m+[m[32m        <table class="report-table">[m
+[32m+[m[32m            <thead>[m
+[32m+[m[32m                <tr>[m
+[32m+[m[32m                    <th style="text-align:left;">Etiqueta</th>[m
+[32m+[m[32m                    <th style="text-align:right;">Valor</th>[m
+[32m+[m[32m                </tr>[m
+[32m+[m[32m            </thead>[m
+[32m+[m[32m            <tbody>[m
+[32m+[m[32m                @foreach($data as $label => $value)[m
+[32m+[m[32m                    <tr>[m
+[32m+[m[32m                        <td>{{ $label }}</td>[m
+[32m+[m[32m                        <td style="text-align:right;">{{ $format($value) }}</td>[m
+[32m+[m[32m                    </tr>[m
+[32m+[m[32m                @endforeach[m
+[32m+[m[32m            </tbody>[m
+[32m+[m[32m            @if(count($numericValues) > 0)[m
+[32m+[m[32m            <tfoot>[m
+[32m+[m[32m                <tr class="total-row">[m
+[32m+[m[32m                    <td>Total</td>[m
+[32m+[m[32m                    <td style="text-align:right;">{{ $format($totalNumeric) }}</td>[m
+[32m+[m[32m                </tr>[m
+[32m+[m[32m            </tfoot>[m
+[32m+[m[32m            @endif[m
+[32m+[m[32m        </table>[m
+[32m+[m[32m    </div>[m
+[32m+[m
+[32m+[m[32m    <div style="margin-top:12px; font-size:11px; color:#666;">Fuente: Sistema de Inventario IUT</div>[m
+[32m+[m[32m</div>[m
+[32m+[m[32m</body>[m
+[32m+[m[32m</html>[m
+[1mdiff --git a/routes/web.php b/routes/web.php[m
+[1mindex 7b913b2..ad5563c 100644[m
+[1m--- a/routes/web.php[m
+[1m+++ b/routes/web.php[m
+[36m@@ -106,6 +106,7 @@[m [mRoute::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function ()[m
+     Route::resource('reportes', ReporteController::class);[m
+     Route::get('reportes/pdf/{tipo}', [ReporteController::class, 'generarPdf'])->name('reportes.pdf');[m
+     Route::get('graficas', [ReporteController::class, 'graficas'])->name('graficas');[m
+[32m+[m[32m    Route::get('graficas/pdf', [ReporteController::class, 'graficasPdf'])->name('graficas.pdf');[m
+ [m
+     // --- UNIDADES ADMINISTRADORAS ---[m
+     Route::resource('unidades', UnidadAdministradoraController::class)->parameters(['unidades' => 'unidadAdministradora']);[m
+[1mdiff --git a/storage/framework/sessions/9VbTq24yg1VccgxwQdnjtolgDVba59FFBUEWlgcz b/storage/framework/sessions/9VbTq24yg1VccgxwQdnjtolgDVba59FFBUEWlgcz[m
+[1mnew file mode 100644[m
+[1mindex 0000000..c24a107[m
+[1m--- /dev/null[m
+[1m+++ b/storage/framework/sessions/9VbTq24yg1VccgxwQdnjtolgDVba59FFBUEWlgcz[m
+[36m@@ -0,0 +1 @@[m
+[32m+[m[32ma:4:{s:6:"_token";s:40:"8DCptE50kLTNVFvBHwKdAsBOUCKwptXKVlSNZH0N";s:9:"_previous";a:1:{s:3:"url";s:28:"http://127.0.0.1:8000/bienes";}s:6:"_flash";a:2:{s:3:"old";a:0:{}s:3:"new";a:0:{}}s:50:"login_web_59ba36addc2b2f9401580f014c7f58ea4e30989d";i:1;}[m
+\ No newline at end of file[m
+[1mdiff --git a/storage/framework/sessions/e6bKfuxgHtwMD4X88SYo6lvMCaoKs0s1GxbXgxY3 b/storage/framework/sessions/e6bKfuxgHtwMD4X88SYo6lvMCaoKs0s1GxbXgxY3[m
+[1mdeleted file mode 100644[m
+[1mindex 72d47db..0000000[m
+[1m--- a/storage/framework/sessions/e6bKfuxgHtwMD4X88SYo6lvMCaoKs0s1GxbXgxY3[m
+[1m+++ /dev/null[m
+[36m@@ -1 +0,0 @@[m
+[31m-a:4:{s:6:"_token";s:40:"VoemBhwElI9l7Kvdk1pdaxNkuPaaRBjsE5mur6xQ";s:6:"_flash";a:2:{s:3:"old";a:0:{}s:3:"new";a:0:{}}s:9:"_previous";a:1:{s:3:"url";s:37:"http://127.0.0.1:8000/usuarios/1/edit";}s:50:"login_web_59ba36addc2b2f9401580f014c7f58ea4e30989d";i:1;}[m
+\ No newline at end of file[m
+[1mdiff --git a/storage/framework/sessions/uwMapMLQbZcK6YVCDHGAJ9e3I6mGv8DwIPW3cpW1 b/storage/framework/sessions/uwMapMLQbZcK6YVCDHGAJ9e3I6mGv8DwIPW3cpW1[m
+[1mdeleted file mode 100644[m
+[1mindex 3059e4d..0000000[m
+[1m--- a/storage/framework/sessions/uwMapMLQbZcK6YVCDHGAJ9e3I6mGv8DwIPW3cpW1[m
+[1m+++ /dev/null[m
+[36m@@ -1 +0,0 @@[m
+[31m-a:4:{s:6:"_token";s:40:"QAzxYghowL1ShpEbE6yZL6HiSEIYmOIukLxsOVb4";s:9:"_previous";a:1:{s:3:"url";s:35:"http://127.0.0.1:8000/bienes/create";}s:6:"_flash";a:2:{s:3:"old";a:0:{}s:3:"new";a:0:{}}s:50:"login_web_59ba36addc2b2f9401580f014c7f58ea4e30989d";i:1;}[m
+\ No newline at end of file[m

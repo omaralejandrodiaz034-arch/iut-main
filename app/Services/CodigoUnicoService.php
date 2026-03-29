@@ -10,107 +10,96 @@ use Illuminate\Support\Facades\DB;
 
 class CodigoUnicoService
 {
+    private static function getModelMapping(): array
+    {
+        return [
+            'organismos'   => [Organismo::class, 'nombre', 'Organismo'],
+            'unidades'     => [UnidadAdministradora::class, 'nombre', 'Unidad Administradora'],
+            'dependencias' => [Dependencia::class, 'nombre', 'Dependencia'],
+            'bienes'       => [Bien::class, 'descripcion', 'Bien'],
+        ];
+    }
+
     /**
-     * Obtiene el siguiente código único disponible en todo el sistema.
-     * Verifica en todas las tablas: organismos, unidades_administradoras, dependencias y bienes.
-     * 
-     * @return string Código de 8 dígitos con ceros a la izquierda
+     * Obtiene el primer código disponible en la secuencia (rellena huecos).
+     * Si existen el 1, 2, 3 y el 100, devolverá el 4.
      */
     public static function obtenerSiguienteCodigo(): string
     {
-        // Obtener el código máximo de cada tabla
-        $maxOrganismos = (int) Organismo::max('codigo');
-        $maxUnidades = (int) UnidadAdministradora::max('codigo');
-        $maxDependencias = (int) Dependencia::max('codigo');
-        
-        // Para bienes, solo consideramos códigos numéricos puros
-        $maxBienes = (int) Bien::whereRaw('codigo REGEXP "^[0-9]+$"')
-            ->orderByRaw('CAST(codigo AS UNSIGNED) DESC')
-            ->value('codigo');
+        // 1. Obtenemos TODOS los códigos numéricos de todas las tablas y los unimos
+        $queries = [];
+        foreach (self::getModelMapping() as $config) {
+            $tableName = (new $config[0])->getTable();
+            $queries[] = DB::table($tableName)
+                ->selectRaw('CAST(codigo AS UNSIGNED) as num')
+                ->whereRaw("codigo REGEXP '^[0-9]+$'");
+        }
 
-        // Determinar el máximo global
-        $maximoGlobal = max($maxOrganismos, $maxUnidades, $maxDependencias, $maxBienes);
+        // Combinamos todos los resultados con UNION
+        $todosLosCodigos = $queries[0];
+        for ($i = 1; $i < count($queries); $i++) {
+            $todosLosCodigos->union($queries[$i]);
+        }
 
-        // Siguiente número secuencial
-        $siguienteNumero = $maximoGlobal + 1;
+        // 2. Buscamos el primer número que NO esté en la lista
+        // Creamos una subconsulta con los códigos existentes
+        $existentes = $todosLosCodigos->pluck('num')->toArray();
 
-        // Formatear a 8 dígitos con ceros a la izquierda
-        return str_pad($siguienteNumero, 8, '0', STR_PAD_LEFT);
+        if (empty($existentes)) {
+            return str_pad('1', 8, '0', STR_PAD_LEFT);
+        }
+
+        // Ordenamos para encontrar el hueco
+        sort($existentes);
+
+        $siguiente = 1;
+        foreach ($existentes as $codigo) {
+            if ($codigo == $siguiente) {
+                $siguiente++;
+            } elseif ($codigo > $siguiente) {
+                // Encontramos un hueco (ej: tenemos 1, 2, 3 y luego 100, el siguiente es 4)
+                break;
+            }
+        }
+
+        return str_pad((string)$siguiente, 8, '0', STR_PAD_LEFT);
     }
 
     /**
-     * Verifica si un código ya existe en cualquiera de las tablas del sistema.
-     * 
-     * @param string $codigo El código a verificar
-     * @param string|null $tabla Tabla a excluir de la verificación (para actualización)
-     * @param int|null $excluirId ID del registro a excluir (para actualización)
-     * @return bool true si el código existe, false si está disponible
+     * Verifica disponibilidad (Útil para validar el "código 100" que meta el usuario)
      */
-    public static function codigoExiste(string $codigo, ?string $tabla = null, ?int $excluirId = null): bool
+    public static function codigoExiste(string $codigo, ?string $tablaActual = null, ?int $excluirId = null): bool
     {
-        $existeEnOrganismos = ($tabla !== 'organismos') 
-            ? Organismo::where('codigo', $codigo)->exists() 
-            : Organismo::where('codigo', $codigo)->where('id', '!=', $excluirId)->exists();
+        foreach (self::getModelMapping() as $key => $config) {
+            $query = $config[0]::where('codigo', $codigo);
 
-        $existeEnUnidades = ($tabla !== 'unidades') 
-            ? UnidadAdministradora::where('codigo', $codigo)->exists() 
-            : UnidadAdministradora::where('codigo', $codigo)->where('id', '!=', $excluirId)->exists();
+            if ($tablaActual === $key && $excluirId) {
+                $query->where('id', '!=', $excluirId);
+            }
 
-        $existeEnDependencias = ($tabla !== 'dependencias') 
-            ? Dependencia::where('codigo', $codigo)->exists() 
-            : Dependencia::where('codigo', $codigo)->where('id', '!=', $excluirId)->exists();
-
-        $existeEnBienes = ($tabla !== 'bienes') 
-            ? Bien::where('codigo', $codigo)->exists() 
-            : Bien::where('codigo', $codigo)->where('id', '!=', $excluirId)->exists();
-
-        return $existeEnOrganismos || $existeEnUnidades || $existeEnDependencias || $existeEnBienes;
+            if ($query->exists()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * Obtiene información de dónde ya existe un código.
-     * 
-     * @param string $codigo
-     * @return array|null Array con 'tabla' y 'id' si existe, null si no existe
+     * Localiza un código existente
      */
     public static function obtenerUbicacionCodigo(string $codigo): ?array
     {
-        $organismo = Organismo::where('codigo', $codigo)->first();
-        if ($organismo) {
-            return [
-                'tabla' => 'Organismo',
-                'nombre' => $organismo->nombre,
-                'id' => $organismo->id
-            ];
+        foreach (self::getModelMapping() as $config) {
+            $registro = $config[0]::where('codigo', $codigo)->first();
+            if ($registro) {
+                $campoNombre = $config[1];
+                return [
+                    'tabla'  => $config[2],
+                    'nombre' => $registro->$campoNombre,
+                    'id'     => $registro->id
+                ];
+            }
         }
-
-        $unidad = UnidadAdministradora::where('codigo', $codigo)->first();
-        if ($unidad) {
-            return [
-                'tabla' => 'Unidad Administradora',
-                'nombre' => $unidad->nombre,
-                'id' => $unidad->id
-            ];
-        }
-
-        $dependencia = Dependencia::where('codigo', $codigo)->first();
-        if ($dependencia) {
-            return [
-                'tabla' => 'Dependencia',
-                'nombre' => $dependencia->nombre,
-                'id' => $dependencia->id
-            ];
-        }
-
-        $bien = Bien::where('codigo', $codigo)->first();
-        if ($bien) {
-            return [
-                'tabla' => 'Bien',
-                'nombre' => $bien->descripcion,
-                'id' => $bien->id
-            ];
-        }
-
         return null;
     }
 }

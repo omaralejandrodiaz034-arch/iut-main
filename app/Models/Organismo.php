@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
+use App\Traits\AuditableTrait;
+use App\Traits\GeneratesMovimiento;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\GeneratesMovimiento;
 
 /**
  * Eloquent model Organismo.
@@ -13,7 +14,7 @@ use App\Traits\GeneratesMovimiento;
  */
 class Organismo extends Model
 {
-    use HasFactory, GeneratesMovimiento;
+    use HasFactory, GeneratesMovimiento, AuditableTrait;
 
     protected $table = 'organismos';
 

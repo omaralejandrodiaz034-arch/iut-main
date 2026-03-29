@@ -17,6 +17,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Demo Password
+    |--------------------------------------------------------------------------
+    |
+    | Password used by DatosDemoSeeder for demo users.
+    | Override in .env file for production deployments.
+    |
+    */
+
+    'demo_password' => env('DEMO_PASSWORD', 'password123'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

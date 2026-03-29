@@ -13,8 +13,9 @@ return new class extends Migration
         Schema::create('reportes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('usuario_id')
+                ->nullable()
                 ->constrained('usuarios')
-                ->cascadeOnDelete()
+                ->nullOnDelete()
                 ->cascadeOnUpdate();
 
             $table->string('tipo', 80);

@@ -3,9 +3,12 @@
 @section('title', 'Crear Organismo')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Organismos', 'url' => route('organismos.index')], ['label' => 'Nuevo Organismo']]" />
+@endpush
 <div class="max-w-2xl mx-auto mt-10">
     <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
-        
+
         {{-- ENCABEZADO CON ESTILO --}}
         <div class="bg-gradient-to-r from-blue-700 to-blue-900 px-8 py-5">
             <h1 class="text-xl font-bold text-white flex items-center gap-2">
@@ -31,35 +34,38 @@
                            placeholder="00000000"
                            class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono bg-blue-50/20">
 
-                    {{-- Botón Sugerir Integrado --}}
-                    <button type="button" onclick="restaurarSugerencia()"
-                            class="absolute right-3 top-3 text-[10px] bg-blue-100 text-blue-700 px-2 py-1.5 rounded hover:bg-blue-200 transition font-bold uppercase tracking-wider border border-blue-200">
-                        Sugerir
+                    {{-- Botón cambiado de Sugerir a Requerido --}}
+                    <button type="button"
+                            class="absolute right-3 top-3 text-[10px] bg-red-100 text-red-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider border border-red-200 cursor-default">
+                        Requerido
                     </button>
                 </div>
 
-                {{-- Aviso de recuperación si el usuario cambia la sugerencia --}}
-                <div id="recuperar-contenedor" class="hidden mt-2 flex items-center gap-2 bg-blue-50/50 p-2 rounded-md border border-blue-100">
-                    <span class="text-blue-800 text-[11px] font-medium">⚠️ El código no coincide con la sugerencia:</span>
-                    <button type="button" id="btnRecuperar" 
-                            class="text-blue-600 text-[11px] font-bold hover:text-blue-800 underline flex items-center gap-1">
-                        Restaurar sugerencia ({{ $codigoSugerido }})
+                {{-- Aviso de recuperación modificado para indicar que es un campo requerido --}}
+                <div id="recuperar-contenedor" class="hidden mt-2 flex items-center gap-2 bg-red-50/50 p-2 rounded-md border border-red-100">
+                    <span class="text-red-800 text-[11px] font-medium">⚠️ Este código es requerido:</span>
+                    <button type="button" id="btnRecuperar"
+                            class="text-red-600 text-[11px] font-bold hover:text-red-800 underline flex items-center gap-1">
+                        Restaurar valor requerido ({{ $codigoSugerido }})
                     </button>
                 </div>
 
                 @error('codigo')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
+                {{-- Mensajes de error de validación --}}
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten números.</p>
-                <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Sugerencia secuencial activa (8 dígitos).</p>
+                <p id="error-ceros" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ El código no puede ser solo ceros; debe tener un valor real.</p>
+
+                <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Campo obligatorio de 8 dígitos numéricos.</p>
             </div>
 
             {{-- Nombre del Organismo --}}
             <div class="px-2">
                 <label for="nombre" class="block text-sm font-bold text-slate-700 mb-2">Nombre del Organismo</label>
-                <input type="text" name="nombre" id="nombre"
-                       value="{{ old('nombre') }}"
-                       maxlength="30"
+                  <input type="text" name="nombre" id="nombre"
+                      value="{{ old('nombre') }}"
+                      maxlength="40"
                        placeholder="Ej: Ministerio de Educación"
                        class="w-full px-4 py-3 border @error('nombre') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
 
@@ -67,7 +73,7 @@
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
                 <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten letras y espacios.</p>
-                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 30 caracteres (solo letras y espacios).</p>
+                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 40 caracteres (solo letras y espacios).</p>
             </div>
 
             {{-- Botones de Acción --}}
@@ -89,17 +95,17 @@
 </div>
 
 <script>
-    // Valor sugerido desde el controlador
     const sugerenciaInicial = "{{ $codigoSugerido }}";
 
     function restaurarSugerencia() {
         const codigoInput = document.getElementById('codigo');
         const recuperarContenedor = document.getElementById('recuperar-contenedor');
-        
+        const errorCeros = document.getElementById('error-ceros');
+
         codigoInput.value = sugerenciaInicial;
         recuperarContenedor.classList.add('hidden');
-        
-        // Feedback visual
+        errorCeros.classList.add('hidden');
+
         codigoInput.classList.add('ring-2', 'ring-green-400', 'bg-green-50');
         setTimeout(() => {
             codigoInput.classList.remove('ring-2', 'ring-green-400', 'bg-green-50');
@@ -109,13 +115,12 @@
     document.addEventListener('DOMContentLoaded', function () {
         const codigoInput = document.getElementById('codigo');
         const errorCodigo = document.getElementById('error-codigo');
+        const errorCeros = document.getElementById('error-ceros');
         const recuperarContenedor = document.getElementById('recuperar-contenedor');
         const btnRecuperar = document.getElementById('btnRecuperar');
         const nombreInput = document.getElementById('nombre');
-        const errorNombre = document.getElementById('error-nombre');
         const form = document.getElementById('organismoForm');
 
-        // 1. Lógica de Código
         codigoInput.addEventListener('input', function (e) {
             let original = e.target.value;
             let filtrado = original.replace(/[^0-9]/g, '');
@@ -127,8 +132,16 @@
 
             e.target.value = filtrado.slice(0, 8);
 
-            // Mostrar/ocultar aviso de restauración
-            if (e.target.value !== sugerenciaInicial) {
+            // Validar si son puros ceros
+            const esTodoCeros = e.target.value.length > 0 && /^0+$/.test(e.target.value);
+            if (esTodoCeros) {
+                errorCeros.classList.remove('hidden');
+            } else {
+                errorCeros.classList.add('hidden');
+            }
+
+            // Mostrar aviso de que es un valor requerido si se borra o cambia
+            if (e.target.value !== sugerenciaInicial || e.target.value.length < 8) {
                 recuperarContenedor.classList.remove('hidden');
             } else {
                 recuperarContenedor.classList.add('hidden');
@@ -146,25 +159,18 @@
             }
         });
 
-        // 2. Lógica de Nombre
-        nombreInput.addEventListener('input', function (e) {
-            let original = e.target.value;
-            let filtrado = original.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-
-            if (original !== filtrado) {
-                errorNombre.classList.remove('hidden');
-                setTimeout(() => errorNombre.classList.add('hidden'), 2500);
-            }
-<<<<<<< HEAD
-
-            e.target.value = filteredValue.slice(0, 30);
-=======
-            e.target.value = filtrado.slice(0, 40);
->>>>>>> 44fa59c4714a6fbc0641edd2b17c64cc51d1efc7
-        });
-
-        // 3. Estado de carga
+        // Validación final al enviar
         form.addEventListener('submit', function(e) {
+            const val = codigoInput.value;
+            const esTodoCeros = /^0+$/.test(val);
+
+            if (val.length < 8 || esTodoCeros) {
+                e.preventDefault();
+                errorCeros.classList.remove('hidden');
+                codigoInput.focus();
+                return;
+            }
+
             const btn = document.getElementById('btnGuardar');
             const icon = document.getElementById('btnIcon');
             const text = document.getElementById('btnText');

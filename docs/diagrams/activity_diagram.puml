@@ -1,0 +1,111 @@
+@startuml
+|Usuario|
+start
+:Accede al sistema;
+:Inicia sesion;
+
+if (Credenciales validas?) then (si)
+    :Cargar Dashboard;
+    if (Es Admin?) then (si)
+        :Menu Completo;
+    else (no)
+        :Menu Restringido;
+    endif
+else (no)
+    :Mostrar error;
+    stop
+endif
+
+|Menu Principal|
+:Accionar opcion del menu;
+
+|Bien|
+if (Opcion = Bienes) then (si)
+    :Listar Bienes;
+    if (Nueva busqueda?) then (si)
+        :Ingresar criterios;
+        :Filtrar resultados;
+    endif
+    :Ver lista filtrada;
+    
+    if (Accion = Crear) then (si)
+        :Formulario nuevo bien;
+        :Seleccionar tipo bien;
+        if (Tipo = Electronico) then (si)
+            :Ingresar datos electronicos;
+        elseif (Tipo = Vehiculo) then (si)
+            :Ingresar datos vehiculo;
+        elseif (Tipo = Mobiliario) then (si)
+            :Ingresar datos mobiliarios;
+        else
+            :Ingresar datos generales;
+        endif
+        :Seleccionar dependencia;
+        :Asignar responsable;
+        :Guardar bien;
+        :Generar codigo unico;
+        :Registrar en auditoria;
+        :Mostrar mensaje exito;
+    elseif (Accion = Editar) then (si)
+        :Cargar datos bien;
+        :Formulario edicion;
+        :Modificar datos;
+        :Guardar cambios;
+        :Registrar auditoria;
+    elseif (Accion = Eliminar) then (si)
+        if (Tiene movimientos?) then (si)
+            :No permitir eliminacion;
+        else
+            :Confirmar eliminacion;
+            :Mover a tabla eliminados;
+            :Registrar auditoria;
+        endif
+    endif
+    
+elseif (Opcion = Movimientos) then (si)
+    :Listar Movimientos;
+    :Crear Movimiento;
+    
+    if (Tipo = Traslado) then (si)
+        :Seleccionar bien;
+        :Seleccionar dependencia origen;
+        :Seleccionar dependencia destino;
+        :Ingresar observaciones;
+        :Generar acta traslado;
+        :Actualizar bien;
+    elseif (Tipo = Asignacion) then (si)
+        :Seleccionar bien;
+        :Seleccionar responsable;
+        :Registrar asignacion;
+    elseif (Tipo = Desincorporacion) then (si)
+        :Seleccionar bien;
+        :Ingresar motivo;
+        :Seleccionar tipo desincorporacion;
+        :Generar acta desincorporacion;
+        :Mover a bienes_desincorporados;
+    endif
+    :Guardar movimiento;
+    :Registrar auditoria;
+    
+elseif (Opcion = Reportes) then (si)
+    :Seleccionar tipo reporte;
+    :Configurar parametros;
+    :Generar reporte PDF;
+    :Descargar archivo;
+    
+elseif (Opcion = Organismos/Unidades/Dependencias) then (si)
+    :CRUD Organismo/Unidad/Dependencia;
+    
+elseif (Opcion = Usuarios) then (si)
+    if (Es Admin?) then (si)
+        :Crear usuario;
+        :Asignar rol;
+        :Gestionar permisos;
+    else
+        :Acceso denegado;
+    endif
+endif
+
+stop
+
+@enduml

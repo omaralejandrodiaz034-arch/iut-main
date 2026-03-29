@@ -35,6 +35,15 @@
                     <p class="text-sm font-medium">{{ session('info') }}</p>
                 </div>
             @endif
+            @if($errors->any())
+                <div class="mb-4 p-4 bg-red-50 border-l-4 border-red-600 text-red-700 rounded shadow-sm">
+                    <ul class="text-sm list-disc list-inside">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
             <form method="POST" action="{{ route('auth.set_password.store') }}" class="space-y-5">
                 @csrf
@@ -55,6 +64,9 @@
                     <input type="password" name="password_confirmation" id="password_confirmation" 
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-800 transition shadow-sm" 
                            placeholder="Repita su contraseña" required>
+                    @error('password_confirmation')
+                        <p class="mt-1 text-xs text-red-600 font-bold italic">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <button type="submit" class="w-full text-white font-bold py-3 rounded-lg shadow-lg hover:brightness-110 active:scale-95 transition duration-200 mt-6" style="background-color: #800020 !important;">

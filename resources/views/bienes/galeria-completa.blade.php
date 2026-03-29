@@ -4,6 +4,9 @@
 @section('title', 'Galería Completa de Bienes')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Bienes', 'url' => route('bienes.index')], ['label' => 'Galería']]" />
+@endpush
 <div class="mb-8 flex items-center justify-between">
     <h1 class="text-3xl font-extrabold text-gray-900 flex items-center gap-2">
     <!-- Heroicon: Photo -->

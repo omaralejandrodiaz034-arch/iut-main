@@ -1,0 +1,87 @@
+@startuml
+skinparam packageStyle rectangle
+
+package "Frontend" {
+    [Browser]
+    [Mobile]
+}
+
+package "Web Server" {
+    [Nginx]
+    [Vite]
+}
+
+package "Laravel App" {
+    
+    package "HTTP" {
+        [Routes]
+    }
+    
+    package "Middleware" {
+        [Auth]
+        [IsAdmin]
+        [RedirectByRole]
+    }
+    
+    package "Controllers" {
+        [AuthController]
+        [BienController]
+        [OrganismoController]
+        [UnidadController]
+        [DependenciaController]
+        [MovimientoController]
+        [UsuarioController]
+        [ReporteController]
+    }
+    
+    package "Services" {
+        [BienTypeService]
+        [CodigoUnicoService]
+        [MovimientoService]
+        [EliminadosService]
+        [FpdfReportService]
+    }
+    
+    package "Models" {
+        [Organismo]
+        [Unidad]
+        [Dependencia]
+        [Bien]
+        [Responsable]
+        [Usuario]
+        [Movimiento]
+        [Auditoria]
+    }
+    
+    package "Traits" {
+        [AuditableTrait]
+    }
+    
+    package "Views" {
+        [Blade Templates]
+    }
+}
+
+package "Database" {
+    [MySQL]
+    [Migrations]
+}
+
+package "Storage" {
+    [Files]
+}
+
+' Relations
+Browser --> Nginx
+Mobile --> Nginx
+Nginx --> Routes
+Routes --> Auth
+Auth --> Controllers
+Controllers --> Services
+Services --> Models
+Models --> MySQL
+Models --> Storage
+Services --> Storage
+Vite --> Browser
+
+@enduml

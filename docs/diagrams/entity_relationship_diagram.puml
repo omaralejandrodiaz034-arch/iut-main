@@ -1,0 +1,298 @@
+@startuml
+skinparam linetype ortho
+
+' ============================================
+' ENTIDADES - JERARQUÍA ORGANIZACIONAL
+' ============================================
+
+entity Organismo {
+  * id <<PK>>
+  --
+  codigo
+  nombre
+  created_at
+  updated_at
+}
+
+entity UnidadAdministradora {
+  * id <<PK>>
+  --
+  * organismo_id <<FK>>
+  codigo
+  nombre
+  created_at
+  updated_at
+}
+
+entity Dependencia {
+  * id <<PK>>
+  --
+  * unidad_administradora_id <<FK>>
+  * responsable_id <<FK>> <<nullable>>
+  codigo
+  nombre
+  created_at
+  updated_at
+}
+
+' ============================================
+' RESPONSABLE Y TIPO DE RESPONSABLE
+' ============================================
+
+entity TipoResponsable {
+  * id <<PK>>
+  --
+  nombre
+}
+
+entity Responsable {
+  * id <<PK>>
+  --
+  * tipo_id <<FK>>
+  cedula
+  nombre
+  correo
+  telefono
+}
+
+' ============================================
+' BIENES - ENTIDAD CENTRAL
+' ============================================
+
+entity Bien {
+  * id <<PK>>
+  --
+  * dependencia_id <<FK>> <<nullable>>
+  codigo
+  descripcion
+  precio
+  fotografia
+  estado
+  fecha_registro
+  tipo_bien
+  caracteristicas
+  created_at
+  updated_at
+}
+
+' Sub-tipos de Bien (1:1 con BIEN)
+entity BienElectronico {
+  * id <<PK>>
+  --
+  * bien_id <<FK>>
+  subtipo
+  procesador
+  memoria
+  almacenamiento
+  pantalla
+  serial
+  garantia
+}
+
+entity BienMobiliario {
+  * id <<PK>>
+  --
+  * bien_id <<FK>>
+  material
+  dimensiones
+  color
+  capacidad
+  cantidad_piezas
+  acabado
+}
+
+entity BienVehiculo {
+  * id <<PK>>
+  --
+  * bien_id <<FK>>
+  marca
+  modelo
+  anio
+  placa
+  motor
+  chasis
+  combustible
+  kilometraje
+}
+
+entity BienOtro {
+  * id <<PK>>
+  --
+  * bien_id <<FK>>
+  especificaciones
+  cantidad
+  presentacion
+}
+
+entity BienDesincorporado {
+  * id <<PK>>
+  --
+  * bien_id <<FK>>
+  * dependencia_id <<FK>> <<nullable>>
+  * responsable_id <<FK>> <<nullable>>
+  codigo
+  descripcion
+  precio
+  fotografia
+  estado
+  fecha_registro
+  tipo_bien
+  caracteristicas
+  motivo_desincorporacion
+  acta_desincorporacion
+  fecha_desincorporacion
+  created_at
+  updated_at
+}
+
+' ============================================
+' USUARIOS Y ROLES
+' ============================================
+
+entity Rol {
+  * id <<PK>>
+  --
+  nombre
+  permisos
+}
+
+entity Usuario {
+  * id <<PK>>
+  --
+  * rol_id <<FK>>
+  cedula
+  nombre
+  apellido
+  foto_perfil
+  correo
+  hash_password
+  activo
+  is_admin
+  remember_token
+  created_at
+  updated_at
+}
+
+' ============================================
+' MOVIMIENTOS Y AUDITORÍA
+' ============================================
+
+entity Movimiento {
+  * id <<PK>>
+  --
+  * bien_id <<FK>>
+  * usuario_id <<FK>>
+  subject_type
+  subject_id
+  tipo
+  fecha
+  observaciones
+  descripcion
+  acta_path
+  created_at
+}
+
+entity HistorialMovimiento {
+  * id <<PK>>
+  --
+  * movimiento_id <<FK>>
+  descripcion
+  fecha
+}
+
+entity Auditoria {
+  * id <<PK>>
+  --
+  * usuario_id <<FK>>
+  tabla
+  registro_id
+  operacion
+  valores_anteriores
+  valores_nuevos
+  descripcion
+  ip_address
+  user_agent
+  created_at
+}
+
+' ============================================
+' REPORTES
+' ============================================
+
+entity Reporte {
+  * id <<PK>>
+  --
+  * usuario_id <<FK>>
+  tipo
+  fecha_generado
+  archivo_pdf_path
+}
+
+' ============================================
+' ELIMINADOS (SOFT DELETE)
+' ============================================
+
+entity Eliminado {
+  * id <<PK>>
+  --
+  tabla_origen
+  registro_id
+  datos
+  motivo
+  * usuario_id <<FK>>
+  fecha_eliminacion
+}
+
+' ============================================
+' RELACIONES - JERARQUÍA ORGANIZACIONAL
+' ============================================
+
+Organismo ||--o{ UnidadAdministradora : tiene
+UnidadAdministradora ||--o{ Dependencia : tiene
+Dependencia ||--o{ Bien : contiene
+
+' ============================================
+' RELACIONES - RESPONSABLE
+' ============================================
+
+TipoResponsable ||--o{ Responsable : clasifica
+Responsable ||--o{ Dependencia : gestiona
+
+' ============================================
+' RELACIONES - BIENES Y SUB-TIPOS
+' ============================================
+
+Bien ||--o| BienElectronico : es_tipo
+Bien ||--o| BienMobiliario : es_tipo
+Bien ||--o| BienVehiculo : es_tipo
+Bien ||--o| BienOtro : es_tipo
+Bien ||--o| BienDesincorporado : desincorporado
+
+' ============================================
+' RELACIONES - USUARIOS Y ROLES
+' ============================================
+
+Rol ||--o{ Usuario : asigna
+
+' ============================================
+' RELACIONES - MOVIMIENTOS
+' ============================================
+
+Bien ||--o{ Movimiento : genera
+Usuario ||--o{ Movimiento : ejecuta
+Movimiento ||--o{ HistorialMovimiento : tiene
+
+' ============================================
+' RELACIONES - AUDITORÍA
+' ============================================
+
+Usuario ||--o{ Auditoria : realiza
+Usuario ||--o{ Reporte : genera
+
+' ============================================
+' RELACIONES - ELIMINADOS
+' ============================================
+
+Usuario ||--o{ Eliminado : elimina
+
+@enduml

@@ -3,6 +3,9 @@
 @section('title', 'Detalles de la Dependencia')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Dependencias', 'url' => route('dependencias.index')], ['label' => $dependencia->nombre]]" />
+@endpush
 @php
 use Illuminate\Support\Str;
 @endphp

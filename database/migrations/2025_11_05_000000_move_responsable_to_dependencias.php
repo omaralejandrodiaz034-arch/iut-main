@@ -44,14 +44,14 @@ return new class extends Migration
 
     public function down(): void
     {
-        // En down(): volver a crear responsable_id en bienes (nullable)
+        // Volver a crear responsable_id en bienes (nullable)
         Schema::table('bienes', function (Blueprint $table) {
             $table->foreignId('responsable_id')->nullable()
                 ->constrained('responsables')->nullOnDelete()->cascadeOnUpdate();
             $table->index('responsable_id', 'idx_bien_responsable');
         });
 
-        // Repropagar los responsables desde dependencias a bienes (simplemente asignar a bienes sin responsable)
+        // Repropagar los responsables desde dependencias a bienes
         $bienes = DB::table('bienes')->select('id', 'dependencia_id')->get();
         foreach ($bienes as $b) {
             $resp = DB::table('dependencias')->where('id', $b->dependencia_id)->value('responsable_id');
@@ -60,13 +60,7 @@ return new class extends Migration
             }
         }
 
-        // Finalmente eliminar responsable_id de dependencias
-        Schema::table('dependencias', function (Blueprint $table) {
-            if (Schema::hasColumn('dependencias', 'responsable_id')) {
-                $table->dropForeign(['responsable_id']);
-                $table->dropIndex('idx_dep_responsable');
-                $table->dropColumn('responsable_id');
-            }
-        });
+        // NOTA: NO se elimina responsable_id de dependencias porque fue creado
+        // en create_dependencias_table, no en esta migración.
     }
 };

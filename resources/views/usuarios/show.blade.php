@@ -3,6 +3,9 @@
 @section('title', 'Detalles del Usuario')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Usuarios', 'url' => route('usuarios.index')], ['label' => $usuario->nombre.' '.$usuario->apellido]]" />
+@endpush
 <div class="max-w-2xl mx-auto">
     @if (session('success'))
         <div class="mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded">

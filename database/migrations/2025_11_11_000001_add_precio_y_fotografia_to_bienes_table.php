@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * NOTA: Esta migración es un no-op porque create_bienes_table ya define
+     * las columnas 'precio' y 'fotografia'. Los hasColumn() impiden duplicados.
+     */
     public function up(): void
     {
         Schema::table('bienes', function (Blueprint $table) {

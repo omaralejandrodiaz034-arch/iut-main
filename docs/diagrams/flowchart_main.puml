@@ -1,0 +1,135 @@
+@startuml
+!theme plain
+
+' ============================================
+' FLOWCHART DIAGRAM
+' SISTEMA DE GESTIÓN DE INVENTARIO DE BIENES
+' ============================================
+
+title Flujo Principal del Sistema de Gestión de Inventario de Bienes
+
+start
+
+:Usuario accede al sistema;
+note right: Login con credenciales
+
+if ¿Usuario autenticado? then (no)
+    :Mostrar formulario de login;
+    stop
+else (sí)
+    :Cargar Dashboard;
+endif
+
+:Usuario selecciona opción del menú;
+
+if Opción seleccionada then
+    case (Registro de Bien)
+        :Formulario de registro;
+        note right: Seleccionar tipo de bien\n(Electrónico, Mobiliario, etc.)
+        
+        :Ingresar datos del bien;
+        note right: Código, Descripción, Precio\nDependencia, Estado, etc.
+        
+        :¿Tiene características específicas?;
+        
+        if sí then
+            :Completar características;
+            note right: Procesador, memoria (electrónico)\nMarca, modelo (vehículo), etc.
+        endif
+        
+        :Subir fotografías;
+        
+        :Guardar bien en BD;
+        :Generar código único;
+        :Actualizar historial;
+        
+        :Mostrar mensaje de éxito;
+        
+    case (Ver Bienes)
+        :Listar bienes;
+        note right: Con paginación y filtros\nPor estado, tipo, dependencia
+        
+        :¿Buscar bien específico?;
+        
+        if sí then
+            :Búsqueda global;
+        endif
+        
+        :Ver detalle del bien;
+        note right: Muestra información\ncompleta e historial
+        
+    case (Mover/Transferir Bien)
+        :Seleccionar bien;
+        
+        :Elegir tipo de movimiento;
+        note right: Traslado, Cambio de estado\nAsignación, Desincorporación
+        
+        if Movimiento = Traslado then
+            :Seleccionar nueva dependencia;
+            :Agregar observaciones;
+            :Confirmar traslado;
+            :Generar acta de traslado (PDF);
+        else if Movimiento = Cambio Estado then
+            :Seleccionar nuevo estado;
+            :Ingresar motivo;
+            :Confirmar cambio;
+        else if Movimiento = Desincorporación then
+            :Seleccionar motivo;
+            note right: Obsolescencia, Daño,\nRobo, Donación, Otra causa
+            :Ingresar descripción;
+            :Confirmar desincorporación;
+            :Generar acta (PDF);
+            :Mover a papelera (30 días);
+        endif
+        
+        :Registrar movimiento;
+        :Actualizar historial;
+        
+    case (Gestionar Dependencias)
+        :CRUD Dependencias;
+        note right: Crear, Editar, Eliminar\nAsignar responsable
+        
+    case (Gestionar Responsables)
+        :CRUD Responsables;
+        note right: Crear, Editar\nAsignar a dependencias
+        
+    case (Generar Reportes)
+        :Seleccionar tipo de reporte;
+        note right: Por dependencia\nPor responsable\nPor estado, etc.
+        
+        :Configurar parámetros;
+        
+        :Generar reporte;
+        
+        :¿Formato PDF? then (sí)
+            :Descargar PDF;
+        else (no)
+            :Descargar Excel;
+        endif
+        
+    case (Auditoría - Admin)
+        :Ver log de operaciones;
+        note right: Todas las acciones\nregistradas con usuario,\nfecha, IP, etc.
+        
+    case (Mi Perfil)
+        :Ver/editar información;
+        
+        :¿Cambiar contraseña?;
+        
+        if sí then
+            :Validar contraseña actual;
+            :Establecer nueva contraseña;
+        endif
+        
+        :¿Cambiar foto?;
+        
+        if sí then
+            :Subir nueva foto;
+        endif
+end
+
+:Usuario cierra sesión;
+
+stop
+
+@enduml

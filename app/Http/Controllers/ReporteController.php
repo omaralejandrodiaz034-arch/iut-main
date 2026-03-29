@@ -226,63 +226,144 @@ class ReporteController extends Controller
             ->toArray();
 
         // =====================================================
-        // 3. Bienes por Registro (Progresivo)
+        // 3. Bienes por Registro (Progresivo) con granularidad
         // =====================================================
+        $granularity = $request->get('granularity', 'monthly'); // daily|weekly|monthly
+
         $q3 = Bien::query();
         $applyFilters($q3);
-        $bienesPorRegistro = (clone $q3)->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as mes, COUNT(*) as count')
-            ->groupBy('mes')
-            ->orderBy('mes')
-            ->get()
-            ->mapWithKeys(fn($item) => [(string) $item->mes => (int) $item->count])
-            ->toArray();
 
+        // Obtiene las fechas y agrupa en PHP para ser DB-agnóstico
+        $createdDates = (clone $q3)->select('created_at')->get()->pluck('created_at')->filter();
+
+        $grouped = $createdDates->map(function ($d) use ($granularity) {
+            if (!$d) return null;
+            $dt = \Illuminate\Support\Carbon::parse($d);
+            return match ($granularity) {
+                'daily' => $dt->format('Y-m-d'),
+                'weekly' => $dt->copy()->startOfWeek()->format('Y-m-d'), // week bucket by start date
+                default => $dt->format('Y-m'),
+            };
+        })->filter()->countBy()->sortKeys();
+
+        // Construir acumulado progresivo
         $acumulado = [];
         $total = 0;
-        foreach ($bienesPorRegistro as $mes => $count) {
+        foreach ($grouped as $period => $count) {
             $total += $count;
-            $acumulado[$mes] = $total;
+            $acumulado[(string) $period] = (int) $total;
         }
         $bienesPorRegistro = $acumulado;
 
         // =====================================================
-        // 4. Bienes Desincorporados
+        // 4. Bienes Desincorporados (progresivo según granularidad)
         // =====================================================
-        $bienesDesincorporados = Eliminado::selectRaw('DATE_FORMAT(deleted_at, "%Y-%m") as mes, COUNT(*) as count')
-            ->groupBy('mes')
-            ->orderBy('mes')
-            ->get()
-            ->mapWithKeys(fn($item) => [(string) $item->mes => (int) $item->count])
-            ->toArray();
+        $deletedDates = Eliminado::select('deleted_at')->get()->pluck('deleted_at')->filter();
+        $groupedDeleted = $deletedDates->map(function ($d) use ($granularity) {
+            if (!$d) return null;
+            $dt = Carbon::parse($d);
+            return match ($granularity) {
+                'daily' => $dt->format('Y-m-d'),
+                'weekly' => $dt->copy()->startOfWeek()->format('Y-m-d'),
+                default => $dt->format('Y-m'),
+            };
+        })->filter()->countBy()->sortKeys();
+
+        $acumDel = [];
+        $t = 0;
+        foreach ($groupedDeleted as $period => $count) {
+            $t += $count;
+            $acumDel[(string) $period] = (int) $t;
+        }
+        $bienesDesincorporados = $acumDel;
 
         // =====================================================
-        // 5. Bienes por Dependencia (DIRECTO)
+        // Series de registro de entidades (organismos, unidades, dependencias)
+        // Agrupar por granularidad y construir acumulados
         // =====================================================
+        $collectAndAccumulate = function ($model, $dateColumn = 'created_at') use ($granularity) {
+            $dates = $model::select($dateColumn)->get()->pluck($dateColumn)->filter();
+            $grouped = $dates->map(function ($d) use ($granularity) {
+                if (!$d) return null;
+                $dt = Carbon::parse($d);
+                return match ($granularity) {
+                    'daily' => $dt->format('Y-m-d'),
+                    'weekly' => $dt->copy()->startOfWeek()->format('Y-m-d'),
+                    default => $dt->format('Y-m'),
+                };
+            })->filter()->countBy()->sortKeys();
 
+            $acc = [];
+            $s = 0;
+            foreach ($grouped as $p => $c) {
+                $s += $c;
+                $acc[(string) $p] = (int) $s;
+            }
+            return $acc;
+        };
 
-        // --- Registro de Organismos ---
-        $registroOrganismos = Organismo::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as mes, COUNT(*) as count')
-            ->groupBy('mes')
-            ->orderBy('mes')
+        $registroOrganismos = $collectAndAccumulate(Organismo::class, 'created_at');
+        $registroUnidades = $collectAndAccumulate(UnidadAdministradora::class, 'created_at');
+        $registroDependencias = $collectAndAccumulate(Dependencia::class, 'created_at');
+
+        // =====================================================
+        // Métricas adicionales recomendadas
+        // =====================================================
+        // 1) Valor total por Estado
+        $qValorEstado = Bien::query();
+        $applyFilters($qValorEstado);
+        $valorPorEstado = (clone $qValorEstado)
+            ->selectRaw('estado, SUM(precio) as total')
+            ->groupBy('estado')
             ->get()
-            ->mapWithKeys(fn($item) => [(string) $item->mes => (int) $item->count])
+            ->mapWithKeys(function ($item) {
+                $estado = $item->estado instanceof \App\Enums\EstadoBien
+                    ? $item->estado
+                    : \App\Enums\EstadoBien::tryFrom($item->estado);
+
+                $label = $estado
+                    ? $estado->label()
+                    : ((string) $item->estado);
+
+                return [(string) $label => (float) $item->total];
+            })
             ->toArray();
 
-        // --- Registro de Unidades Administradoras ---
-        $registroUnidades = UnidadAdministradora::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as mes, COUNT(*) as count')
-            ->groupBy('mes')
-            ->orderBy('mes')
+        // 2) Top 10 Dependencias por Valor
+        $qTopDeps = Bien::query();
+        $applyFilters($qTopDeps);
+        $topDependenciasValor = (clone $qTopDeps)
+            ->whereNotNull('dependencia_id')
+            ->join('dependencias', 'dependencias.id', '=', 'bienes.dependencia_id')
+            ->selectRaw('dependencias.nombre as nombre, COUNT(*) as count, SUM(precio) as total')
+            ->groupBy('dependencias.nombre')
+            ->orderByDesc('total')
+            ->limit(10)
             ->get()
-            ->mapWithKeys(fn($item) => [(string) $item->mes => (int) $item->count])
+            ->mapWithKeys(fn($item) => [(string) $item->nombre => (float) $item->total])
             ->toArray();
 
-        // --- Registro de Dependencias ---
-        $registroDependencias = Dependencia::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as mes, COUNT(*) as count')
-            ->groupBy('mes')
-            ->orderBy('mes')
-            ->get()
-            ->mapWithKeys(fn($item) => [(string) $item->mes => (int) $item->count])
-            ->toArray();
+        // 3) Porcentaje de bienes con/sin fotografía
+        $qFoto = Bien::query();
+        $applyFilters($qFoto);
+        $totalBienes = (clone $qFoto)->count();
+        $withFoto = (clone $qFoto)->whereNotNull('fotografia')->count();
+        $withoutFoto = max(0, $totalBienes - $withFoto);
+        $fotoCoverage = [
+            'Con fotografía' => $withFoto,
+            'Sin fotografía' => $withoutFoto,
+        ];
+
+        // 4) Bienes sin movimientos en los últimos 12 meses (útil para auditoría)
+        $since = Carbon::now()->subYear();
+        $qMov = Bien::query();
+        $applyFilters($qMov);
+        $sinMovimientos = (clone $qMov)->whereDoesntHave('movimientos', fn($q) => $q->where('fecha', '>=', $since))->count();
+        $conMovimientos = max(0, $totalBienes - $sinMovimientos);
+        $movimientoCoverage = [
+            'Con movimientos 12m' => $conMovimientos,
+            'Sin movimientos 12m' => $sinMovimientos,
+        ];
 
 
         return view('reportes.graficas', compact(
@@ -292,9 +373,156 @@ class ReporteController extends Controller
             'bienesDesincorporados',
             'registroOrganismos',
             'registroUnidades',
-            'registroDependencias'
-        ));
+            'registroDependencias',
+            // Nuevas métricas
+            'valorPorEstado',
+            'topDependenciasValor',
+            'fotoCoverage',
+            'movimientoCoverage'
+        , 'granularity'));
 
+    }
+
+    /**
+     * Generar PDF con los datos de una gráfica específica.
+     * Parámetros: chart (nombre lógico), mantiene los filtros de la UI.
+     */
+    public function graficasPdf(Request $request)
+    {
+        $chart = $request->get('chart');
+        $granularity = $request->get('granularity', 'monthly');
+
+        // Helper para aplicar filtros como en graficas()
+        $applyFilters = function ($q) use ($request) {
+            if ($request->filled('search')) {
+                $q->where(function($sub) use ($request) {
+                    $term = '%'.$request->get('search').'%';
+                    $sub->where('codigo', 'like', $term)
+                        ->orWhere('descripcion', 'like', $term);
+                });
+            }
+            if ($request->filled('tipo_bien')) $q->where('tipo_bien', $request->get('tipo_bien'));
+            if ($request->filled('fecha_desde')) $q->whereDate('fecha_registro', '>=', $request->get('fecha_desde'));
+            if ($request->filled('fecha_hasta')) $q->whereDate('fecha_registro', '<=', $request->get('fecha_hasta'));
+            if ($request->filled('dependencias')) {
+                $deps = $request->get('dependencias');
+                if (is_array($deps)) $q->whereIn('dependencia_id', $deps);
+            } elseif ($request->filled('unidad_id')) {
+                $q->whereHas('dependencia', fn($sub) => $sub->where('unidad_administradora_id', $request->get('unidad_id')));
+            } elseif ($request->filled('organismo_id')) {
+                $q->whereHas('dependencia.unidadAdministradora', fn($sub) => $sub->where('organismo_id', $request->get('organismo_id')));
+            }
+            if ($request->filled('estado')) {
+                $est = $request->get('estado'); if (is_array($est)) $q->whereIn('estado', $est);
+            }
+        };
+
+        $data = [];
+        $title = '';
+
+        switch ($chart) {
+            case 'valorPorEstado':
+                $q = Bien::query(); $applyFilters($q);
+                $items = $q->selectRaw('estado, SUM(precio) as total')->groupBy('estado')->get();
+                foreach ($items as $it) {
+                    $estado = $it->estado instanceof \App\Enums\EstadoBien ? $it->estado->label() : (string)$it->estado;
+                    $data[$estado] = (float)$it->total;
+                }
+                $title = 'Valor total por Estado';
+                break;
+            case 'topDependencias':
+                $q = Bien::query(); $applyFilters($q);
+                $items = $q->whereNotNull('dependencia_id')
+                    ->join('dependencias','dependencias.id','=','bienes.dependencia_id')
+                    ->selectRaw('dependencias.nombre as nombre, SUM(precio) as total')
+                    ->groupBy('dependencias.nombre')
+                    ->orderByDesc('total')
+                    ->limit(100)
+                    ->get();
+                foreach ($items as $it) $data[$it->nombre] = (float)$it->total;
+                $title = 'Dependencias por Valor';
+                break;
+            case 'fotos':
+                $q = Bien::query(); $applyFilters($q);
+                $total = (clone $q)->count();
+                $with = (clone $q)->whereNotNull('fotografia')->count();
+                $data = ['Con fotografía' => $with, 'Sin fotografía' => max(0, $total - $with)];
+                $title = 'Cobertura de Fotografías';
+                break;
+            case 'movimientos':
+                $q = Bien::query(); $applyFilters($q);
+                $total = (clone $q)->count();
+                $since = \Illuminate\Support\Carbon::now()->subYear();
+                $sin = (clone $q)->whereDoesntHave('movimientos', fn($q) => $q->where('fecha', '>=', $since))->count();
+                $data = ['Con movimientos 12m' => max(0, $total - $sin), 'Sin movimientos 12m' => $sin];
+                $title = 'Bienes con/sin movimientos 12m';
+                break;
+            case 'bienesPorRegistro':
+                $q = Bien::query(); $applyFilters($q);
+                $dates = (clone $q)->select('created_at')->get()->pluck('created_at')->filter();
+                $grouped = $dates->map(function($d) use ($granularity) {
+                    $dt = \Illuminate\Support\Carbon::parse($d);
+                    return match ($granularity) {
+                        'daily' => $dt->format('Y-m-d'),
+                        'weekly' => $dt->copy()->startOfWeek()->format('Y-m-d'),
+                        default => $dt->format('Y-m'),
+                    };
+                })->filter()->countBy()->sortKeys();
+                $acc=[]; $s=0; foreach($grouped as $k=>$c){$s+=$c;$acc[$k]=(int)$s;} $data=$acc;
+                $title = 'Registro progresivo de Bienes';
+                break;
+            case 'bienesDesincorporados':
+                $dates = Eliminado::select('deleted_at')->get()->pluck('deleted_at')->filter();
+                $grouped = $dates->map(function($d) use ($granularity) {
+                    $dt = \Illuminate\Support\Carbon::parse($d);
+                    return match ($granularity) {
+                        'daily' => $dt->format('Y-m-d'),
+                        'weekly' => $dt->copy()->startOfWeek()->format('Y-m-d'),
+                        default => $dt->format('Y-m'),
+                    };
+                })->filter()->countBy()->sortKeys();
+                $acc=[]; $s=0; foreach($grouped as $k=>$c){$s+=$c;$acc[$k]=(int)$s;} $data=$acc;
+                $title = 'Bienes Desincorporados';
+                break;
+            case 'bienesPorTipo':
+                $q = Bien::query(); $applyFilters($q);
+                $items = (clone $q)->selectRaw('tipo_bien, COUNT(*) as count')->groupBy('tipo_bien')->get();
+                foreach ($items as $it) {
+                    $tipo = $it->tipo_bien instanceof \App\Enums\TipoBien
+                        ? $it->tipo_bien
+                        : \App\Enums\TipoBien::tryFrom($it->tipo_bien);
+
+                    $label = $tipo ? $tipo->label() : ((string) $it->tipo_bien);
+                    $data[(string)$label] = (int)$it->count;
+                }
+                $title = 'Bienes por Tipo';
+                break;
+            case 'bienesPorEstado':
+                $q = Bien::query(); $applyFilters($q);
+                $items = (clone $q)->selectRaw('estado, COUNT(*) as count')->groupBy('estado')->get();
+                foreach ($items as $it) {
+                    $estado = $it->estado instanceof \App\Enums\EstadoBien
+                        ? $it->estado
+                        : \App\Enums\EstadoBien::tryFrom($it->estado);
+
+                    $label = $estado ? $estado->label() : ((string) $it->estado);
+                    $data[(string)$label] = (int)$it->count;
+                }
+                $title = 'Bienes por Estado';
+                break;
+            default:
+                abort(400, 'Parámetro "chart" inválido');
+        }
+
+        // Render a simple table PDF
+        $pdf = Pdf::loadView('reportes.pdf_grafica', [
+            'title' => $title,
+            'data' => $data,
+            'filters' => $request->all(),
+        ])->setPaper('letter');
+
+        $fileName = 'grafica_' . ($chart ?? 'datos') . '_' . now()->format('Ymd_His') . '.pdf';
+        return $pdf->download($fileName);
     }
 
 

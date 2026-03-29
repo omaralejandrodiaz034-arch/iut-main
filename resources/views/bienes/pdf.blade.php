@@ -88,10 +88,6 @@
             <div class="field-value">{{ $bien->estado?->name ?? (string)$bien->estado }}</div>
         </div>
         <div class="field">
-            <div class="field-label">Ubicación</div>
-            <div class="field-value">{{ $bien->ubicacion ?? '—' }}</div>
-        </div>
-        <div class="field">
             <div class="field-label">Fecha de registro</div>
             <div class="field-value">{{ optional($bien->fecha_registro)->format('d/m/Y') }}</div>
         </div>

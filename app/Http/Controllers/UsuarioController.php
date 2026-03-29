@@ -6,7 +6,10 @@ use App\Models\Usuario;
 use App\Models\Rol;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -95,6 +98,24 @@ class UsuarioController extends Controller
             $request->merge(['cedula' => Usuario::normalizeCedula($request->input('cedula'))]);
         }
 
+        // Primero verificar que la cédula exista en el API externo (como en el login)
+        $cedulaDigits = preg_replace('/\D/', '', $request->input('cedula'));
+        $personaApi = $this->buscarPersonaEnApiPorCedula($cedulaDigits);
+        
+        if (!$personaApi) {
+            return back()
+                ->withInput()
+                ->with('error', 'La cédula ingresada no existe en los registros autorizados. Solo se pueden crear usuarios que estén registrados en la base de datos institucional.');
+        }
+
+        // Verificar que el usuario no exista ya en el sistema
+        $existingUser = Usuario::where('cedula', $request->input('cedula'))->first();
+        if ($existingUser) {
+            return back()
+                ->withInput()
+                ->with('error', 'Ya existe un usuario registrado con esta cédula en el sistema.');
+        }
+
         $validated = $request->validate([
             'rol_id'        => ['required', 'exists:roles,id'],
             'cedula'        => ['required', 'string', 'unique:usuarios,cedula', 'regex:/^V-\d{2}\.\d{3}\.\d{3}$/'],
@@ -103,6 +124,10 @@ class UsuarioController extends Controller
             'correo'        => ['required', 'email', 'unique:usuarios,correo'],
             'hash_password' => ['required', 'string', 'min:8'],
             'activo'        => ['boolean'],
+        ], [
+            'cedula.regex' => 'El formato de cédula debe ser V-00.000.000',
+            'cedula.unique' => 'Ya existe un usuario con esta cédula',
+            'correo.unique' => 'Ya existe un usuario con este correo',
         ]);
 
         $rolAdmin = Rol::where('nombre', 'Administrador')->first();
@@ -113,7 +138,51 @@ class UsuarioController extends Controller
 
         return $request->expectsJson() 
             ? response()->json(['message' => 'Creado', 'usuario' => $usuario], 201)
-            : redirect()->route('usuarios.index')->with('success', 'Registrado con éxito.');
+            : redirect()->route('usuarios.index')->with('success', 'Usuario registrado exitosamente.');
+    }
+
+    /**
+     * Verificar Cédula en API Externo
+     * Método auxiliar para validar Cédula contra la API externa
+     */
+    private function buscarPersonaEnApiPorCedula(string $cedula): ?array
+    {
+        // 1) Intentar API externa
+        $url = config('services.people_api.url');
+        $token = config('services.people_api.token');
+        $timeout = (int) config('services.people_api.timeout', 5);
+        
+        try {
+            if ($url && $token) {
+                $resp = Http::timeout($timeout)
+                    ->acceptJson()
+                    ->get($url, ['pin' => $cedula, 'token' => $token]);
+
+                if ($resp->ok()) {
+                    $payload = $resp->json();
+                    $list = is_array($payload) ? ($payload[0]['data'] ?? []) : [];
+                    $persona = collect($list)->first(function ($item) use ($cedula) {
+                        return preg_replace('/\D/', '', ($item['pin'] ?? '')) === $cedula;
+                    });
+                    if ($persona) {
+                        return $persona;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Fallo API externa en usuario.store', ['error' => $e->getMessage()]);
+        }
+
+        // 2) Fallback al JSON local
+        $jsonPath = storage_path('app/respuesta.json');
+        if (!file_exists($jsonPath)) {
+            return null;
+        }
+        $data = json_decode(file_get_contents($jsonPath), true);
+        $persona = collect($data[0]['data'] ?? [])->first(function ($item) use ($cedula) {
+            return preg_replace('/\D/', '', ($item['pin'] ?? '')) === $cedula;
+        });
+        return $persona ?: null;
     }
 
     /**
@@ -208,12 +277,33 @@ class UsuarioController extends Controller
 
     public function destroy(Usuario $usuario)
     {
-        if (! auth()->user()->canDeleteUser($usuario)) abort(403);
+        // Verificar permisos primero - si no tiene permiso, mostrar mensaje claro
+        if (!auth()->user()->canDeleteUser($usuario)) {
+            // Si es solicitud AJAX, devolver JSON con error
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'No tienes permiso para eliminar este usuario. Solo los administradores pueden eliminar usuarios.'], 403);
+            }
+            // Si es solicitud normal, redirigir con mensaje de error
+            return redirect()->route('usuarios.index')->with('error', 'No tienes permiso para eliminar este usuario. Solo los administradores pueden eliminar usuarios.');
+        }
         
-        \App\Services\EliminadosService::archiveModel($usuario, auth()->id());
-        $usuario->delete();
-
-        return response()->json(null, 204);
+        try {
+            // Archivar en tabla de eliminados antes de borrar
+            \App\Services\EliminadosService::archiveModel($usuario, auth()->id());
+            $usuario->delete();
+            
+            // Responder según tipo de solicitud
+            if (request()->expectsJson()) {
+                return response()->json(['success' => 'Usuario eliminado correctamente'], 200);
+            }
+            return redirect()->route('usuarios.index')->with('success', 'Usuario eliminado correctamente.');
+            
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'Error al eliminar usuario: ' . $e->getMessage()], 500);
+            }
+            return redirect()->route('usuarios.index')->with('error', 'Error al eliminar usuario: ' . $e->getMessage());
+        }
     }
 
 

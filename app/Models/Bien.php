@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EstadoBien;
 use App\Enums\TipoBien;
+use App\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Bien extends Model
 {
-    use HasFactory;
+    use HasFactory, AuditableTrait;
 
     // Tabla asociada
     protected $table = 'bienes';
@@ -26,7 +27,6 @@ class Bien extends Model
         'descripcion',
         'precio',
         'fotografia',
-        'ubicacion',
         'estado',
         'fecha_registro',
         'tipo_bien',
@@ -40,8 +40,7 @@ class Bien extends Model
         if ($term) {
             $query->where(function ($q) use ($term) {
                 $q->where('codigo', 'LIKE', "%{$term}%")
-                    ->orWhere('descripcion', 'LIKE', "%{$term}%")
-                    ->orWhere('ubicacion', 'LIKE', "%{$term}%");
+                    ->orWhere('descripcion', 'LIKE', "%{$term}%");
             });
         }
     }
@@ -60,6 +59,8 @@ class Bien extends Model
     {
         return $this->belongsTo(Dependencia::class);
     }
+
+    // El responsable se accede a través de la dependencia: $bien->dependencia->responsable
 
     public function movimientos()
     {
@@ -85,5 +86,10 @@ class Bien extends Model
     public function otro()
     {
         return $this->hasOne(BienOtro::class, 'bien_id');
+    }
+
+    public function desincorporado()
+    {
+        return $this->hasOne(\App\Models\BienDesincorporado::class, 'bien_id');
     }
 }

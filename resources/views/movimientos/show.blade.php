@@ -3,6 +3,9 @@
 @section('title', 'Detalle del Movimiento')
 
 @section('content')
+@push('breadcrumbs')
+<x-breadcrumbs :items="[['label' => 'Movimientos', 'url' => route('movimientos.index')], ['label' => 'Movimiento #'.$movimiento->id]]" />
+@endpush
 <div class="max-w-3xl mx-auto">
     @if (session('success'))
         <div class="mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded">
@@ -104,11 +107,36 @@
         </div>
 
         <!-- Acta de Desincorporación -->
-        @if ($movimiento->acta_desincorporacion)
+        @if ($movimiento->tipo === 'DESINCORPORACION' && $movimiento->acta_path)
             <div class="col-span-1 md:col-span-2">
-                <h2 class="text-lg font-bold text-gray-800">Acta de Desincorporación</h2>
-                <a href="{{ Storage::url($movimiento->acta_desincorporacion) }}" target="_blank"
-                   class="text-blue-600 hover:underline">Ver Acta</a>
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">Acta de Desincorporación</h2>
+                        <p class="text-sm text-gray-600 mt-1">Documento oficial de desincorporación del bien</p>
+                    </div>
+                    <a href="{{ Storage::disk('public')->url($movimiento->acta_path) }}" target="_blank"
+                       class="inline-flex items-center px-4 py-2.5 bg-[#800020] text-white font-semibold rounded-lg hover:bg-[#9a0026] shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
+                        <x-heroicon-o-document-arrow-down class="w-5 h-5 mr-2"/>
+                        Ver / Descargar Acta
+                    </a>
+                </div>
+            </div>
+        @endif
+
+        <!-- Acta de Traslado -->
+        @if ($movimiento->tipo === 'TRASLADO' && $movimiento->acta_path)
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">Acta de Traslado</h2>
+                        <p class="text-sm text-gray-600 mt-1">Documento oficial de traslado del bien</p>
+                    </div>
+                    <a href="{{ Storage::disk('public')->url($movimiento->acta_path) }}" target="_blank"
+                       class="inline-flex items-center px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
+                        <x-heroicon-o-document-arrow-down class="w-5 h-5 mr-2"/>
+                        Ver / Descargar Acta
+                    </a>
+                </div>
             </div>
         @endif
 

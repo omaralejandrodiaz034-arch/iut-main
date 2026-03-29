@@ -1,0 +1,205 @@
+@startuml SistemaGestionInventarioBienes_UseCaseDiagram
+!theme plain
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+title Sistema de Gestión de Inventario de Bienes\nDiagrama de Casos de Uso
+
+left to right direction
+
+' ========== ACTORES ==========
+actor "Administrador" as Admin #FF6B6B
+actor "Usuario Normal" as UserNormal #4ECDC4
+actor "Responsable\nPatrimonial\nPrimario" as RespPrimario #45B7D1
+actor "Responsable\nPatrimonial\nPor Uso" as RespUso #96CEB4
+
+' ========== SISTEMA EXTERNO ==========
+actor "Sistema Externo\n(Excel/API)" as SistemaExterno #DDA0DD
+
+' ========== PAQUETES ==========
+
+package "Gestión Organizacional" {
+    usecase "Gestionar Organismos" as UC_Organismo
+    usecase "Gestionar Unidades\nAdministradoras" as UC_Unidad
+    usecase "Gestionar Dependencias" as UC_Dependencia
+}
+
+package "Gestión de Bienes" {
+    usecase "Registrar Bien" as UC_RegistrarBien
+    usecase "Editar Bien" as UC_EditarBien
+    usecase "Eliminar Bien" as UC_EliminarBien
+    usecase "Consultar Bienes" as UC_ConsultarBienes
+    usecase "Ver Detalle de Bien" as UC_DetalleBien
+    usecase "Importar Bienes\n(Excel)" as UC_ImportarBienes
+    usecase "Exportar Bienes\n(Excel)" as UC_ExportarBienes
+}
+
+package "Gestión de Movimientos" {
+    usecase "Registrar Movimiento" as UC_RegistrarMovimiento
+    usecase "Historial de\nMovimientos" as UC_HistorialMovimientos
+    usecase "Generar Acta\nde Traslado" as UC_ActaTraslado
+}
+
+package "Gestión de Responsables" {
+    usecase "Gestionar Responsables" as UC_Responsable
+    usecase "Asignar Responsable\na Dependencia" as UC_AsignarResponsable
+}
+
+package "Gestión de Usuarios" {
+    usecase "Gestionar Usuarios" as UC_GestionarUsuarios
+    usecase "Asignar Roles" as UC_AsignarRoles
+}
+
+package "Reportes y Consultas" {
+    usecase "Generar Reportes" as UC_Reportes
+    usecase "Filtrar por Estado" as UC_FiltroEstado
+    usecase "Filtrar por Tipo" as UC_FiltroTipo
+    usecase "Filtrar por Fechas" as UC_FiltroFechas
+    usecase "Reporte por\nDependencia" as UC_ReporteDependencia
+    usecase "Reporte por\nUnidad" as UC_ReporteUnidad
+    usecase "Reporte por\nOrganismo" as UC_ReporteOrganismo
+    usecase "Generar Acta de\nDesincorporación" as UC_ActaDesincorporacion
+}
+
+package "Auditoría" {
+    usecase "Ver Registro de\nAuditoría" as UC_Auditoria
+    usecase "Auditar Sistema" as UC_AuditarSistema
+}
+
+package "Autenticación" {
+    usecase "Iniciar Sesión" as UC_Login
+    usecase "Cerrar Sesión" as UC_Logout
+    usecase "Ver Perfil" as UC_Perfil
+    usecase "Cambiar Contraseña" as UC_CambiarPassword
+}
+
+' ========== RELACIONES ACTOR - CASO DE USO ==========
+
+' Administrador - Acceso completo
+Admin --> UC_Organismo
+Admin --> UC_Unidad
+Admin --> UC_Dependencia
+Admin --> UC_RegistrarBien
+Admin --> UC_EditarBien
+Admin --> UC_EliminarBien
+Admin --> UC_ConsultarBienes
+Admin --> UC_DetalleBien
+Admin --> UC_ImportarBienes
+Admin --> UC_ExportarBienes
+Admin --> UC_RegistrarMovimiento
+Admin --> UC_HistorialMovimientos
+Admin --> UC_ActaTraslado
+Admin --> UC_Responsable
+Admin --> UC_AsignarResponsable
+Admin --> UC_GestionarUsuarios
+Admin --> UC_AsignarRoles
+Admin --> UC_Reportes
+Admin --> UC_FiltroEstado
+Admin --> UC_FiltroTipo
+Admin --> UC_FiltroFechas
+Admin --> UC_ReporteDependencia
+Admin --> UC_ReporteUnidad
+Admin --> UC_ReporteOrganismo
+Admin --> UC_ActaDesincorporacion
+Admin --> UC_Auditoria
+Admin --> UC_AuditarSistema
+Admin --> UC_Login
+Admin --> UC_Logout
+Admin --> UC_Perfil
+Admin --> UC_CambiarPassword
+
+' Usuario Normal - Acceso limitado
+UserNormal --> UC_Login
+UserNormal --> UC_Logout
+UserNormal --> UC_ConsultarBienes
+UserNormal --> UC_DetalleBien
+UserNormal --> UC_ExportarBienes
+UserNormal --> UC_RegistrarMovimiento
+UserNormal --> UC_HistorialMovimientos
+UserNormal --> UC_Reportes
+UserNormal --> UC_FiltroEstado
+UserNormal --> UC_FiltroTipo
+UserNormal --> UC_FiltroFechas
+UserNormal --> UC_Perfil
+UserNormal --> UC_CambiarPassword
+
+' Responsable Patrimonial Primario
+RespPrimario --> UC_Login
+RespPrimario --> UC_Logout
+RespPrimario --> UC_ConsultarBienes
+RespPrimario --> UC_DetalleBien
+RespPrimario --> UC_RegistrarBien
+RespPrimario --> UC_EditarBien
+RespPrimario --> UC_HistorialMovimientos
+RespPrimario --> UC_ActaTraslado
+RespPrimario --> UC_Reportes
+RespPrimario --> UC_ReporteDependencia
+RespPrimario --> UC_ReporteUnidad
+RespPrimario --> UC_ReporteOrganismo
+RespPrimario --> UC_AuditarSistema
+RespPrimario --> UC_Perfil
+RespPrimario --> UC_CambiarPassword
+
+' Responsable Patrimonial Por Uso
+RespUso --> UC_Login
+RespUso --> UC_Logout
+RespUso --> UC_ConsultarBienes
+RespUso --> UC_DetalleBien
+RespUso --> UC_RegistrarMovimiento
+RespUso --> UC_HistorialMovimientos
+RespUso --> UC_Perfil
+RespUso --> UC_CambiarPassword
+
+' Sistema Externo
+SistemaExterno --> UC_ImportarBienes
+SistemaExterno --> UC_ExportarBienes
+
+' ========== RELACIONES ENTRE CASOS DE USO ==========
+
+' Herencia/Include
+UC_FiltroEstado ..> UC_Reportes : <<include>>
+UC_FiltroTipo ..> UC_Reportes : <<include>>
+UC_FiltroFechas ..> UC_Reportes : <<include>>
+UC_ReporteDependencia ..> UC_Reportes : <<include>>
+UC_ReporteUnidad ..> UC_Reportes : <<include>>
+UC_ReporteOrganismo ..> UC_Reportes : <<include>>
+UC_ActaDesincorporacion ..> UC_Reportes : <<include>>
+
+UC_DetalleBien ..> UC_ConsultarBienes : <<include>>
+UC_EditarBien ..> UC_ConsultarBienes : <<include>>
+UC_EliminarBien ..> UC_ConsultarBienes : <<include>>
+
+UC_ActaTraslado ..> UC_RegistrarMovimiento : <<include>>
+
+' ========== NOTAS ==========
+note right of Admin
+  Acceso completo al sistema:
+  - CRUD completo de todas las entidades
+  - Gestión de usuarios y roles
+  - Auditoría del sistema
+  - Import/Export de datos
+end note
+
+note right of UserNormal
+  Acceso limitado:
+  - Solo consulta y registro de movimientos
+  - No puede eliminar datos
+  - No puede gestionar usuarios
+end note
+
+note right of RespPrimario
+  Supervisa el inventario:
+  - Valida registros de bienes
+  - Genera reportes maestros
+  - Audita el sistema
+  - Gestiona movimientos
+end note
+
+note right of RespUso
+  Responsable por uso:
+  - Cuida bienes de su dependencia
+  - Reporta cambios de ubicación
+  - Registra daños o movimientos
+end note
+
+@enduml
