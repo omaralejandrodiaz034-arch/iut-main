@@ -1,0 +1,104 @@
+sequenceDiagram
+    participant Usuario
+    participant DashboardController
+    participant Bien
+    participant Organismo
+    participant UnidadAdministradora
+    participant Dependencia
+    participant Movimiento
+    participant Usuario as UsuarioModel
+    participant DB
+
+    %% CARGAR DASHBOARD
+    rect rgb(200, 230, 255)
+    note right of Usuario: Cargar Dashboard Principal
+    Usuario->>DashboardController: GET /dashboard (index)
+    
+    %% KPIs Generales
+    DashboardController->>Bien: Contar total de bienes
+    Bien->>DB: SELECT COUNT(*) FROM bienes
+    DB-->>Bien: Total de bienes
+    Bien-->>DashboardController: totalBienes
+    
+    DashboardController->>Bien: Contar bienes activos
+    Bien->>DB: SELECT COUNT(*) FROM bienes WHERE estado = 'activo'
+    DB-->>Bien: Total activos
+    Bien-->>DashboardController: totalActivos
+    
+    DashboardController->>Bien: Contar bienes dañados
+    Bien->>DB: SELECT COUNT(*) FROM bienes WHERE estado = 'dañado'
+    DB-->>Bien: Total dañados
+    Bien-->>DashboardController: totalDañados
+    
+    DashboardController->>Bien: Contar bienes en mantenimiento
+    Bien->>DB: SELECT COUNT(*) FROM bienes WHERE estado = 'en_mantenimiento'
+    DB-->>Bien: Total mantenimiento
+    Bien-->>DashboardController: totalMantenimiento
+    
+    DashboardController->>Bien: Contar bienes extraviados
+    Bien->>DB: SELECT COUNT(*) FROM bienes WHERE estado = 'extraviado'
+    DB-->>Bien: Total extraviados
+    Bien-->>DashboardController: totalExtraviados
+    
+    DashboardController->>Bien: Contar bienes desincorporados
+    Bien->>DB: SELECT COUNT(*) FROM bienes WHERE estado = 'desincorporado'
+    DB-->>Bien: Total desincorporados
+    Bien-->>DashboardController: totalDesincorporados
+    
+    DashboardController->>Organismo: Contar organismos
+    Organismo->>DB: SELECT COUNT(*) FROM organismos
+    DB-->>Organismo: Total organismos
+    Organismo-->>DashboardController: totalOrganismos
+    
+    DashboardController->>UnidadAdministradora: Contar unidades
+    UnidadAdministradora->>DB: SELECT COUNT(*) FROM unidades_administradoras
+    DB-->>UnidadAdministradora: Total unidades
+    UnidadAdministradora-->>DashboardController: totalUnidades
+    
+    DashboardController->>Dependencia: Contar dependencias
+    Dependencia->>DB: SELECT COUNT(*) FROM dependencias
+    DB-->>Dependencia: Total dependencias
+    Dependencia-->>DashboardController: totalDependencias
+    
+    DashboardController->>UsuarioModel: Contar usuarios activos
+    UsuarioModel->>DB: SELECT COUNT(*) FROM usuarios WHERE activo = true
+    DB-->>UsuarioModel: Total usuarios activos
+    UsuarioModel-->>DashboardController: totalUsuarios
+    
+    DashboardController->>Bien: Sumar valor total del inventario
+    Bien->>DB: SELECT SUM(precio) FROM bienes WHERE precio IS NOT NULL AND estado != 'desincorporado'
+    DB-->>Bien: Valor total
+    Bien-->>DashboardController: valorTotal
+    
+    %% Distribución por Estado
+    DashboardController->>Bien: Contar bienes por cada estado
+    Bien->>DB: SELECT estado, COUNT(*) FROM bienes GROUP BY estado
+    DB-->>Bien: Conteo por estado
+    Bien-->>DashboardController: porEstado
+    
+    %% Distribución por Tipo
+    DashboardController->>Bien: Contar bienes por cada tipo
+    Bien->>DB: SELECT tipo_bien, COUNT(*) FROM bienes GROUP BY tipo_bien
+    DB-->>Bien: Conteo por tipo
+    Bien-->>DashboardController: porTipo
+    
+    %% Top 5 Dependencias
+    DashboardController->>Dependencia: Obtener top 5 dependencias con más bienes
+    Dependencia->>DB: SELECT dependencias.*, COUNT(bienes.id) as bienes_count FROM dependencias LEFT JOIN bienes ON dependencias.id = bienes.dependencia_id GROUP BY dependencias.id ORDER BY bienes_count DESC LIMIT 5
+    DB-->>Dependencia: Top 5 dependencias
+    Dependencia-->>DashboardController: topDependencias
+    
+    %% Últimos 10 Movimientos
+    DashboardController->>Movimiento: Obtener últimos 10 movimientos
+    Movimiento->>DB: SELECT movimientos.*, bienes.descripcion, usuarios.nombre FROM movimientos LEFT JOIN bienes ON movimientos.bien_id = bienes.id LEFT JOIN usuarios ON movimientos.usuario_id = usuarios.id ORDER BY fecha DESC LIMIT 10
+    DB-->>Movimiento: Últimos 10 movimientos
+    Movimiento-->>DashboardController: ultimosMovimientos
+    
+    %% Bienes por Mes (últimos 12 meses)
+    DashboardController->>Bien: Contar bienes registrados por mes
+    Bien->>DB: SELECT strftime('%Y-%m', fecha_registro) as mes, COUNT(*) as total FROM bienes WHERE fecha_registro IS NOT NULL AND fecha_registro >= date('now', '-12 months') GROUP BY mes ORDER BY mes
+    DB-->>Bien: Bienes por mes
+    Bien-->>DashboardController: bienesPorMes
+    
+    DashboardController-->>Usuario: Vista dashboard con todas las métricas
+    end

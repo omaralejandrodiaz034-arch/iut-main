@@ -16,14 +16,14 @@ class ResponsableController extends Controller
     public function index(Request $request)
     {
         $search = $request->get('search');
-        
+
         $responsables = Responsable::with('tipo', 'dependencias')
             ->when($search, function ($query) use ($search) {
                 $query->where('nombre', 'like', "%{$search}%")
-                      ->orWhere('cedula', 'like', "%{$search}%");
+                    ->orWhere('cedula', 'like', "%{$search}%");
             })
             ->paginate(10);
-            
+
         return view('responsables.index', compact('responsables', 'search'));
     }
 
@@ -33,6 +33,7 @@ class ResponsableController extends Controller
     public function create()
     {
         $tipos = TipoResponsable::all();
+
         return view('responsables.create', compact('tipos'));
     }
 
@@ -62,7 +63,7 @@ class ResponsableController extends Controller
         $responsable = Responsable::create($request->only('cedula', 'nombre', 'correo', 'telefono', 'tipo_id'));
 
         return redirect()->route('responsables.index')
-            ->with('success', '✅ Responsable "' . $responsable->nombre . '" (Cédula: ' . $responsable->cedula . ') registrado correctamente el ' . now()->format('d/m/Y \a \l\a\s H:i') . '.');
+            ->with('success', '✅ Responsable "'.$responsable->nombre.'" (Cédula: '.$responsable->cedula.') registrado correctamente el '.now()->format('d/m/Y \a \l\a\s H:i').'.');
     }
 
     /**
@@ -71,7 +72,7 @@ class ResponsableController extends Controller
     public function show(Responsable $responsable)
     {
         $responsable->load('tipo', 'dependencias.unidadAdministradora.organismo', 'bienes');
-        
+
         return view('responsables.show', compact('responsable'));
     }
 
@@ -81,6 +82,7 @@ class ResponsableController extends Controller
     public function edit(Responsable $responsable)
     {
         $tipos = TipoResponsable::all();
+
         return view('responsables.edit', compact('responsable', 'tipos'));
     }
 
@@ -110,7 +112,7 @@ class ResponsableController extends Controller
         $responsable->update($request->only('cedula', 'nombre', 'correo', 'telefono', 'tipo_id'));
 
         return redirect()->route('responsables.show', $responsable)
-            ->with('success', '✅ Responsable "' . $responsable->nombre . '" actualizado correctamente el ' . now()->format('d/m/Y \a \l\a\s H:i') . '.');
+            ->with('success', '✅ Responsable "'.$responsable->nombre.'" actualizado correctamente el '.now()->format('d/m/Y \a \l\a\s H:i').'.');
     }
 
     /**
@@ -126,7 +128,7 @@ class ResponsableController extends Controller
         // Verificar si tiene dependencias asignadas
         if ($responsable->dependencias()->count() > 0) {
             return redirect()->route('responsables.index')
-                ->with('error', '⚠️ No se puede eliminar el responsable "' . $responsable->nombre . '" porque tiene ' . $responsable->dependencias()->count() . ' dependencia(s) asignada(s). Primero debe reassignar las dependencias.');
+                ->with('error', '⚠️ No se puede eliminar el responsable "'.$responsable->nombre.'" porque tiene '.$responsable->dependencias()->count().' dependencia(s) asignada(s). Primero debe reassignar las dependencias.');
         }
 
         // Archivar antes de eliminar
@@ -136,7 +138,6 @@ class ResponsableController extends Controller
         $responsable->delete();
 
         return redirect()->route('responsables.index')
-            ->with('success', '🗑️ Responsable "' . $nombre . '" (Cédula: ' . $cedula . ') eliminado correctamente el ' . now()->format('d/m/Y \a \l\a\s H:i') . '.');
+            ->with('success', '🗑️ Responsable "'.$nombre.'" (Cédula: '.$cedula.') eliminado correctamente el '.now()->format('d/m/Y \a \l\a\s H:i').'.');
     }
 }
-

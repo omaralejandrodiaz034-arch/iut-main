@@ -1,0 +1,125 @@
+sequenceDiagram
+    participant Usuario
+    participant ResponsableController
+    participant Responsable
+    participant TipoResponsable
+    participant EliminadosService
+    participant DB
+
+    %% LISTAR RESPONSABLES
+    rect rgb(200, 230, 255)
+    note right of Usuario: Listar Responsables con Filtros
+    Usuario->>ResponsableController: GET /responsables (index)
+    ResponsableController->>ResponsableController: Validar filtros (search)
+    ResponsableController->>Responsable: Query con relaciones (tipo, dependencias)
+    Responsable->>DB: Aplicar filtros y ordenamiento
+    DB-->>Responsable: Resultados paginados
+    Responsable-->>ResponsableController: Collection de responsables
+    ResponsableController-->>Usuario: Vista responsables.index con datos filtrados
+    end
+
+    %% CREAR RESPONSABLE
+    rect rgb(255, 240, 200)
+    note right of Usuario: Crear Nuevo Responsable
+    Usuario->>ResponsableController: GET /responsables/create (create)
+    ResponsableController->>TipoResponsable: Cargar todos los tipos
+    TipoResponsable->>DB: SELECT FROM tipos_responsables
+    DB-->>TipoResponsable: Lista de tipos
+    TipoResponsable-->>ResponsableController: Tipos disponibles
+    ResponsableController-->>Usuario: Vista responsables.create con tipos
+    
+    Usuario->>ResponsableController: POST /responsables (store)
+    ResponsableController->>ResponsableController: Validar datos (cedula, nombre, correo, telefono, tipo_id)
+    
+    ResponsableController->>Responsable: Verificar cédula única
+    Responsable->>DB: SELECT FROM responsables WHERE cedula = ?
+    DB-->>Responsable: Cédula existe/no existe
+    
+    alt Cédula ya existe
+        ResponsableController-->>Usuario: Error de validación (cédula duplicada)
+    else Cédula disponible
+        ResponsableController->>Responsable: Create con datos validados
+        Responsable->>DB: INSERT INTO responsables
+        DB-->>Responsable: Responsable creado
+        Responsable-->>ResponsableController: Responsable guardado
+        ResponsableController-->>Usuario: Redirect a responsables.index con mensaje de éxito
+    end
+    end
+
+    %% VER DETALLE DE RESPONSABLE
+    rect rgb(230, 255, 230)
+    note right of Usuario: Ver Detalle de Responsable
+    Usuario->>ResponsableController: GET /responsables/{id} (show)
+    ResponsableController->>Responsable: Cargar responsable con relaciones
+    Responsable->>DB: SELECT con tipo, dependencias.unidadAdministradora.organismo, bienes
+    DB-->>Responsable: Datos completos del responsable
+    Responsable-->>ResponsableController: Responsable con relaciones
+    ResponsableController-->>Usuario: Vista responsables.show con detalles
+    end
+
+    %% EDITAR RESPONSABLE
+    rect rgb(255, 230, 255)
+    note right of Usuario: Editar Responsable Existente
+    Usuario->>ResponsableController: GET /responsables/{id}/edit (edit)
+    ResponsableController->>Responsable: Buscar responsable por ID
+    Responsable->>DB: SELECT FROM responsables WHERE id = ?
+    DB-->>Responsable: Datos del responsable
+    ResponsableController->>TipoResponsable: Cargar todos los tipos
+    TipoResponsable->>DB: SELECT FROM tipos_responsables
+    DB-->>TipoResponsable: Lista de tipos
+    TipoResponsable-->>ResponsableController: Tipos disponibles
+    ResponsableController-->>Usuario: Vista responsables.edit con datos
+    
+    Usuario->>ResponsableController: PUT /responsables/{id} (update)
+    ResponsableController->>ResponsableController: Validar datos (con unique ignore para cédula)
+    
+    alt Cambió cédula
+        ResponsableController->>Responsable: Verificar cédula única (ignorando ID actual)
+        Responsable->>DB: SELECT FROM responsables WHERE cedula = ? AND id != ?
+        DB-->>Responsable: Cédula existe/no existe
+        
+        alt Cédula no disponible
+            ResponsableController-->>Usuario: Error de validación (cédula duplicada)
+        else Cédula disponible
+            ResponsableController->>Responsable: Update con datos validados
+            Responsable->>DB: UPDATE responsables SET ...
+            DB-->>Responsable: Responsable actualizado
+            Responsable-->>ResponsableController: Responsable actualizado
+            ResponsableController-->>Usuario: Redirect con mensaje de éxito
+        end
+    else No cambió cédula
+        ResponsableController->>Responsable: Update con datos validados
+        Responsable->>DB: UPDATE responsables SET ...
+        DB-->>Responsable: Responsable actualizado
+        Responsable-->>ResponsableController: Responsable actualizado
+        ResponsableController-->>Usuario: Redirect con mensaje de éxito
+    end
+    end
+
+    %% ELIMINAR RESPONSABLE
+    rect rgb(255, 200, 200)
+    note right of Usuario: Eliminar Responsable
+    Usuario->>ResponsableController: DELETE /responsables/{id} (destroy)
+    ResponsableController->>Usuario: Verificar permisos (canDeleteData)
+    
+    alt No tiene permisos
+        ResponsableController-->>Usuario: Error 403 (sin permisos)
+    else Tiene permisos
+        ResponsableController->>Responsable: Verificar dependencias asignadas
+        Responsable->>DB: COUNT(dependencias) WHERE responsable_id = ?
+        DB-->>Responsable: Cantidad de dependencias
+        
+        alt Tiene dependencias asignadas
+            ResponsableController-->>Usuario: Error (no se puede eliminar, tiene dependencias)
+        else No tiene dependencias
+            ResponsableController->>EliminadosService: archiveModel(responsable, auth_id)
+            EliminadosService->>DB: INSERT INTO eliminados (registro del responsable)
+            DB-->>EliminadosService: Registro archivado
+            ResponsableController->>Responsable: delete()
+            Responsable->>DB: DELETE FROM responsables WHERE id = ?
+            DB-->>Responsable: Responsable eliminado
+            Responsable-->>ResponsableController: Responsable eliminado
+            ResponsableController-->>Usuario: Redirect con mensaje de éxito
+        end
+    end
+    end

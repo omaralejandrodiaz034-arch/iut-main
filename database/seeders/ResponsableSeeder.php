@@ -12,7 +12,7 @@ class ResponsableSeeder extends Seeder
         $primario = DB::table('tipos_responsables')->where('nombre', 'Responsable Patrimonial Primario')->first();
         $uso = DB::table('tipos_responsables')->where('nombre', 'Responsable Patrimonial por Uso')->first();
 
-        if (!$primario || !$uso) {
+        if (! $primario || ! $uso) {
             return; // Evitar errores si no existen
         }
 
@@ -54,4 +54,3 @@ class ResponsableSeeder extends Seeder
         }
     }
 }
-

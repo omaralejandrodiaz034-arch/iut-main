@@ -4,7 +4,7 @@
 
 @section('content')
 @push('breadcrumbs')
-<x-breadcrumbs :items="[['label' => 'Unidades Administradoras', 'url' => route('unidades.index')], ['label' => $unidad->nombre, 'url' => route('unidades.show', $unidad)], ['label' => 'Editar']]" />
+<x-breadcrumbs :items="[['label' => 'Unidades Administradoras', 'url' => route('unidades.index')], ['label' => $unidadAdministradora->nombre, 'url' => route('unidades.show', $unidadAdministradora)], ['label' => 'Editar']]" />
 @endpush
 <div class="max-w-2xl mx-auto mt-10">
     <div class="bg-white dark:bg-slate-900 shadow-xl dark:shadow-slate-800 rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700">

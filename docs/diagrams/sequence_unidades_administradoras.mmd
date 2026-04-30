@@ -1,0 +1,127 @@
+sequenceDiagram
+    participant Usuario
+    participant UnidadAdministradoraController
+    participant UnidadAdministradora
+    participant Organismo
+    participant CodigoUnicoService
+    participant DB
+    participant Pdf
+
+    %% LISTAR UNIDADES ADMINISTRADORAS
+    rect rgb(200, 230, 255)
+    note right of Usuario: Listar Unidades Administradoras con Filtros
+    Usuario->>UnidadAdministradoraController: GET /unidades (index)
+    UnidadAdministradoraController->>UnidadAdministradoraController: Validar filtros (search, organismo_id)
+    UnidadAdministradoraController->>UnidadAdministradora: Query con relaciones (organismo, dependencias)
+    UnidadAdministradora->>DB: Aplicar filtros y ordenamiento
+    DB-->>UnidadAdministradora: Resultados paginados
+    UnidadAdministradora-->>UnidadAdministradoraController: Collection de unidades
+    UnidadAdministradoraController->>Organismo: Cargar todos los organismos
+    Organismo->>DB: SELECT FROM organismos ORDER BY nombre
+    DB-->>Organismo: Lista de organismos
+    Organismo-->>UnidadAdministradoraController: Organismos disponibles
+    UnidadAdministradoraController-->>Usuario: Vista unidades.index con datos filtrados
+    end
+
+    %% CREAR UNIDAD ADMINISTRADORA
+    rect rgb(255, 240, 200)
+    note right of Usuario: Crear Nueva Unidad Administradora
+    Usuario->>UnidadAdministradoraController: GET /unidades/create (create)
+    UnidadAdministradoraController->>Organismo: Cargar todos los organismos
+    Organismo->>DB: SELECT FROM organismos
+    DB-->>Organismo: Lista de organismos
+    Organismo-->>UnidadAdministradoraController: Organismos disponibles
+    UnidadAdministradoraController->>CodigoUnicoService: obtenerSiguienteCodigo()
+    CodigoUnicoService->>DB: SELECT MAX(codigo) FROM todas_las_tablas
+    DB-->>CodigoUnicoService: Último código global
+    CodigoUnicoService-->>UnidadAdministradoraController: Código siguiente sugerido (8 dígitos)
+    UnidadAdministradoraController-->>Usuario: Vista unidades.create con código sugerido
+    
+    Usuario->>UnidadAdministradoraController: POST /unidades (store)
+    UnidadAdministradoraController->>UnidadAdministradoraController: Validar datos (organismo_id, codigo, nombre)
+    
+    UnidadAdministradoraController->>CodigoUnicoService: codigoExiste(codigo)
+    CodigoUnicoService->>DB: Verificar código en todas las tablas
+    DB-->>CodigoUnicoService: Código disponible/no disponible
+    CodigoUnicoService-->>UnidadAdministradoraController: Resultado verificación
+    
+    alt Código ya existe
+        UnidadAdministradoraController-->>Usuario: Error de validación (código duplicado)
+    else Código disponible
+        UnidadAdministradoraController->>UnidadAdministradora: Create con datos validados
+        UnidadAdministradora->>DB: INSERT INTO unidades_administradoras
+        DB-->>UnidadAdministradora: Unidad creada
+        UnidadAdministradora-->>UnidadAdministradoraController: Unidad guardada
+        UnidadAdministradoraController-->>Usuario: Redirect a unidades.index con mensaje de éxito
+    end
+    end
+
+    %% VER DETALLE DE UNIDAD ADMINISTRADORA
+    rect rgb(230, 255, 230)
+    note right of Usuario: Ver Detalle de Unidad Administradora
+    Usuario->>UnidadAdministradoraController: GET /unidades/{id} (show)
+    UnidadAdministradoraController->>UnidadAdministradora: Cargar unidad con relaciones
+    UnidadAdministradora->>DB: SELECT con organismo, dependencias
+    DB-->>UnidadAdministradora: Datos completos de la unidad
+    UnidadAdministradora-->>UnidadAdministradoraController: Unidad con relaciones
+    UnidadAdministradoraController-->>Usuario: Vista unidades.show con detalles
+    end
+
+    %% EDITAR UNIDAD ADMINISTRADORA
+    rect rgb(255, 230, 255)
+    note right of Usuario: Editar Unidad Administradora Existente
+    Usuario->>UnidadAdministradoraController: GET /unidades/{id}/edit (edit)
+    UnidadAdministradoraController->>UnidadAdministradora: Buscar unidad por ID
+    UnidadAdministradora->>DB: SELECT FROM unidades_administradoras WHERE id = ?
+    DB-->>UnidadAdministradora: Datos de la unidad
+    UnidadAdministradoraController->>Organismo: Cargar todos los organismos
+    Organismo->>DB: SELECT FROM organismos
+    DB-->>Organismo: Lista de organismos
+    Organismo-->>UnidadAdministradoraController: Organismos disponibles
+    UnidadAdministradoraController-->>Usuario: Vista unidades.edit con datos
+    
+    Usuario->>UnidadAdministradoraController: PUT /unidades/{id} (update)
+    UnidadAdministradoraController->>UnidadAdministradoraController: Validar datos (con unique ignore)
+    
+    alt Cambió código
+        UnidadAdministradoraController->>CodigoUnicoService: codigoExiste(codigo, 'unidades', id)
+        CodigoUnicoService->>DB: Verificar código en todas las tablas (ignorando ID actual)
+        DB-->>CodigoUnicoService: Código disponible/no disponible
+        CodigoUnicoService-->>UnidadAdministradoraController: Resultado verificación
+        
+        alt Código no disponible
+            UnidadAdministradoraController-->>Usuario: Error de validación (código duplicado)
+        else Código disponible
+            UnidadAdministradoraController->>UnidadAdministradora: Update con datos validados
+            UnidadAdministradora->>DB: UPDATE unidades_administradoras SET ...
+            DB-->>UnidadAdministradora: Unidad actualizada
+            UnidadAdministradora-->>UnidadAdministradoraController: Unidad actualizada
+            UnidadAdministradoraController-->>Usuario: Redirect con mensaje de éxito
+        end
+    else No cambió código
+        UnidadAdministradoraController->>UnidadAdministradora: Update con datos validados
+        UnidadAdministradora->>DB: UPDATE unidades_administradoras SET ...
+        DB-->>UnidadAdministradora: Unidad actualizada
+        UnidadAdministradora-->>UnidadAdministradoraController: Unidad actualizada
+        UnidadAdministradoraController-->>Usuario: Redirect con mensaje de éxito
+    end
+    end
+
+    %% EXPORTAR UNIDAD ADMINISTRADORA A PDF
+    rect rgb(255, 255, 200)
+    note right of Usuario: Exportar Unidad Administradora a PDF
+    Usuario->>UnidadAdministradoraController: GET /unidades/{id}/pdf (exportPdf)
+    UnidadAdministradoraController->>UnidadAdministradora: Cargar unidad con relaciones
+    UnidadAdministradora->>DB: SELECT con organismo, dependencias
+    DB-->>UnidadAdministradora: Unidad completa
+    UnidadAdministradoraController->>Pdf: loadView('unidades.pdf', unidad)
+    Pdf-->>UnidadAdministradoraController: PDF generado
+    UnidadAdministradoraController-->>Usuario: Descargar unidad_{codigo}_{nombre}.pdf
+    end
+
+    %% ELIMINAR UNIDAD ADMINISTRADORA (NO PERMITIDO)
+    rect rgb(255, 200, 200)
+    note right of Usuario: Intentar Eliminar Unidad Administradora
+    Usuario->>UnidadAdministradoraController: DELETE /unidades/{id} (destroy)
+    UnidadAdministradoraController-->>Usuario: Error 403 (No se pueden eliminar unidades administrativas)
+    end

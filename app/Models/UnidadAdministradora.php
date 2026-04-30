@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class UnidadAdministradora extends Model
 {
-    use HasFactory, GeneratesMovimiento, AuditableTrait;
+    use AuditableTrait, GeneratesMovimiento, HasFactory;
 
     /**
      * Nombre de la tabla asociada.
@@ -29,6 +29,8 @@ class UnidadAdministradora extends Model
         'organismo_id',
         'codigo',
         'nombre',
+        'code_min',
+        'code_max',
     ];
 
     // App\Models\UnidadAdministradora.php

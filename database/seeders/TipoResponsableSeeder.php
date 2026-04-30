@@ -1,6 +1,7 @@
 <?php
 
 // database/seeders/TipoResponsableSeeder.php
+
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -15,7 +16,7 @@ class TipoResponsableSeeder extends Seeder
             'Responsable Patrimonial por Uso',
             'Obrero',
             'Docente',
-            'Administrativo'
+            'Administrativo',
         ];
 
         foreach ($tipos as $nombre) {
@@ -23,5 +24,3 @@ class TipoResponsableSeeder extends Seeder
         }
     }
 }
-
-

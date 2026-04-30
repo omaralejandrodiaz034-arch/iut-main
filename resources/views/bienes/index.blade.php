@@ -183,6 +183,14 @@
                         <span class="ml-2 group-hover:text-blue-600 transition">{{ $label }}</span>
                     </label>
                 @endforeach
+
+                {{-- Filtro especial: Solo Desincorporados --}}
+                <label class="inline-flex items-center text-sm text-gray-700 cursor-pointer group ml-4 pl-4 border-l border-gray-300">
+                    <input type="checkbox" name="solo_desincorporados" value="1"
+                           class="rounded border-gray-300 text-red-600 focus:ring-red-500 filtro-auto"
+                           {{ old('solo_desincorporados', request('solo_desincorporados')) ? 'checked' : '' }}>
+                    <span class="ml-2 group-hover:text-red-600 transition font-medium">🗑️ Solo Desincorporados</span>
+                </label>
             </div>
 
             <div class="flex items-center gap-3">
@@ -202,7 +210,7 @@
 <!-- Chips de filtros activos -->
 <div id="activeFiltersContainer" class="mb-5">
     @php
-        $params = request()->only(['search', 'tipo_bien', 'organismo_id', 'unidad_id', 'fecha_desde', 'fecha_hasta', 'estado', 'dependencias']);
+        $params = request()->only(['search', 'tipo_bien', 'organismo_id', 'unidad_id', 'fecha_desde', 'fecha_hasta', 'estado', 'dependencias', 'solo_desincorporados']);
         $activeFilters = collect($params)->filter(fn($v) => filled($v) && $v !== [] && $v !== '');
     @endphp
 
@@ -221,6 +229,7 @@
                             @case('fecha_hasta') Hasta @break
                             @case('estado') Estados @break
                             @case('dependencias') Dependencias @break
+                            @case('solo_desincorporados') Solo Desincorporados @break
                             @default {{ ucfirst($key) }}
                         @endswitch:
                     </span>

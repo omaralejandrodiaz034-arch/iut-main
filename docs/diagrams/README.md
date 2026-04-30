@@ -17,6 +17,20 @@ Archivos:
  - `sequence_login.mmd` — Secuencia del proceso de login / autenticación.
  - `api/openapi_stub.yaml` — Stub OpenAPI para el recurso `Bien` (CRUD) y contrato para frontend.
 
+### Diagramas de Secuencia (Nuevos)
+- `sequence_bienes.mmd` — Secuencia completa para operaciones CRUD de Bienes (listar, crear, ver, editar, eliminar, exportar PDF, galería, reportes).
+- `sequence_usuarios_api.mmd` — Secuencia completa para operaciones CRUD de Usuarios (listar, crear, ver, editar, eliminar, exportar PDF, importar desde API).
+- `sequence_dependencias.mmd` — Secuencia completa para operaciones CRUD de Dependencias (listar, crear, ver, editar, exportar PDF).
+- `sequence_organismos.mmd` — Secuencia completa para operaciones CRUD de Organismos (listar, crear, ver, editar, exportar PDF).
+- `sequence_unidades_administradoras.mmd` — Secuencia completa para operaciones CRUD de Unidades Administradoras (listar, crear, ver, editar, exportar PDF).
+- `sequence_responsables.mmd` — Secuencia completa para operaciones CRUD de Responsables (listar, crear, ver, editar, eliminar).
+- `sequence_reportes.mmd` — Secuencia para generación de reportes y gráficas (listar tipos, generar gráficas, exportar PDF).
+- `sequence_dashboard.mmd` — Secuencia para carga del dashboard principal con KPIs y métricas.
+- `sequence_perfil.mmd` — Secuencia para gestión de perfil de usuario (ver perfil, actualizar contraseña, actualizar datos, gestionar foto).
+- `sequence_auditoria.mmd` — Secuencia para visualización de registros de auditoría.
+- `sequence_busqueda.mmd` — Secuencia para búsqueda global en el sistema.
+- `sequence_movimientos_detallado.mmd` — Secuencia detallada para operaciones de Movimientos (listar, crear, ver, editar, eliminar, restaurar, exportar PDF, reintegrar bienes).
+
 Cómo previsualizar
 - En VS Code instale una extensión de Mermaid (por ejemplo: "Markdown Preview Enhanced" o "Mermaid Preview").
 - Abrir el archivo `.mmd` y usar la vista previa de la extensión.

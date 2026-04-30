@@ -11,17 +11,17 @@ class ActaDesincorporacionService
 {
     public function generar(Bien $bien, string $motivo, $usuario)
     {
-        $folio = 'DES-' . now()->format('Y') . '-' . str_pad($bien->id, 6, '0', STR_PAD_LEFT);
+        $folio = 'DES-'.now()->format('Y').'-'.str_pad($bien->id, 6, '0', STR_PAD_LEFT);
 
         $data = [
-            'bien'        => $bien,
-            'motivo'      => $motivo,
-            'fecha'       => Carbon::now()->format('d/m/Y'),
-            'hora'        => Carbon::now()->format('H:i'),
-            'usuario'     => $usuario->nombre_completo ?? $usuario->name ?? auth()->user()?->nombre_completo ?? 'Usuario del sistema',
+            'bien' => $bien,
+            'motivo' => $motivo,
+            'fecha' => Carbon::now()->format('d/m/Y'),
+            'hora' => Carbon::now()->format('H:i'),
+            'usuario' => $usuario->nombre_completo ?? $usuario->name ?? auth()->user()?->nombre_completo ?? 'Usuario del sistema',
             'responsable' => $bien->dependencia?->responsable?->nombre_completo ?? '—',
             'dependencia' => $bien->dependencia?->nombre ?? '—',
-            'folio'       => $folio,
+            'folio' => $folio,
         ];
 
         $pdf = Pdf::loadView('bienes.pdf.acta-desincorporacion', $data);
@@ -36,21 +36,21 @@ class ActaDesincorporacionService
 
     public function descargar(Bien $bien, string $motivo, $usuario)
     {
-        $folio = 'DES-' . now()->format('Y') . '-' . str_pad($bien->id, 6, '0', STR_PAD_LEFT);
+        $folio = 'DES-'.now()->format('Y').'-'.str_pad($bien->id, 6, '0', STR_PAD_LEFT);
 
         $data = [
-            'bien'        => $bien,
-            'motivo'      => $motivo,
-            'fecha'       => Carbon::now()->format('d/m/Y'),
-            'hora'        => Carbon::now()->format('H:i'),
-            'usuario'     => $usuario->nombre_completo ?? $usuario->name ?? auth()->user()?->nombre_completo ?? 'Usuario del sistema',
+            'bien' => $bien,
+            'motivo' => $motivo,
+            'fecha' => Carbon::now()->format('d/m/Y'),
+            'hora' => Carbon::now()->format('H:i'),
+            'usuario' => $usuario->nombre_completo ?? $usuario->name ?? auth()->user()?->nombre_completo ?? 'Usuario del sistema',
             'responsable' => $bien->dependencia?->responsable?->nombre_completo ?? '—',
             'dependencia' => $bien->dependencia?->nombre ?? '—',
-            'folio'       => $folio,
+            'folio' => $folio,
         ];
 
         $pdf = Pdf::loadView('bienes.pdf.acta-desincorporacion', $data);
 
-        return $pdf->download('acta-desincorporacion-' . $bien->codigo . '.pdf');
+        return $pdf->download('acta-desincorporacion-'.$bien->codigo.'.pdf');
     }
 }

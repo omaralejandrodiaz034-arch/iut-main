@@ -13,8 +13,75 @@
                     <p class="text-gray-600 mt-2 max-w-2xl">
                         Visualización gráfica de los bienes por tipo, estado, registro y desincorporación.
                     </p>
-                </div>
+            <!-- Registro de Organismos -->
+            <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Registro de Organismos</h2>
+                <button data-chart="registroOrganismos" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>
+                <canvas id="chartOrganismo" class="w-96 h-56"></canvas>
             </div>
+
+            <!-- === GRÁFICAS DE USUARIOS === -->
+            <!-- Usuarios por Rol -->
+            <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Usuarios por Rol</h2>
+                <button data-chart="usuariosPorRol" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>
+                <canvas id="chartUsuariosRol" class="w-96 h-56"></canvas>
+            </div>
+
+            <!-- Usuarios Activos vs Inactivos -->
+            <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Usuarios Activos / Inactivos</h2>
+                <button data-chart="usuariosActivos" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>
+                <canvas id="chartUsuariosActivos" class="w-96 h-56"></canvas>
+            </div>
+
+            <!-- === GRÁFICAS DE DEPENDENCIAS === -->
+            <!-- Dependencias por Unidad -->
+            <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Dependencias por Unidad</h2>
+                <button data-chart="dependenciasPorUnidad" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>
+                <canvas id="chartDepsUnidad" class="w-96 h-56"></canvas>
+            </div>
+
+            <!-- Dependencias con/sin responsable -->
+            <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Dependencias: con/sin responsable</h2>
+                <button data-chart="dependenciasResponsable" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>
+                <canvas id="chartDepsResponsable" class="w-96 h-56"></canvas>
+            </div>
+
+            <!-- === GRÁFICAS DE MOVIMIENTOS === -->
+            <!-- Movimientos por Tipo -->
+            <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Movimientos por Tipo</h2>
+                <button data-chart="movimientosPorTipo" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>
+                <canvas id="chartMovTipo" class="w-96 h-56"></canvas>
+            </div>
+
+            <!-- Movimientos por Usuario (Top 10) -->
+            <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Top 10 Usuarios por Movimientos</h2>
+                <button data-chart="movimientosPorUsuario" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>
+                <canvas id="chartMovUsuario" class="w-96 h-56"></canvas>
+            </div>
+
+            <!-- Movimientos por Fecha (Progresivo) -->
+            <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6 md:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">Movimientos por Fecha (Progresivo)</h2>
+                    <button data-chart="movimientosPorFecha" class="ml-2 inline-block px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 download-btn">Descargar PDF</button>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-600">Granularidad:</label>
+                        <select id="granularity" name="granularity" class="border-gray-300 rounded px-2 py-1 text-sm">
+                            <option value="daily" @selected(request('granularity') == 'daily')>Diaria</option>
+                            <option value="weekly" @selected(request('granularity') == 'weekly')>Semanal</option>
+                            <option value="monthly" @selected(request('granularity', 'monthly') == 'monthly')>Mensual</option>
+                        </select>
+                    </div>
+                </div>
+                <canvas id="chartMovFecha" class="w-full h-64"></canvas>
+            </div>
+        </div> <!-- fin grid -->
 
             <div class="grid gap-8 md:grid-cols-2 xl:grid-cols-2">
                 <!-- Valor total por Estado -->
@@ -306,92 +373,132 @@
             data: { labels: labelsUnidad, datasets:[{ label:'Unidades Registradas', data: valuesUnidad, backgroundColor: CHART_PALETTE[5]+'33', borderColor: CHART_PALETTE[5], borderWidth:2, fill:true, tension:0.25, pointRadius:2 }] },
             options: opts
         });
-    })();
+     })();
 
-    // Registro de Organismos
-    const dataOrganismo = (Object.keys(@json($registroOrganismos)).length ? @json($registroOrganismos) : { 'Sin datos': 0 });
-    const labelsOrganismo = Object.keys(dataOrganismo);
-    const valuesOrganismo = Object.values(dataOrganismo);
+     // === DATOS DE NUEVAS ENTIDADES ===
+     // Usuarios por Rol
+     const dataUsuariosRol = (Object.keys(@json($usuariosPorRol ?? [])).length ? @json($usuariosPorRol) : { 'Sin datos': 0 });
+     const labelsUsuariosRol = Object.keys(dataUsuariosRol);
+     const valuesUsuariosRol = Object.values(dataUsuariosRol);
 
-    // --- Nuevos datasets desde el servidor ---
-    const dataValorPorEstado = (Object.keys(@json($valorPorEstado ?? [])).length ? @json($valorPorEstado) : { 'Sin datos': 0 });
-    const labelsValorPorEstado = Object.keys(dataValorPorEstado);
-    const valuesValorPorEstado = Object.values(dataValorPorEstado);
+     // Usuarios Activos/Inactivos
+     const dataUsuariosActivos = (Object.keys(@json($usuariosActivos ?? [])).length ? @json($usuariosActivos) : { 'Sin datos': 0 });
+     const labelsUsuariosActivos = Object.keys(dataUsuariosActivos);
+     const valuesUsuariosActivos = Object.values(dataUsuariosActivos);
 
-    const dataTopDeps = (Object.keys(@json($topDependenciasValor ?? [])).length ? @json($topDependenciasValor) : { 'Sin datos': 0 });
-    const labelsTopDeps = Object.keys(dataTopDeps);
-    const valuesTopDeps = Object.values(dataTopDeps);
+     // Dependencias por Unidad
+     const dataDepsUnidad = (Object.keys(@json($dependenciasPorUnidad ?? [])).length ? @json($dependenciasPorUnidad) : { 'Sin datos': 0 });
+     const labelsDepsUnidad = Object.keys(dataDepsUnidad);
+     const valuesDepsUnidad = Object.values(dataDepsUnidad);
 
-    const dataFotos = (Object.keys(@json($fotoCoverage ?? [])).length ? @json($fotoCoverage) : { 'Sin datos': 0 });
-    const labelsFotos = Object.keys(dataFotos);
-    const valuesFotos = Object.values(dataFotos);
+     // Dependencias con/sin responsable
+     const dataDepsResponsable = (Object.keys(@json($dependenciasResponsable ?? [])).length ? @json($dependenciasResponsable) : { 'Sin datos': 0 });
+     const labelsDepsResponsable = Object.keys(dataDepsResponsable);
+     const valuesDepsResponsable = Object.values(dataDepsResponsable);
 
-    const dataMov = (Object.keys(@json($movimientoCoverage ?? [])).length ? @json($movimientoCoverage) : { 'Sin datos': 0 });
-    const labelsMov = Object.keys(dataMov);
-    const valuesMov = Object.values(dataMov);
+     // Movimientos por Tipo
+     const dataMovTipo = (Object.keys(@json($movimientosPorTipo ?? [])).length ? @json($movimientosPorTipo) : { 'Sin datos': 0 });
+     const labelsMovTipo = Object.keys(dataMovTipo);
+     const valuesMovTipo = Object.values(dataMovTipo);
 
-    // Si por alguna razón se inyectó una tabla en esta vista, ocultarla
-    document.addEventListener('DOMContentLoaded', function () {
-        const tabla = document.getElementById('tablaBienesContainer');
-        if (tabla) tabla.style.display = 'none';
-    });
+     // Movimientos por Usuario (Top 10)
+     const dataMovUsuario = (Object.keys(@json($movimientosPorUsuario ?? [])).length ? @json($movimientosPorUsuario) : { 'Sin datos': 0 });
+     const labelsMovUsuario = Object.keys(dataMovUsuario);
+     const valuesMovUsuario = Object.values(dataMovUsuario);
 
-    (function(){
-        const opts = commonOptions({currency:false});
-        opts.plugins.title.text = `Registro de Organismos (${granularityLabel})`;
-        new Chart(document.getElementById('chartOrganismo').getContext('2d'), {
-            type: 'line',
-            data: { labels: labelsOrganismo, datasets:[{ label:'Organismos Registrados', data: valuesOrganismo, backgroundColor: CHART_PALETTE[6]+'33', borderColor: CHART_PALETTE[6], borderWidth:2, fill:true, tension:0.25, pointRadius:2 }] },
-            options: opts
-        });
-    })();
+     // Movimientos por Fecha (Progresivo)
+     const dataMovFecha = (Object.keys(@json($movimientosPorFecha ?? [])).length ? @json($movimientosPorFecha) : { 'Sin datos': 0 });
+     const labelsMovFecha = Object.keys(dataMovFecha);
+     const valuesMovFecha = Object.values(dataMovFecha);
 
-    // Valor total por Estado
-    (function(){
-        const opts = commonOptions({currency:true});
-        opts.plugins.title.text = 'Valor total por Estado (Bs.)';
-        new Chart(document.getElementById('chartValorEstado').getContext('2d'), {
-            type: 'bar',
-            data: { labels: labelsValorPorEstado, datasets:[{ label:'Valor (Bs.)', data: valuesValorPorEstado, backgroundColor: CHART_PALETTE[1], maxBarThickness: 60 }] },
-            options: opts
-        });
-    })();
+     // Si por alguna razón se inyectó una tabla en esta vista, ocultarla
+     document.addEventListener('DOMContentLoaded', function () {
+         const tabla = document.getElementById('tablaBienesContainer');
+         if (tabla) tabla.style.display = 'none';
+     });
 
-    // Top 10 Dependencias por Valor (horizontal bar)
-    (function(){
-        const opts = commonOptions({currency:true, indexAxis:'y'});
-        opts.plugins.title.text = 'Top 10 Dependencias por Valor (Bs.)';
-        new Chart(document.getElementById('chartTopDeps').getContext('2d'), {
-            type: 'bar',
-            data: { labels: labelsTopDeps, datasets:[{ label:'Valor (Bs.)', data: valuesTopDeps, backgroundColor: CHART_PALETTE[2], barThickness: 18, maxBarThickness: 40 }] },
-            options: opts
-        });
-    })();
+     // === NUEVOS GRÁFICOS ===
+     // Usuarios por Rol (dona)
+     (function(){
+         const opts = commonOptions({currency:false});
+         opts.plugins.title.text = 'Usuarios por Rol';
+         new Chart(document.getElementById('chartUsuariosRol').getContext('2d'), {
+             type: 'doughnut',
+             data: { labels: labelsUsuariosRol, datasets:[{ data: valuesUsuariosRol, backgroundColor: CHART_PALETTE.slice(0, labelsUsuariosRol.length) }] },
+             options: opts
+         });
+     })();
 
-    // Cobertura de fotografías (doughnut)
-    (function(){
-        const opts = commonOptions({currency:false});
-        opts.plugins.title.text = 'Cobertura de Fotografías';
-        new Chart(document.getElementById('chartFotos').getContext('2d'), {
-            type: 'doughnut',
-            data: { labels: labelsFotos, datasets:[{ data: valuesFotos, backgroundColor: [CHART_PALETTE[1], CHART_PALETTE[3]], hoverOffset:6 }] },
-            options: opts
-        });
-    })();
+     // Usuarios Activos/Inactivos (dona)
+     (function(){
+         const opts = commonOptions({currency:false});
+         opts.plugins.title.text = 'Usuarios Activos vs Inactivos';
+         new Chart(document.getElementById('chartUsuariosActivos').getContext('2d'), {
+             type: 'doughnut',
+             data: { labels: labelsUsuariosActivos, datasets:[{ data: valuesUsuariosActivos, backgroundColor: [CHART_PALETTE[1], CHART_PALETTE[3]] }] },
+             options: opts
+         });
+     })();
 
-    // Bienes sin movimientos (12 meses)
-    (function(){
-        const opts = commonOptions({currency:false});
-        opts.plugins.title.text = 'Bienes con/sin movimientos (12 meses)';
-        new Chart(document.getElementById('chartMovimientos').getContext('2d'), {
-            type: 'pie',
-            data: { labels: labelsMov, datasets:[{ data: valuesMov, backgroundColor: [CHART_PALETTE[1], CHART_PALETTE[2]] }] },
-            options: opts
-        });
-    })();
+     // Dependencias por Unidad (barra horizontal)
+     (function(){
+         const opts = commonOptions({currency:false, indexAxis:'y'});
+         opts.plugins.title.text = 'Dependencias por Unidad';
+         new Chart(document.getElementById('chartDepsUnidad').getContext('2d'), {
+             type: 'bar',
+             data: { labels: labelsDepsUnidad, datasets:[{ label:'Número de Dependencias', data: valuesDepsUnidad, backgroundColor: CHART_PALETTE[4], barThickness: 18 }] },
+             options: opts
+         });
+     })();
 
-    // Descarga de PDFs por gráfica
-    document.querySelectorAll('.download-btn').forEach(btn => {
+     // Dependencias con/sin responsable (dona)
+     (function(){
+         const opts = commonOptions({currency:false});
+         opts.plugins.title.text = 'Dependencias: con/sin responsable';
+         new Chart(document.getElementById('chartDepsResponsable').getContext('2d'), {
+             type: 'doughnut',
+             data: { labels: labelsDepsResponsable, datasets:[{ data: valuesDepsResponsable, backgroundColor: [CHART_PALETTE[0], CHART_PALETTE[3]] }] },
+             options: opts
+         });
+     })();
+
+     // Movimientos por Tipo (barra)
+     (function(){
+         const opts = commonOptions({currency:false});
+         opts.plugins.title.text = 'Movimientos por Tipo';
+         new Chart(document.getElementById('chartMovTipo').getContext('2d'), {
+             type: 'bar',
+             data: { labels: labelsMovTipo, datasets:[{ label:'Cantidad', data: valuesMovTipo, backgroundColor: CHART_PALETTE[5], maxBarThickness: 60 }] },
+             options: opts
+         });
+     })();
+
+     // Movimientos por Usuario - Top 10 (barra horizontal)
+     (function(){
+         const opts = commonOptions({currency:false, indexAxis:'y'});
+         opts.plugins.title.text = 'Top 10 Usuarios por Movimientos';
+         new Chart(document.getElementById('chartMovUsuario').getContext('2d'), {
+             type: 'bar',
+             data: { labels: labelsMovUsuario, datasets:[{ label:'Movimientos', data: valuesMovUsuario, backgroundColor: CHART_PALETTE[6], barThickness: 16 }] },
+             options: opts
+         });
+     })();
+
+     // Movimientos por Fecha (Progresivo)
+     const granMov = @json($granularity ?? 'monthly');
+     const granMovLabel = granMov === 'daily' ? 'Diaria' : (granMov === 'weekly' ? 'Semanal' : 'Mensual');
+     (function(){
+         const opts = commonOptions({currency:false});
+         opts.plugins.title.text = `Movimientos por Fecha (${granMovLabel})`;
+         new Chart(document.getElementById('chartMovFecha').getContext('2d'), {
+             type: 'line',
+             data: { labels: labelsMovFecha, datasets:[{ label:'Movimientos Acumulados', data: valuesMovFecha, backgroundColor: CHART_PALETTE[7]+'33', borderColor: CHART_PALETTE[7], borderWidth:2, fill:true, tension:0.25, pointRadius:2 }] },
+             options: opts
+         });
+     })();
+
+     // Descarga de PDFs por gráfica
+     document.querySelectorAll('.download-btn').forEach(btn => {
         btn.addEventListener('click', function () {
             const chart = this.getAttribute('data-chart');
             const params = new URLSearchParams(window.location.search);

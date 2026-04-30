@@ -1,0 +1,209 @@
+sequenceDiagram
+    participant Usuario
+    participant MovimientoController
+    participant Movimiento
+    participant Bien
+    participant Usuario as UsuarioModel
+    participant Eliminado
+    participant EliminadosService
+    participant Pdf
+    participant DB
+
+    %% LISTAR MOVIMIENTOS CON FILTROS
+    rect rgb(200, 230, 255)
+    note right of Usuario: Listar Movimientos con Filtros
+    Usuario->>MovimientoController: GET /movimientos (index)
+    MovimientoController->>MovimientoController: Validar filtros (tipo, usuario, entidad, fecha_desde, fecha_hasta)
+    MovimientoController->>Movimiento: Query con relaciones (bien, usuario, subject)
+    Movimiento->>DB: Aplicar filtros y ordenamiento por fecha DESC
+    DB-->>Movimiento: Resultados paginados
+    Movimiento-->>MovimientoController: Collection de movimientos
+    
+    alt Es Admin
+        MovimientoController->>Eliminado: Obtener registros eliminados
+        Eliminado->>DB: SELECT FROM eliminados ORDER BY deleted_at DESC LIMIT 10
+        DB-->>Eliminado: Registros eliminados
+        Eliminado-->>MovimientoController: eliminados
+        
+        MovimientoController->>UsuarioModel: Obtener usuarios que eliminaron
+        UsuarioModel->>DB: SELECT FROM usuarios WHERE id IN (deleted_by)
+        DB-->>UsuarioModel: Usuarios
+        UsuarioModel-->>MovimientoController: Usuarios por ID
+    end
+    
+    alt Request AJAX
+        MovimientoController-->>Usuario: HTML renderizado de movimientos.index
+    else Request JSON
+        MovimientoController-->>Usuario: JSON response con movimientos y eliminados
+    else Request normal
+        MovimientoController-->>Usuario: Vista movimientos.index con datos
+    end
+    end
+
+    %% CREAR MOVIMIENTO
+    rect rgb(255, 240, 200)
+    note right of Usuario: Crear Nuevo Movimiento
+    Usuario->>MovimientoController: POST /movimientos (store)
+    MovimientoController->>Usuario: Verificar permisos (isAdmin para requests no JSON)
+    
+    alt No es Admin y request no es JSON
+        MovimientoController-->>Usuario: Error 403 (Solo administradores)
+    else Tiene permisos
+        MovimientoController->>MovimientoController: Validar datos (bien_id, subject_type, subject_id, tipo, fecha, observaciones, usuario_id)
+        
+        alt Tiene subject_type
+            MovimientoController->>MovimientoController: Verificar subject_type permitido
+            alt Subject type no permitido
+                MovimientoController-->>Usuario: Error de validación (tipo de sujeto no permitido)
+            else Subject type permitido
+                MovimientoController->>DB: Verificar si subject existe
+                DB-->>MovimientoController: Subject existe/no existe
+                alt Subject no existe
+                    MovimientoController-->>Usuario: Error de validación (sujeto no existe)
+                else Subject existe
+                    alt Subject es Bien y bien_id está vacío
+                        MovimientoController->>MovimientoController: Asignar subject_id a bien_id
+                    end
+                    MovimientoController->>Movimiento: Create con datos validados
+                    Movimiento->>DB: INSERT INTO movimientos
+                    DB-->>Movimiento: Movimiento creado
+                    Movimiento-->>MovimientoController: Movimiento guardado
+                    alt Request JSON
+                        MovimientoController-->>Usuario: JSON response con movimiento creado (201)
+                    else Request normal
+                        MovimientoController-->>Usuario: Redirect a movimientos.index con mensaje de éxito
+                    end
+                end
+            end
+        else No tiene subject_type
+            MovimientoController->>Movimiento: Create con datos validados
+            Movimiento->>DB: INSERT INTO movimientos
+            DB-->>Movimiento: Movimiento creado
+            Movimiento-->>MovimientoController: Movimiento guardado
+            alt Request JSON
+                MovimientoController-->>Usuario: JSON response con movimiento creado (201)
+            else Request normal
+                MovimientoController-->>Usuario: Redirect a movimientos.index con mensaje de éxito
+            end
+        end
+    end
+    end
+
+    %% VER DETALLE DE MOVIMIENTO
+    rect rgb(230, 255, 230)
+    note right of Usuario: Ver Detalle de Movimiento
+    Usuario->>MovimientoController: GET /movimientos/{id} (show)
+    MovimientoController->>Movimiento: Cargar movimiento con relaciones
+    Movimiento->>DB: SELECT con usuario, bien, subject, historialMovimientos
+    DB-->>Movimiento: Datos completos del movimiento
+    Movimiento-->>MovimientoController: Movimiento con relaciones
+    MovimientoController-->>Usuario: Vista movimientos.show con detalles
+    end
+
+    %% EDITAR MOVIMIENTO
+    rect rgb(255, 230, 255)
+    note right of Usuario: Editar Movimiento Existente
+    Usuario->>MovimientoController: PUT /movimientos/{id} (update)
+    MovimientoController->>MovimientoController: Validar datos (con sometimes)
+    
+    alt Tiene subject_type
+        MovimientoController->>MovimientoController: Verificar subject_type permitido
+        alt Subject type no permitido
+            MovimientoController-->>Usuario: Error de validación (tipo de sujeto no permitido)
+        else Subject type permitido
+            MovimientoController->>DB: Verificar si subject existe
+            DB-->>MovimientoController: Subject existe/no existe
+            alt Subject no existe
+                MovimientoController-->>Usuario: Error de validación (sujeto no existe)
+            else Subject existe
+                alt Subject es Bien y bien_id está vacío
+                    MovimientoController->>MovimientoController: Asignar subject_id a bien_id
+                end
+                MovimientoController->>Movimiento: Update con datos validados
+                Movimiento->>DB: UPDATE movimientos SET ...
+                DB-->>Movimiento: Movimiento actualizado
+                Movimiento-->>MovimientoController: Movimiento actualizado
+                MovimientoController-->>Usuario: JSON response con movimiento actualizado
+            end
+        end
+    else No tiene subject_type
+        MovimientoController->>Movimiento: Update con datos validados
+        Movimiento->>DB: UPDATE movimientos SET ...
+        DB-->>Movimiento: Movimiento actualizado
+        Movimiento-->>MovimientoController: Movimiento actualizado
+        MovimientoController-->>Usuario: JSON response con movimiento actualizado
+    end
+    end
+
+    %% ELIMINAR MOVIMIENTO
+    rect rgb(255, 200, 200)
+    note right of Usuario: Eliminar Movimiento
+    Usuario->>MovimientoController: DELETE /movimientos/{id} (destroy)
+    MovimientoController->>MovimientoController: Obtener ID del usuario autenticado
+    MovimientoController->>EliminadosService: archiveModel(movimiento, deletedBy)
+    EliminadosService->>DB: INSERT INTO eliminados (registro del movimiento)
+    DB-->>EliminadosService: Registro archivado
+    MovimientoController->>Movimiento: delete()
+    Movimiento->>DB: DELETE FROM movimientos WHERE id = ?
+    DB-->>Movimiento: Movimiento eliminado
+    Movimiento-->>MovimientoController: Movimiento eliminado
+    MovimientoController-->>Usuario: JSON response 204 (sin contenido)
+    end
+
+    %% RESTAURAR REGISTRO ELIMINADO
+    rect rgb(200, 255, 200)
+    note right of Usuario: Restaurar Registro Eliminado
+    Usuario->>MovimientoController: POST /movimientos/eliminados/{id}/restaurar (restoreEliminado)
+    MovimientoController->>Usuario: Verificar permisos (isAdmin)
+    
+    alt No es Admin
+        MovimientoController-->>Usuario: Error 403 (Solo administradores)
+    else Es Admin
+        MovimientoController->>EliminadosService: restoreEliminado(eliminado)
+        EliminadosService->>DB: Restaurar registro desde eliminados
+        DB-->>EliminadosService: Registro restaurado
+        EliminadosService-->>MovimientoController: Resultado (éxito/fallo)
+        alt Restauración exitosa
+            MovimientoController-->>Usuario: Redirect con mensaje de éxito
+        else Restauración falló
+            MovimientoController-->>Usuario: Redirect con mensaje de error
+        end
+    end
+    end
+
+    %% EXPORTAR MOVIMIENTO A PDF
+    rect rgb(255, 255, 200)
+    note right of Usuario: Exportar Movimiento a PDF
+    Usuario->>MovimientoController: GET /movimientos/{id}/pdf (pdf)
+    MovimientoController->>Movimiento: Cargar movimiento con relaciones
+    Movimiento->>DB: SELECT con usuario, subject, bien, historialMovimientos
+    DB-->>Movimiento: Movimiento completo
+    MovimientoController->>Pdf: loadView('movimientos.pdf', movimiento)
+    Pdf-->>MovimientoController: PDF generado
+    MovimientoController-->>Usuario: Descargar movimiento_{id}.pdf
+    end
+
+    %% VER BIENES ELIMINADOS (DESINCORPORADOS)
+    rect rgb(230, 230, 255)
+    note right of Usuario: Ver Bienes Eliminados
+    Usuario->>MovimientoController: GET /movimientos/eliminados (eliminados)
+    MovimientoController->>Bien: Obtener bienes con estado desincorporado
+    Bien->>DB: SELECT FROM bienes WHERE estado = 'desincorporado' WITH movimiento
+    DB-->>Bien: Bienes desincorporados
+    Bien-->>MovimientoController: Bienes desincorporados
+    MovimientoController-->>Usuario: Vista movimientos.eliminados con bienes
+    end
+
+    %% REINTEGRAR BIEN
+    rect rgb(255, 220, 200)
+    note right of Usuario: Reintegrar Bien Desincorporado
+    Usuario->>MovimientoController: POST /movimientos/eliminar/{id}/reintegrar (reintegrar)
+    MovimientoController->>Bien: Update estado a activo
+    Bien->>DB: UPDATE bienes SET estado = 'activo' WHERE id = ?
+    DB-->>Bien: Estado actualizado
+    MovimientoController->>Movimiento: Create movimiento de reintegración
+    Movimiento->>DB: INSERT INTO movimientos (tipo: 'reintegración', descripcion: 'Bien reintegrado')
+    DB-->>Movimiento: Movimiento creado
+    Movimiento-->>MovimientoController: Movimiento creado
+    MovimientoController-->>Usuario: Redirect con mensaje de éxito
+    end

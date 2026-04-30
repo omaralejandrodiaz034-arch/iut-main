@@ -25,11 +25,11 @@ return new class extends Migration
             $table->date('fecha_registro')->nullable()->after('estado');
             $table->string('tipo_bien', 50)->nullable()->after('fecha_registro');
             $table->json('caracteristicas')->nullable()->after('tipo_bien');
-            
+
             // Información de desincorporación
             $table->string('motivo_desincorporacion', 500)->change();
             $table->string('acta_desincorporacion', 500)->nullable()->change();
-            
+
             // Timestamps
             $table->timestamp('fecha_desincorporacion')->useCurrent()->after('acta_desincorporacion');
         });

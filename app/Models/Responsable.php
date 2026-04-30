@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Responsable extends Model
 {
-    use GeneratesMovimiento, AuditableTrait;
+    use AuditableTrait, GeneratesMovimiento;
 
     protected $table = 'responsables';
 
@@ -43,9 +43,9 @@ class Responsable extends Model
     {
         return $this->hasMany(Dependencia::class, 'responsable_id');
     }
+
     public function getNombreCompletoAttribute()
     {
         return "{$this->nombre} ({$this->cedula}) - {$this->tipo->nombre}";
     }
-
 }

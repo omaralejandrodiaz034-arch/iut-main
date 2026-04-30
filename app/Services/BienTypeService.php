@@ -4,9 +4,9 @@ namespace App\Services;
 
 use App\Models\Bien;
 use App\Models\BienElectronico;
-use App\Models\BienVehiculo;
 use App\Models\BienMobiliario;
 use App\Models\BienOtro;
+use App\Models\BienVehiculo;
 
 class BienTypeService
 {
@@ -27,42 +27,47 @@ class BienTypeService
                     $out[$k] = $v;
                 }
             }
+
             return $out;
         };
 
         if ($tipo === 'ELECTRONICO') {
-            $fields = ['subtipo','procesador','memoria','almacenamiento','pantalla','serial','garantia'];
+            $fields = ['subtipo', 'procesador', 'memoria', 'almacenamiento', 'pantalla', 'serial', 'garantia'];
             BienElectronico::updateOrCreate(
                 ['bien_id' => $bien->id],
                 $normalize(array_intersect_key($data, array_flip($fields)))
             );
+
             return;
         }
 
         if ($tipo === 'VEHICULO') {
-            $fields = ['marca','modelo','anio','placa','motor','chasis','combustible','kilometraje'];
+            $fields = ['marca', 'modelo', 'anio', 'placa', 'motor', 'chasis', 'combustible', 'kilometraje'];
             BienVehiculo::updateOrCreate(
                 ['bien_id' => $bien->id],
                 $normalize(array_intersect_key($data, array_flip($fields)))
             );
+
             return;
         }
 
         if ($tipo === 'MOBILIARIO') {
-            $fields = ['material','dimensiones','color','capacidad','cantidad_piezas','acabado'];
+            $fields = ['material', 'dimensiones', 'color', 'capacidad', 'cantidad_piezas', 'acabado'];
             BienMobiliario::updateOrCreate(
                 ['bien_id' => $bien->id],
                 $normalize(array_intersect_key($data, array_flip($fields)))
             );
+
             return;
         }
 
         if ($tipo === 'OTROS') {
-            $fields = ['especificaciones','cantidad','presentacion'];
+            $fields = ['especificaciones', 'cantidad', 'presentacion'];
             BienOtro::updateOrCreate(
                 ['bien_id' => $bien->id],
                 $normalize(array_intersect_key($data, array_flip($fields)))
             );
+
             return;
         }
     }

@@ -1,0 +1,91 @@
+@startuml
+|Usuario|
+start
+:Accede al sistema;
+:Inicia sesion;
+
+if (Credenciales validas?) then (si)
+    :Cargar Dashboard;
+    if (Es Admin?) then (si)
+        :Menu Completo;
+    else (no)
+        :Menu Restringido;
+    endif
+else (no)
+    :Mostrar error;
+    stop
+endif
+
+|Menu Principal|
+:Accionar opcion del menu;
+
+|Bien|
+if (Opcion = Bienes?) then (si)
+    :Listar Bienes;
+    :Ver lista filtrada;
+    
+    if (Accion = Crear?) then (si)
+        :Formulario nuevo bien;
+        :Seleccionar tipo bien;
+        if (Tipo = Electronico?) then (si)
+            :Ingresar datos electronicos;
+        elseif (Tipo = Vehiculo?) then (si)
+            :Ingresar datos vehiculo;
+        elseif (Tipo = Mobiliario?) then (si)
+            :Ingresar datos mobiliarios;
+        else (no)
+            :Ingresar datos generales;
+        endif
+        :Guardar bien;
+    elseif (Accion = Editar?) then (si)
+        :Cargar datos bien;
+        :Modificar datos;
+        :Guardar cambios;
+    elseif (Accion = Eliminar?) then (si)
+        if (Tiene movimientos?) then (si)
+            :No permitir eliminacion;
+        else (no)
+            :Confirmar eliminacion;
+            :Mover a tabla eliminados;
+        endif
+    endif
+    
+elseif (Opcion = Movimientos?) then (si)
+    :Listar Movimientos;
+    :Crear Movimiento;
+    
+    if (Tipo = Traslado?) then (si)
+        :Seleccionar bien;
+        :Seleccionar dependencia origen;
+        :Seleccionar dependencia destino;
+        :Generar acta traslado;
+    elseif (Tipo = Asignacion?) then (si)
+        :Seleccionar bien;
+        :Seleccionar responsable;
+        :Registrar asignacion;
+    elseif (Tipo = Desincorporacion?) then (si)
+        :Seleccionar bien;
+        :Ingresar motivo;
+        :Generar acta desincorporacion;
+    endif
+    :Guardar movimiento;
+    
+elseif (Opcion = Reportes?) then (si)
+    :Seleccionar tipo reporte;
+    :Generar reporte PDF;
+    
+elseif (Opcion = Organismos/Unidades/Dependencias?) then (si)
+    :CRUD Organismo/Unidad/Dependencia;
+    
+elseif (Opcion = Usuarios?) then (si)
+    if (Es Admin?) then (si)
+        :Crear usuario;
+        :Asignar rol;
+    else (no)
+        :Acceso denegado;
+    endif
+endif
+
+stop
+
+@enduml

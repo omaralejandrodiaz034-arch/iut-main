@@ -10,19 +10,18 @@ class RolSeeder extends Seeder
     public function run(): void
     {
         DB::table('roles')->updateOrInsert(
-                ['nombre' => 'Administrador'],
-                ['permisos' => json_encode(['*' => true])]
-            );
+            ['nombre' => 'Administrador'],
+            ['permisos' => json_encode(['*' => true])]
+        );
 
-            DB::table('roles')->updateOrInsert(
-                ['nombre' => 'Usuario Normal'],
-                ['permisos' => json_encode([
-                    'crear_bienes' => true,
-                    'ver_reportes' => true,
-                    'crear_movimientos' => true,
-                ])]
-            );
+        DB::table('roles')->updateOrInsert(
+            ['nombre' => 'Usuario Normal'],
+            ['permisos' => json_encode([
+                'crear_bienes' => true,
+                'ver_reportes' => true,
+                'crear_movimientos' => true,
+            ])]
+        );
 
     }
 }
-

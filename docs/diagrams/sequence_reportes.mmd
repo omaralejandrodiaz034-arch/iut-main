@@ -1,0 +1,157 @@
+sequenceDiagram
+    participant Usuario
+    participant ReporteController
+    participant Bien
+    participant Movimiento
+    participant Eliminado
+    participant Organismo
+    participant UnidadAdministradora
+    participant Dependencia
+    participant FpdfReportService
+    participant DB
+    participant Pdf
+
+    %% LISTAR TIPOS DE REPORTE
+    rect rgb(200, 230, 255)
+    note right of Usuario: Ver Tipos de Reporte Disponibles
+    Usuario->>ReporteController: GET /reportes (index)
+    ReporteController->>ReporteController: Definir tipos de reporte disponibles
+    ReporteController-->>Usuario: Vista reportes.index con tipos de reporte
+    end
+
+    %% GENERAR GRÁFICAS
+    rect rgb(255, 240, 200)
+    note right of Usuario: Generar Gráficas de Reportes
+    Usuario->>ReporteController: GET /reportes/graficas (graficas)
+    ReporteController->>ReporteController: Validar filtros (search, tipo_bien, fechas, dependencias, estado, granularity)
+    
+    %% Bienes por Tipo
+    ReporteController->>Bien: Query con filtros aplicados
+    Bien->>DB: SELECT tipo_bien, COUNT(*) GROUP BY tipo_bien
+    DB-->>Bien: Resultados por tipo
+    Bien-->>ReporteController: bienesPorTipo
+    
+    %% Bienes por Estado
+    ReporteController->>Bien: Query con filtros aplicados
+    Bien->>DB: SELECT estado, COUNT(*) GROUP BY estado
+    DB-->>Bien: Resultados por estado
+    Bien-->>ReporteController: bienesPorEstado
+    
+    %% Bienes por Registro (Progresivo)
+    ReporteController->>Bien: Query con filtros aplicados
+    Bien->>DB: SELECT created_at FROM bienes
+    DB-->>Bien: Fechas de registro
+    Bien-->>ReporteController: Fechas de registro
+    ReporteController->>ReporteController: Agrupar por granularidad (daily/weekly/monthly)
+    ReporteController->>ReporteController: Construir acumulado progresivo
+    ReporteController-->>ReporteController: bienesPorRegistro
+    
+    %% Bienes Desincorporados
+    ReporteController->>Eliminado: Query registros eliminados
+    Eliminado->>DB: SELECT deleted_at FROM eliminados
+    DB-->>Eliminado: Fechas de eliminación
+    Eliminado-->>ReporteController: Fechas de eliminación
+    ReporteController->>ReporteController: Agrupar por granularidad
+    ReporteController->>ReporteController: Construir acumulado progresivo
+    ReporteController-->>ReporteController: bienesDesincorporados
+    
+    %% Registro de Organismos
+    ReporteController->>Organismo: Query organismos
+    Organismo->>DB: SELECT created_at FROM organismos
+    DB-->>Organismo: Fechas de creación
+    Organismo-->>ReporteController: Fechas de creación
+    ReporteController->>ReporteController: Agrupar y acumular
+    ReporteController-->>ReporteController: registroOrganismos
+    
+    %% Registro de Unidades
+    ReporteController->>UnidadAdministradora: Query unidades
+    UnidadAdministradora->>DB: SELECT created_at FROM unidades_administradoras
+    DB-->>UnidadAdministradora: Fechas de creación
+    UnidadAdministradora-->>ReporteController: Fechas de creación
+    ReporteController->>ReporteController: Agrupar y acumular
+    ReporteController-->>ReporteController: registroUnidades
+    
+    %% Registro de Dependencias
+    ReporteController->>Dependencia: Query dependencias
+    Dependencia->>DB: SELECT created_at FROM dependencias
+    DB-->>Dependencia: Fechas de creación
+    Dependencia-->>ReporteController: Fechas de creación
+    ReporteController->>ReporteController: Agrupar y acumular
+    ReporteController-->>ReporteController: registroDependencias
+    
+    %% Métricas Adicionales
+    ReporteController->>Bien: Query con filtros aplicados
+    Bien->>DB: SELECT estado, SUM(precio) GROUP BY estado
+    DB-->>Bien: Valor por estado
+    Bien-->>ReporteController: valorPorEstado
+    
+    ReporteController->>Bien: Query con filtros aplicados
+    Bien->>DB: SELECT dependencia.nombre, SUM(precio) TOP 10
+    DB-->>Bien: Top dependencias por valor
+    Bien-->>ReporteController: topDependenciasValor
+    
+    ReporteController->>Bien: Query con filtros aplicados
+    Bien->>DB: COUNT(*) con/sin fotografía
+    DB-->>Bien: Cobertura de fotografías
+    Bien-->>ReporteController: fotoCoverage
+    
+    ReporteController->>Bien: Query con filtros aplicados
+    Bien->>DB: COUNT(*) con/sin movimientos 12m
+    DB-->>Bien: Cobertura de movimientos
+    Bien-->>ReporteController: movimientoCoverage
+    
+    ReporteController-->>Usuario: Vista reportes.graficas con todas las métricas
+    end
+
+    %% GENERAR PDF DE GRÁFICA
+    rect rgb(230, 255, 230)
+    note right of Usuario: Exportar Gráfica a PDF
+    Usuario->>ReporteController: GET /reportes/graficas/pdf (graficasPdf)
+    ReporteController->>ReporteController: Validar parámetros (chart, granularity, filtros)
+    
+    alt Chart: valorPorEstado
+        ReporteController->>Bien: Query con filtros
+        Bien->>DB: SELECT estado, SUM(precio) GROUP BY estado
+        DB-->>Bien: Valor por estado
+        Bien-->>ReporteController: Datos para PDF
+    else Chart: topDependencias
+        ReporteController->>Bien: Query con filtros
+        Bien->>DB: SELECT dependencia.nombre, SUM(precio) TOP 100
+        DB-->>Bien: Top dependencias
+        Bien-->>ReporteController: Datos para PDF
+    else Chart: fotos
+        ReporteController->>Bien: Query con filtros
+        Bien->>DB: COUNT(*) con/sin fotografía
+        DB-->>Bien: Cobertura de fotos
+        Bien-->>ReporteController: Datos para PDF
+    else Chart: movimientos
+        ReporteController->>Bien: Query con filtros
+        Bien->>DB: COUNT(*) con/sin movimientos 12m
+        DB-->>Bien: Cobertura de movimientos
+        Bien-->>ReporteController: Datos para PDF
+    else Chart: bienesPorRegistro
+        ReporteController->>Bien: Query con filtros
+        Bien->>DB: SELECT created_at FROM bienes
+        DB-->>Bien: Fechas de registro
+        Bien-->>ReporteController: Datos para PDF
+    else Chart: bienesDesincorporados
+        ReporteController->>Eliminado: Query registros eliminados
+        Eliminado->>DB: SELECT deleted_at FROM eliminados
+        DB-->>Eliminado: Fechas de eliminación
+        Eliminado-->>ReporteController: Datos para PDF
+    else Chart: bienesPorTipo
+        ReporteController->>Bien: Query con filtros
+        Bien->>DB: SELECT tipo_bien, COUNT(*) GROUP BY tipo_bien
+        DB-->>Bien: Bienes por tipo
+        Bien-->>ReporteController: Datos para PDF
+    else Chart: bienesPorEstado
+        ReporteController->>Bien: Query con filtros
+        Bien->>DB: SELECT estado, COUNT(*) GROUP BY estado
+        DB-->>Bien: Bienes por estado
+        Bien-->>ReporteController: Datos para PDF
+    end
+    
+    ReporteController->>FpdfReportService: Generar PDF con datos
+    FpdfReportService-->>ReporteController: PDF generado
+    ReporteController-->>Usuario: Descargar reporte_grafica.pdf
+    end

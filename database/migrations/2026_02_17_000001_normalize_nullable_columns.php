@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -11,7 +11,7 @@ return new class extends Migration
     {
         // bienes_electronicos: convertir valores vacíos a NULL y permitir NULLs
         if (Schema::hasTable('bienes_electronicos')) {
-            foreach (['subtipo','procesador','memoria','almacenamiento','pantalla','serial'] as $col) {
+            foreach (['subtipo', 'procesador', 'memoria', 'almacenamiento', 'pantalla', 'serial'] as $col) {
                 DB::table('bienes_electronicos')->where($col, '')->update([$col => null]);
             }
 
@@ -28,7 +28,7 @@ return new class extends Migration
 
         // bienes_mobiliarios
         if (Schema::hasTable('bienes_mobiliarios')) {
-            foreach (['material','dimensiones','color','capacidad','acabado'] as $col) {
+            foreach (['material', 'dimensiones', 'color', 'capacidad', 'acabado'] as $col) {
                 DB::table('bienes_mobiliarios')->where($col, '')->update([$col => null]);
             }
             DB::table('bienes_mobiliarios')->where('cantidad_piezas', 0)->update(['cantidad_piezas' => null]);
@@ -45,7 +45,7 @@ return new class extends Migration
 
         // bienes_vehiculos
         if (Schema::hasTable('bienes_vehiculos')) {
-            foreach (['marca','modelo','anio','placa','motor','chasis','combustible','kilometraje'] as $col) {
+            foreach (['marca', 'modelo', 'anio', 'placa', 'motor', 'chasis', 'combustible', 'kilometraje'] as $col) {
                 DB::table('bienes_vehiculos')->where($col, '')->update([$col => null]);
             }
 

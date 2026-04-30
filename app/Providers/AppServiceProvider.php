@@ -2,13 +2,14 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use App\Models\Bien;
+use App\Models\Dependencia;
 use App\Models\Organismo;
 use App\Models\UnidadAdministradora;
-use App\Models\Dependencia;
 use App\Models\Usuario;
 use App\Observers\ModelObserver;
+use App\Services\FpdfReportService;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,7 +18,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(FpdfReportService::class, function ($app) {
+            return new FpdfReportService();
+        });
     }
 
     /**
@@ -33,4 +36,3 @@ class AppServiceProvider extends ServiceProvider
         Usuario::observe(ModelObserver::class);
     }
 }
-

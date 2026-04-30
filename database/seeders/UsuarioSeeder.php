@@ -64,4 +64,3 @@ class UsuarioSeeder extends Seeder
         }
     }
 }
-

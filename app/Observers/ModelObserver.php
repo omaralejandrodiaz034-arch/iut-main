@@ -2,9 +2,9 @@
 
 namespace App\Observers;
 
-use Illuminate\Database\Eloquent\Model;
-use App\Models\Movimiento;
 use App\Models\HistorialMovimiento;
+use App\Models\Movimiento;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class ModelObserver
@@ -27,6 +27,7 @@ class ModelObserver
 
             if (is_string($identifier) && filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
                 $u = \App\Models\Usuario::where('correo', $identifier)->first();
+
                 return $u?->id;
             }
         } catch (\Throwable $e) {
@@ -61,6 +62,7 @@ class ModelObserver
             logger()->info('Evento updated en ModelObserver con observaciones explícitas', ['model' => $model, 'observaciones' => $obs]);
 
             $this->registrarMovimiento($model, 'Actualización', $obs);
+
             return;
         }
 

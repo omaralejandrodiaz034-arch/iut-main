@@ -17,6 +17,11 @@ package "Laravel App" {
         [Routes]
     }
     
+    package "API" {
+        [API_Routes]
+        [API_Controllers]
+    }
+    
     package "Middleware" {
         [Auth]
         [IsAdmin]
@@ -58,7 +63,7 @@ package "Laravel App" {
     }
     
     package "Views" {
-        [Blade Templates]
+        [Blade_Templates]
     }
 }
 
@@ -75,8 +80,11 @@ package "Storage" {
 Browser --> Nginx
 Mobile --> Nginx
 Nginx --> Routes
+Nginx --> API_Routes
 Routes --> Auth
+API_Routes --> API_Controllers
 Auth --> Controllers
+API_Controllers --> Services
 Controllers --> Services
 Services --> Models
 Models --> MySQL

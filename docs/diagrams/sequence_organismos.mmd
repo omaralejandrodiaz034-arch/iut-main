@@ -1,0 +1,114 @@
+sequenceDiagram
+    participant Usuario
+    participant OrganismoController
+    participant Organismo
+    participant CodigoUnicoService
+    participant DB
+    participant Pdf
+
+    %% LISTAR ORGANISMOS
+    rect rgb(200, 230, 255)
+    note right of Usuario: Listar Organismos con Filtros
+    Usuario->>OrganismoController: GET /organismos (index)
+    OrganismoController->>OrganismoController: Validar filtros (buscar, codigo, nombre)
+    OrganismoController->>Organismo: Query con filtros
+    Organismo->>DB: Aplicar filtros y ordenamiento
+    DB-->>Organismo: Resultados paginados
+    Organismo-->>OrganismoController: Collection de organismos
+    OrganismoController-->>Usuario: Vista organismos.index con datos filtrados
+    end
+
+    %% CREAR ORGANISMO
+    rect rgb(255, 240, 200)
+    note right of Usuario: Crear Nuevo Organismo
+    Usuario->>OrganismoController: GET /organismos/create (create)
+    OrganismoController->>CodigoUnicoService: obtenerSiguienteCodigo()
+    CodigoUnicoService->>DB: SELECT MAX(codigo) FROM todas_las_tablas
+    DB-->>CodigoUnicoService: Último código global
+    CodigoUnicoService-->>OrganismoController: Código siguiente sugerido (8 dígitos)
+    OrganismoController-->>Usuario: Vista organismos.create con código sugerido
+    
+    Usuario->>OrganismoController: POST /organismos (store)
+    OrganismoController->>OrganismoController: Validar datos (codigo, nombre)
+    
+    OrganismoController->>CodigoUnicoService: codigoExiste(codigo)
+    CodigoUnicoService->>DB: Verificar código en todas las tablas
+    DB-->>CodigoUnicoService: Código disponible/no disponible
+    CodigoUnicoService-->>OrganismoController: Resultado verificación
+    
+    alt Código ya existe
+        OrganismoController-->>Usuario: Error de validación (código duplicado)
+    else Código disponible
+        OrganismoController->>Organismo: Create con datos validados
+        Organismo->>DB: INSERT INTO organismos
+        DB-->>Organismo: Organismo creado
+        Organismo-->>OrganismoController: Organismo guardado
+        OrganismoController-->>Usuario: Redirect a organismos.index con mensaje de éxito
+    end
+    end
+
+    %% VER DETALLE DE ORGANISMO
+    rect rgb(230, 255, 230)
+    note right of Usuario: Ver Detalle de Organismo
+    Usuario->>OrganismoController: GET /organismos/{id} (show)
+    OrganismoController->>Organismo: Cargar organismo con relaciones
+    Organismo->>DB: SELECT con unidadesAdministradoras
+    DB-->>Organismo: Datos completos del organismo
+    Organismo-->>OrganismoController: Organismo con relaciones
+    OrganismoController-->>Usuario: Vista organismos.show con detalles
+    end
+
+    %% EDITAR ORGANISMO
+    rect rgb(255, 230, 255)
+    note right of Usuario: Editar Organismo Existente
+    Usuario->>OrganismoController: GET /organismos/{id}/edit (edit)
+    OrganismoController->>Organismo: Buscar organismo por ID
+    Organismo->>DB: SELECT FROM organismos WHERE id = ?
+    DB-->>Organismo: Datos del organismo
+    OrganismoController-->>Usuario: Vista organismos.edit con datos
+    
+    Usuario->>OrganismoController: PUT /organismos/{id} (update)
+    OrganismoController->>OrganismoController: Validar datos (con unique ignore)
+    
+    alt Cambió código
+        OrganismoController->>CodigoUnicoService: codigoExiste(codigo, 'organismos', id)
+        CodigoUnicoService->>DB: Verificar código en todas las tablas (ignorando ID actual)
+        DB-->>CodigoUnicoService: Código disponible/no disponible
+        CodigoUnicoService-->>OrganismoController: Resultado verificación
+        
+        alt Código no disponible
+            OrganismoController-->>Usuario: Error de validación (código duplicado)
+        else Código disponible
+            OrganismoController->>Organismo: Update con datos validados
+            Organismo->>DB: UPDATE organismos SET ...
+            DB-->>Organismo: Organismo actualizado
+            Organismo-->>OrganismoController: Organismo actualizado
+            OrganismoController-->>Usuario: Redirect con mensaje de éxito
+        end
+    else No cambió código
+        OrganismoController->>Organismo: Update con datos validados
+        Organismo->>DB: UPDATE organismos SET ...
+        DB-->>Organismo: Organismo actualizado
+        Organismo-->>OrganismoController: Organismo actualizado
+        OrganismoController-->>Usuario: Redirect con mensaje de éxito
+    end
+    end
+
+    %% EXPORTAR ORGANISMO A PDF
+    rect rgb(255, 255, 200)
+    note right of Usuario: Exportar Organismo a PDF
+    Usuario->>OrganismoController: GET /organismos/{id}/pdf (exportPdf)
+    OrganismoController->>Organismo: Cargar organismo con relaciones
+    Organismo->>DB: SELECT con unidadesAdministradoras
+    DB-->>Organismo: Organismo completo
+    OrganismoController->>Pdf: loadView('organismos.pdf', organismo)
+    Pdf-->>OrganismoController: PDF generado
+    OrganismoController-->>Usuario: Descargar organismo_{codigo}.pdf
+    end
+
+    %% ELIMINAR ORGANISMO (NO PERMITIDO)
+    rect rgb(255, 200, 200)
+    note right of Usuario: Intentar Eliminar Organismo
+    Usuario->>OrganismoController: DELETE /organismos/{id} (destroy)
+    OrganismoController-->>Usuario: Error 403 (No está permitido eliminar organismos)
+    end

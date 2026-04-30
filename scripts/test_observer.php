@@ -1,14 +1,14 @@
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
-$app = require_once __DIR__ . '/../bootstrap/app.php';
+require __DIR__.'/../vendor/autoload.php';
+$app = require_once __DIR__.'/../bootstrap/app.php';
 // Bootstrap the application (so observers are registered)
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
-use App\Models\Dependencia;
-use App\Models\Bien;
-use App\Models\Movimiento;
 use App\Enums\EstadoBien;
+use App\Models\Bien;
+use App\Models\Dependencia;
+use App\Models\Movimiento;
 
 $dep = Dependencia::first();
 if (! $dep) {
@@ -18,7 +18,7 @@ if (! $dep) {
 
 $b = Bien::create([
     'dependencia_id' => $dep->id,
-    'codigo' => 'TEST-' . uniqid(),
+    'codigo' => 'TEST-'.uniqid(),
     'descripcion' => 'Prueba movimiento observer',
     'precio' => 0,
     'estado' => EstadoBien::ACTIVO->value,

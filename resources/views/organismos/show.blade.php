@@ -54,6 +54,19 @@ use Illuminate\Support\Str;
                         <p class="text-sm text-gray-600">Nombre</p>
                         <p class="text-base font-medium text-gray-800">{{ $organismo->nombre }}</p>
                     </div>
+
+                    <div>
+                        <p class="text-sm text-gray-600">Rango de códigos reservados para Unidades</p>
+                        @if($organismo->code_max > 0)
+                            <p class="text-base font-medium text-green-600">
+                                {{ str_pad($organismo->code_min, 8, '0', STR_PAD_LEFT) }} - {{ str_pad($organismo->code_max, 8, '0', STR_PAD_LEFT) }}
+                            </p>
+                            <p class="text-xs text-gray-500">({{ $organismo->code_max - $organismo->code_min + 1 }} códigos disponibles)</p>
+                        @else
+                            <p class="text-base font-medium text-gray-400">Sin reservar</p>
+                        @endif
+                    </div>
+
                     <div>
                         <p class="text-sm text-gray-600">Fecha de Creación</p>
                         <p class="text-base font-medium text-gray-800">{{ $organismo->created_at?->format('d/m/Y H:i') }}</p>

@@ -79,26 +79,34 @@
         // Get the search route from a meta tag or use a default
         const searchUrl = document.querySelector('meta[name="search-route"]')?.content || '/buscar';
         
+        console.log('Searching for:', query, 'at URL:', searchUrl);
+        
         fetch(`${searchUrl}?q=${encodeURIComponent(query)}`, {
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(res => res.json())
+        .then(res => {
+            console.log('Response status:', res.status);
+            return res.json();
+        })
         .then(data => {
-            if (data.length === 0) {
+            console.log('Response data:', data);
+            const results = data.results || data;
+            console.log('Results array:', results);
+            if (!results || results.length === 0) {
                 resultsContainer.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">Sin resultados</div>';
             } else {
                 let html = '';
-                data.forEach(item => {
-                    const icon = item.type === 'bien' ? '📦' : (item.type === 'usuario' ? '👤' : '🏢');
+                results.forEach(item => {
+                    const icon = item.icon || '📦';
                     const url = item.url || '#';
                     html += `<a href="${url}" class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800 transition border-b border-gray-50 dark:border-slate-700 last:border-0">
                         <span class="text-lg">${icon}</span>
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">${item.title}</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${item.subtitle || ''}</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">${item.label || item.title}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${item.type || ''}</p>
                         </div>
                     </a>`;
                 });
@@ -106,7 +114,8 @@
             }
             resultsContainer.classList.remove('hidden');
         })
-        .catch(() => {
+        .catch(err => {
+            console.error('Search error:', err);
             resultsContainer.classList.add('hidden');
         });
     }

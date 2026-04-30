@@ -22,7 +22,7 @@ class UnidadSeeder extends Seeder
 
             // Otras unidades
             for ($i = 1; $i <= 3; $i++) {
-                $codigo = $organismo->codigo . '-U' . str_pad($i, 3, '0', STR_PAD_LEFT);
+                $codigo = $organismo->codigo.'-U'.str_pad($i, 3, '0', STR_PAD_LEFT);
                 DB::table('unidades_administradoras')->updateOrInsert(
                     ['organismo_id' => $organismo->id, 'codigo' => $codigo],
                     ['nombre' => "Unidad Administradora {$i} de {$organismo->nombre}"]
@@ -31,5 +31,3 @@ class UnidadSeeder extends Seeder
         }
     }
 }
-
-

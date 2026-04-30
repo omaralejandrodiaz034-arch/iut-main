@@ -12,7 +12,7 @@ class EliminadosService
      * Guarda una copia JSON del modelo y el usuario que borró.
      */
     /**
-     * @param mixed $deletedBy id del usuario que elimina (int|string|null)
+     * @param  mixed  $deletedBy  id del usuario que elimina (int|string|null)
      */
     public static function archiveModel($model, $deletedBy = null): Eliminado
     {
@@ -116,6 +116,7 @@ class EliminadosService
             return true;
         } catch (\Throwable $e) {
             report($e);
+
             return false;
         }
     }

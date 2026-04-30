@@ -35,7 +35,7 @@ class AuditoriaController extends Controller
 
         $registros = $query->paginate(50)->withQueryString();
 
-        $tablas      = Auditoria::distinct()->orderBy('tabla')->pluck('tabla');
+        $tablas = Auditoria::distinct()->orderBy('tabla')->pluck('tabla');
         $operaciones = Auditoria::distinct()->orderBy('operacion')->pluck('operacion');
 
         return view('auditoria.index', compact('registros', 'tablas', 'operaciones'));

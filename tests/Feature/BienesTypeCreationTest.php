@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Bien;
 use App\Models\Dependencia;
 use App\Models\Usuario;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class BienesTypeCreationTest extends TestCase
 {
@@ -27,6 +27,7 @@ class BienesTypeCreationTest extends TestCase
             'is_admin' => true,
         ]);
         $this->actingAs($user);
+
         return $user;
     }
 
@@ -49,7 +50,7 @@ class BienesTypeCreationTest extends TestCase
             'fecha_registro' => now()->format('Y-m-d'),
             'serial' => 'SN12345',
             'procesador' => 'i7',
-            'memoria' => '8GB'
+            'memoria' => '8GB',
         ];
 
         $resp = $this->post(route('bienes.store'), $payload);
@@ -76,7 +77,7 @@ class BienesTypeCreationTest extends TestCase
             'tipo_bien' => 'VEHICULO',
             'fecha_registro' => now()->format('Y-m-d'),
             'marca' => 'Toyota',
-            'placa' => 'ABC123'
+            'placa' => 'ABC123',
         ];
 
         $resp = $this->post(route('bienes.store'), $payload);
@@ -103,7 +104,7 @@ class BienesTypeCreationTest extends TestCase
             'tipo_bien' => 'MOBILIARIO',
             'fecha_registro' => now()->format('Y-m-d'),
             'material' => 'Madera',
-            'cantidad_piezas' => 2
+            'cantidad_piezas' => 2,
         ];
 
         $resp = $this->post(route('bienes.store'), $payload);
@@ -130,7 +131,7 @@ class BienesTypeCreationTest extends TestCase
             'tipo_bien' => 'OTROS',
             'fecha_registro' => now()->format('Y-m-d'),
             'especificaciones' => 'Caja pequeña',
-            'cantidad' => 5
+            'cantidad' => 5,
         ];
 
         $resp = $this->post(route('bienes.store'), $payload);

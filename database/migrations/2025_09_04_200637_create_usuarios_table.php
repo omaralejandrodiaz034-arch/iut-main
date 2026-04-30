@@ -13,9 +13,9 @@ return new class extends Migration
         Schema::create('usuarios', function (Blueprint $table) {
             $table->id();
             $table->foreignId('rol_id')
-            ->constrained('roles')
-            ->cascadeOnDelete()
-            ->cascadeOnUpdate();
+                ->constrained('roles')
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
 
             $table->string('cedula', 20)->unique();
             $table->string('nombre', 150);

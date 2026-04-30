@@ -1,0 +1,111 @@
+sequenceDiagram
+    participant Usuario
+    participant ProfileController
+    participant Auth
+    participant Usuario as UsuarioModel
+    participant Hash
+    participant Storage
+    participant DB
+
+    %% VER PERFIL
+    rect rgb(200, 230, 255)
+    note right of Usuario: Ver Perfil de Usuario
+    Usuario->>ProfileController: GET /perfil (show)
+    ProfileController->>Auth: Obtener usuario autenticado
+    Auth-->>ProfileController: Usuario actual
+    ProfileController-->>Usuario: Vista perfil.show con datos del usuario
+    end
+
+    %% ACTUALIZAR CONTRASEÑA
+    rect rgb(255, 240, 200)
+    note right of Usuario: Actualizar Contraseña
+    Usuario->>ProfileController: POST /perfil/password (updatePassword)
+    ProfileController->>ProfileController: Validar datos (password_actual, password, password_confirmation)
+    ProfileController->>Auth: Obtener usuario autenticado
+    Auth-->>ProfileController: Usuario actual
+    
+    ProfileController->>Hash: check(password_actual, usuario.hash_password)
+    Hash-->>ProfileController: Contraseña válida/inválida
+    
+    alt Contraseña actual incorrecta
+        ProfileController-->>Usuario: Error de validación (contraseña actual incorrecta)
+    else Contraseña actual correcta
+        ProfileController->>Hash: make(nueva_password)
+        Hash-->>ProfileController: Password hasheado
+        ProfileController->>UsuarioModel: Update hash_password
+        UsuarioModel->>DB: UPDATE usuarios SET hash_password = ?
+        DB-->>UsuarioModel: Contraseña actualizada
+        UsuarioModel-->>ProfileController: Contraseña actualizada
+        ProfileController-->>Usuario: Redirect con mensaje de éxito
+    end
+    end
+
+    %% ACTUALIZAR PERFIL
+    rect rgb(230, 255, 230)
+    note right of Usuario: Actualizar Datos del Perfil
+    Usuario->>ProfileController: POST /perfil (updateProfile)
+    ProfileController->>ProfileController: Validar datos (nombre, apellido, correo)
+    ProfileController->>Auth: Obtener usuario autenticado
+    Auth-->>ProfileController: Usuario actual
+    
+    ProfileController->>UsuarioModel: Verificar correo único (ignorando ID actual)
+    UsuarioModel->>DB: SELECT FROM usuarios WHERE correo = ? AND id != ?
+    DB-->>UsuarioModel: Correo existe/no existe
+    
+    alt Correo ya existe
+        ProfileController-->>Usuario: Error de validación (correo duplicado)
+    else Correo disponible
+        ProfileController->>UsuarioModel: Update nombre, apellido, correo
+        UsuarioModel->>DB: UPDATE usuarios SET nombre = ?, apellido = ?, correo = ?
+        DB-->>UsuarioModel: Perfil actualizado
+        UsuarioModel-->>ProfileController: Perfil actualizado
+        ProfileController-->>Usuario: Redirect con mensaje de éxito
+    end
+    end
+
+    %% ACTUALIZAR FOTO DE PERFIL
+    rect rgb(255, 230, 255)
+    note right of Usuario: Actualizar Foto de Perfil
+    Usuario->>ProfileController: POST /perfil/foto (updateFoto)
+    ProfileController->>ProfileController: Validar archivo (imagen, mimes, max:2048)
+    ProfileController->>Auth: Obtener usuario autenticado
+    Auth-->>ProfileController: Usuario actual
+    
+    alt Tiene foto anterior
+        ProfileController->>Storage: Verificar si existe foto anterior
+        Storage-->>ProfileController: Foto existe/no existe
+        alt Foto anterior existe
+            ProfileController->>Storage: Eliminar foto anterior
+            Storage-->>ProfileController: Foto eliminada
+        end
+    end
+    
+    ProfileController->>Storage: Guardar nueva foto (fotos_perfil/user_{id}_{timestamp}.{ext})
+    Storage-->>ProfileController: Path de la foto
+    ProfileController->>UsuarioModel: Update foto_perfil
+    UsuarioModel->>DB: UPDATE usuarios SET foto_perfil = ?
+    DB-->>UsuarioModel: Foto actualizada
+    UsuarioModel-->>ProfileController: Foto actualizada
+    ProfileController-->>Usuario: Redirect con mensaje de éxito
+    end
+
+    %% ELIMINAR FOTO DE PERFIL
+    rect rgb(255, 200, 200)
+    note right of Usuario: Eliminar Foto de Perfil
+    Usuario->>ProfileController: POST /perfil/foto/eliminar (eliminarFoto)
+    ProfileController->>Auth: Obtener usuario autenticado
+    Auth-->>ProfileController: Usuario actual
+    
+    ProfileController->>Storage: Verificar si existe foto
+    Storage-->>ProfileController: Foto existe/no existe
+    alt Foto existe
+        ProfileController->>Storage: Eliminar foto
+        Storage-->>ProfileController: Foto eliminada
+    end
+    
+    ProfileController->>UsuarioModel: Update foto_perfil a null
+    UsuarioModel->>DB: UPDATE usuarios SET foto_perfil = NULL
+    DB-->>UsuarioModel: Foto eliminada
+    UsuarioModel-->>ProfileController: Foto eliminada
+    ProfileController-->>Usuario: Redirect con mensaje de éxito
+    end

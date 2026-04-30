@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Usuario;
+use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -21,7 +21,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $validated = $request->validate([
-            'cedula'   => ['required', 'string'],
+            'cedula' => ['required', 'string'],
             'password' => ['nullable', 'string', 'min:8'],
             'remember' => ['sometimes', 'boolean'],
         ]);
@@ -42,12 +42,12 @@ class AuthController extends Controller
             // Guardar datos básicos en sesión para prellenar el formulario de contraseña
             session([
                 'registro_api_usuario' => [
-                    'pin'        => (string) ($persona['pin'] ?? ''),
+                    'pin' => (string) ($persona['pin'] ?? ''),
                     'firstnames' => (string) ($persona['firstnames'] ?? ''),
-                    'lastnames'  => (string) ($persona['lastnames'] ?? ''),
-                    'fullname'   => (string) ($persona['fullname'] ?? ''),
-                    'status'     => (string) ($persona['status'] ?? '0'),
-                    'pin_str'    => (string) ($persona['pin_str'] ?? ''),
+                    'lastnames' => (string) ($persona['lastnames'] ?? ''),
+                    'fullname' => (string) ($persona['fullname'] ?? ''),
+                    'status' => (string) ($persona['status'] ?? '0'),
+                    'pin_str' => (string) ($persona['pin_str'] ?? ''),
                 ],
             ]);
 
@@ -95,28 +95,28 @@ class AuthController extends Controller
         // Preservar datos de sesión ANTES de cualquier validación o redirección
         // Esto asegura que al fallar la validación, los datos no se pierdan
         $datos = session('registro_api_usuario');
-        
+
         // Solo intentar recuperar desde API si es la primera vez (no es un retry de validación)
         // y solo si tenemos la cédula del formulario
-        if (!$datos) {
+        if (! $datos) {
             if ($request->filled('cedula')) {
                 $rec = $this->buscarPersonaEnApiPorCedula($this->normalizeCedulaDigits((string) $request->input('cedula')));
                 if ($rec) {
                     $datos = [
-                        'pin'        => (string) ($rec['pin'] ?? ''),
+                        'pin' => (string) ($rec['pin'] ?? ''),
                         'firstnames' => (string) ($rec['firstnames'] ?? ''),
-                        'lastnames'  => (string) ($rec['lastnames'] ?? ''),
-                        'fullname'   => (string) ($rec['fullname'] ?? ''),
-                        'status'     => (string) ($rec['status'] ?? '0'),
-                        'pin_str'    => (string) ($rec['pin_str'] ?? ''),
+                        'lastnames' => (string) ($rec['lastnames'] ?? ''),
+                        'fullname' => (string) ($rec['fullname'] ?? ''),
+                        'status' => (string) ($rec['status'] ?? '0'),
+                        'pin_str' => (string) ($rec['pin_str'] ?? ''),
                     ];
                     // Guardar en sesión para siguientes intentos
                     session(['registro_api_usuario' => $datos]);
                 }
             }
-            
+
             // Si aún no tenemos datos, mostrar el formulario
-            if (!$datos) {
+            if (! $datos) {
                 return redirect()->route('login')->with('error', 'Sesión expirada. Por favor, ingrese su cédula nuevamente.');
             }
         }
@@ -124,18 +124,18 @@ class AuthController extends Controller
         $validated = $request->validate([
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ], [
-            'password.required'  => 'La contraseña es obligatoria.',
-            'password.min'       => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.required' => 'La contraseña es obligatoria.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
             'password.confirmed' => 'Las contraseñas no coinciden.',
         ]);
 
         // Preparar mapeo y creación local
         $firstnames = (string) ($datos['firstnames'] ?? '');
-        $lastnames  = (string) ($datos['lastnames'] ?? '');
-        $fullname   = trim($datos['fullname'] ?? trim($firstnames.' '.$lastnames));
-        $estatus    = (string) ($datos['status'] ?? '0');
-        $pin        = (string) ($datos['pin'] ?? '');
-        $pinStr     = (string) ($datos['pin_str'] ?? ('V-'.$pin));
+        $lastnames = (string) ($datos['lastnames'] ?? '');
+        $fullname = trim($datos['fullname'] ?? trim($firstnames.' '.$lastnames));
+        $estatus = (string) ($datos['status'] ?? '0');
+        $pin = (string) ($datos['pin'] ?? '');
+        $pinStr = (string) ($datos['pin_str'] ?? ('V-'.$pin));
 
         // Correo generado para cumplir UNIQUE si no hay email real del API
         $correo = strtolower(Str::slug($pinStr, '.')).'@externo.local';
@@ -143,7 +143,7 @@ class AuthController extends Controller
         // Asignación de rol según cédula: 31077912 => Administrador; resto => Usuario Normal
         $esAdminCedula = ((string) $pin) === '31077912';
         $rolAdminId = optional(DB::table('roles')->where('nombre', 'Administrador')->first())->id;
-        $rolUserId  = optional(DB::table('roles')->where('nombre', 'Usuario Normal')->first())->id;
+        $rolUserId = optional(DB::table('roles')->where('nombre', 'Usuario Normal')->first())->id;
         $rolId = $esAdminCedula ? ($rolAdminId ?? $rolUserId) : ($rolUserId ?? $rolAdminId);
 
         if (! $rolId) {
@@ -155,13 +155,13 @@ class AuthController extends Controller
                 return Usuario::updateOrCreate(
                     ['cedula' => $pin],
                     [
-                        'rol_id'        => $rolId,
-                        'nombre'        => $firstnames ?: $fullname,
-                        'apellido'      => $lastnames,
-                        'correo'        => $correo,
+                        'rol_id' => $rolId,
+                        'nombre' => $firstnames ?: $fullname,
+                        'apellido' => $lastnames,
+                        'correo' => $correo,
                         'hash_password' => Hash::make($validated['password']),
-                        'activo'        => ($estatus === '1'),
-                        'is_admin'      => $esAdminCedula,
+                        'activo' => ($estatus === '1'),
+                        'is_admin' => $esAdminCedula,
                     ]
                 );
             });
@@ -169,7 +169,7 @@ class AuthController extends Controller
             \Log::error('Error creando usuario desde setPassword', [
                 'cedula' => $pin,
                 'correo' => $correo,
-                'error'  => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
             // Posible colisión UNIQUE en correo: regenerar correo con sufijo y reintentar una vez
             $correoAlt = strtolower(Str::slug($pinStr, '.')).'.'.uniqid().'@externo.local';
@@ -177,13 +177,13 @@ class AuthController extends Controller
                 return Usuario::updateOrCreate(
                     ['cedula' => $pin],
                     [
-                        'rol_id'        => $rolId,
-                        'nombre'        => $firstnames ?: $fullname,
-                        'apellido'      => $lastnames,
-                        'correo'        => $correoAlt,
+                        'rol_id' => $rolId,
+                        'nombre' => $firstnames ?: $fullname,
+                        'apellido' => $lastnames,
+                        'correo' => $correoAlt,
                         'hash_password' => Hash::make($validated['password']),
-                        'activo'        => ($estatus === '1'),
-                        'is_admin'      => $esAdminCedula,
+                        'activo' => ($estatus === '1'),
+                        'is_admin' => $esAdminCedula,
                     ]
                 );
             });
@@ -238,6 +238,7 @@ class AuthController extends Controller
         $persona = collect($data[0]['data'] ?? [])->first(function ($item) use ($digits) {
             return $this->normalizeCedulaDigits((string) ($item['pin'] ?? '')) === $digits;
         });
+
         return $persona ?: null;
     }
 

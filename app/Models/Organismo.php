@@ -14,13 +14,15 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Organismo extends Model
 {
-    use HasFactory, GeneratesMovimiento, AuditableTrait;
+    use AuditableTrait, GeneratesMovimiento, HasFactory;
 
     protected $table = 'organismos';
 
     protected $fillable = [
         'codigo',
         'nombre',
+        'code_min',
+        'code_max',
     ];
 
     /**

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Movimiento extends Model
 {
     use AuditableTrait;
+
     protected $table = 'movimientos';
 
     public $timestamps = false;
@@ -27,7 +28,7 @@ class Movimiento extends Model
         return $this->belongsTo(Usuario::class);
     }
 
-        public function historialMovimientos()
+    public function historialMovimientos()
     {
         return $this->hasMany(HistorialMovimiento::class, 'movimiento_id');
     }

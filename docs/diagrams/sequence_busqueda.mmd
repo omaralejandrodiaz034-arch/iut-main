@@ -1,0 +1,46 @@
+sequenceDiagram
+    participant Usuario
+    participant SearchController
+    participant Bien
+    participant Dependencia
+    participant UnidadAdministradora
+    participant Usuario as UsuarioModel
+    participant DB
+
+    %% BÚSQUEDA GLOBAL
+    rect rgb(200, 230, 255)
+    note right of Usuario: Búsqueda Global
+    Usuario->>SearchController: GET /search?q={query} (global)
+    SearchController->>SearchController: Validar longitud de query (mínimo 2 caracteres)
+    
+    alt Query muy corto
+        SearchController-->>Usuario: JSON response con results vacío
+    else Query válido
+        %% Buscar Bienes
+        SearchController->>Bien: Buscar por código o descripción
+        Bien->>DB: SELECT FROM bienes WHERE codigo LIKE '%query%' OR descripcion LIKE '%query%' LIMIT 5
+        DB-->>Bien: Bienes encontrados
+        Bien-->>SearchController: Bienes (máximo 5)
+        
+        %% Buscar Dependencias
+        SearchController->>Dependencia: Buscar por nombre o código
+        Dependencia->>DB: SELECT FROM dependencias WHERE nombre LIKE '%query%' OR codigo LIKE '%query%' LIMIT 4
+        DB-->>Dependencia: Dependencias encontradas
+        Dependencia-->>SearchController: Dependencias (máximo 4)
+        
+        %% Buscar Unidades
+        SearchController->>UnidadAdministradora: Buscar por nombre o código
+        UnidadAdministradora->>DB: SELECT FROM unidades_administradoras WHERE nombre LIKE '%query%' OR codigo LIKE '%query%' LIMIT 3
+        DB-->>UnidadAdministradora: Unidades encontradas
+        UnidadAdministradora-->>SearchController: Unidades (máximo 3)
+        
+        %% Buscar Usuarios
+        SearchController->>UsuarioModel: Buscar por nombre, apellido o cédula
+        UsuarioModel->>DB: SELECT FROM usuarios WHERE nombre LIKE '%query%' OR apellido LIKE '%query%' OR cedula LIKE '%query%' LIMIT 3
+        DB-->>UsuarioModel: Usuarios encontrados
+        UsuarioModel-->>SearchController: Usuarios (máximo 3)
+        
+        SearchController->>SearchController: Combinar resultados y limitar a 15 total
+        SearchController-->>Usuario: JSON response con results (máximo 15)
+    end
+    end

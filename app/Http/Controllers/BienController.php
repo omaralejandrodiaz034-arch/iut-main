@@ -44,6 +44,7 @@ class BienController extends Controller
             'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde'],
             'sort' => ['nullable', 'string', Rule::in(['codigo', 'descripcion', 'precio', 'fecha_registro', 'estado'])],
             'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
+            'solo_desincorporados' => ['nullable', 'boolean'],
         ]);
 
         // 2. Construcción de la consulta con relaciones
@@ -75,6 +76,18 @@ class BienController extends Controller
             $query->whereHas('dependencia', fn ($q) => $q->where('unidad_administradora_id', $validated['unidad_id']));
         } elseif (! empty($validated['organismo_id'])) {
             $query->whereHas('dependencia.unidadAdministradora', fn ($q) => $q->where('organismo_id', $validated['organismo_id']));
+        }
+
+        // Filtrado de Desincorporados: por defecto se excluyen, solo se muestran con filtro específico
+        $soloDesincorporados = filter_var($validated['solo_desincorporados'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filtroEstadoExplicito = ! empty($validated['estado']) && in_array('DESINCORPORADO', $validated['estado']);
+
+        if ($soloDesincorporados) {
+            // Mostrar SOLO bienes desincorporados
+            $query->where('estado', 'DESINCORPORADO');
+        } elseif (! $filtroEstadoExplicito) {
+            // Por defecto: EXCLUIR bienes desincorporados (a menos que el filtro de estado lo incluya explícitamente)
+            $query->where('estado', '!=', 'DESINCORPORADO');
         }
 
         // ⚡️ Ordenamiento y Paginación
@@ -136,7 +149,7 @@ class BienController extends Controller
      */
     public function create()
     {
-        // Uso del servicio para sugerir el código real disponible
+        // Código sugerido global (modo fallback)
         $codigoSugerido = CodigoUnicoService::obtenerSiguienteCodigo();
 
         $dependencias = Dependencia::with('responsable')->get();
@@ -146,6 +159,44 @@ class BienController extends Controller
         );
 
         return view('bienes.create', compact('dependencias', 'tiposBien', 'codigoSugerido'));
+    }
+
+    /**
+     * Obtener el siguiente código recomendado para una dependencia específica.
+     * Usado por el formulario de creación vía AJAX.
+     */
+    public function recomendarCodigo(Dependencia $dependencia)
+    {
+        try {
+            $resultado = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
+
+            return response()->json([
+                'success' => true,
+                'codigo' => $resultado['codigo'],
+                'siguiente_numero' => $resultado['siguiente_numero'],
+                'rango_min' => $resultado['rango_min'],
+                'rango_max' => $resultado['rango_max'],
+                'mensaje' => sprintf(
+                    'Código recomendado: %s (rango %d-%d, siguiente: %d)',
+                    $resultado['codigo'],
+                    $resultado['rango_min'],
+                    $resultado['rango_max'],
+                    $resultado['siguiente_numero']
+                ),
+            ]);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'rango_exhausto',
+                'mensaje' => $e->getMessage(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'error_general',
+                'mensaje' => 'Error al generar el código: '.$e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

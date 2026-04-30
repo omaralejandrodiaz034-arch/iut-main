@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Dependencia extends Model
 {
-    use HasFactory, GeneratesMovimiento, AuditableTrait;
+    use AuditableTrait, GeneratesMovimiento, HasFactory;
 
     /**
      * Nombre de la tabla asociada.
@@ -25,18 +25,19 @@ class Dependencia extends Model
     /**
      * Atributos que se pueden asignar de forma masiva.
      */
-        protected $fillable = [
+    protected $fillable = [
         'unidad_administradora_id',
         'codigo',
         'nombre',
         'responsable_id',
+        'code_min',
+        'code_max',
     ];
 
     public function responsable()
     {
         return $this->belongsTo(\App\Models\Responsable::class);
     }
-
 
     public function scopeSearch($query, $term)
     {
@@ -67,5 +68,4 @@ class Dependencia extends Model
     /**
      * Relación: La dependencia puede tener un responsable asignado.
      */
-
 }

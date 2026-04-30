@@ -4,13 +4,13 @@ namespace App\Exports;
 
 use App\Models\Bien;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class BienesExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class BienesExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping, WithStyles
 {
     /**
      * Bienes a exportar

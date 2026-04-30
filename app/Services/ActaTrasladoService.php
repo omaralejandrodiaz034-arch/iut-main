@@ -13,21 +13,21 @@ class ActaTrasladoService
     {
         if (! extension_loaded('gd')) {
             // lanzar excepción con instrucción clara para desarrolladores/administradores
-            throw new \RuntimeException("La extensión PHP GD es necesaria para generar el acta. \n" .
+            throw new \RuntimeException("La extensión PHP GD es necesaria para generar el acta. \n".
                 "Active 'extension=gd' en el php.ini del servidor web y reinicie Apache/Tomcat.");
         }
 
-        $folio = 'TRAS-' . now()->format('Y') . '-' . str_pad($bien->id, 6, '0', STR_PAD_LEFT);
+        $folio = 'TRAS-'.now()->format('Y').'-'.str_pad($bien->id, 6, '0', STR_PAD_LEFT);
 
         $data = [
-            'bien'        => $bien,
-            'motivo'      => $motivo,
-            'fecha'       => Carbon::now()->format('d/m/Y'),
-            'hora'        => Carbon::now()->format('H:i'),
-            'usuario'     => $usuario->nombre_completo ?? $usuario->name ?? auth()->user()?->nombre_completo ?? 'Usuario del sistema',
+            'bien' => $bien,
+            'motivo' => $motivo,
+            'fecha' => Carbon::now()->format('d/m/Y'),
+            'hora' => Carbon::now()->format('H:i'),
+            'usuario' => $usuario->nombre_completo ?? $usuario->name ?? auth()->user()?->nombre_completo ?? 'Usuario del sistema',
             'dependencia_anterior' => $dependenciaAnterior,
-            'dependencia_nueva'    => $dependenciaNueva,
-            'folio'       => $folio,
+            'dependencia_nueva' => $dependenciaNueva,
+            'folio' => $folio,
         ];
 
         $pdf = Pdf::loadView('bienes.pdf.acta-traslado', $data);
@@ -45,21 +45,21 @@ class ActaTrasladoService
 
     public function descargar(Bien $bien, string $motivo, $usuario, $dependenciaAnterior, $dependenciaNueva)
     {
-        $folio = 'TRAS-' . now()->format('Y') . '-' . str_pad($bien->id, 6, '0', STR_PAD_LEFT);
+        $folio = 'TRAS-'.now()->format('Y').'-'.str_pad($bien->id, 6, '0', STR_PAD_LEFT);
 
         $data = [
-            'bien'        => $bien,
-            'motivo'      => $motivo,
-            'fecha'       => Carbon::now()->format('d/m/Y'),
-            'hora'        => Carbon::now()->format('H:i'),
-            'usuario'     => $usuario->nombre_completo ?? $usuario->name ?? auth()->user()?->nombre_completo ?? 'Usuario del sistema',
+            'bien' => $bien,
+            'motivo' => $motivo,
+            'fecha' => Carbon::now()->format('d/m/Y'),
+            'hora' => Carbon::now()->format('H:i'),
+            'usuario' => $usuario->nombre_completo ?? $usuario->name ?? auth()->user()?->nombre_completo ?? 'Usuario del sistema',
             'dependencia_anterior' => $dependenciaAnterior,
-            'dependencia_nueva'    => $dependenciaNueva,
-            'folio'       => $folio,
+            'dependencia_nueva' => $dependenciaNueva,
+            'folio' => $folio,
         ];
 
         $pdf = Pdf::loadView('bienes.pdf.acta-traslado', $data);
 
-        return $pdf->download('acta-traslado-' . $bien->codigo . '.pdf');
+        return $pdf->download('acta-traslado-'.$bien->codigo.'.pdf');
     }
 }

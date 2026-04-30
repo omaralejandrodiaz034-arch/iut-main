@@ -13,9 +13,9 @@ return new class extends Migration
         Schema::create('unidades_administradoras', function (Blueprint $table) {
             $table->id();
             $table->foreignId('organismo_id')
-            ->constrained('organismos')
-            ->cascadeOnDelete()
-            ->cascadeOnUpdate();
+                ->constrained('organismos')
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
 
             $table->string('codigo', 50);
             $table->string('nombre', 150);

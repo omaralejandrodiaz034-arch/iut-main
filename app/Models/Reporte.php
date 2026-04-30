@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Traits\GeneratesMovimiento;
+use Illuminate\Database\Eloquent\Model;
 
 class Reporte extends Model
 {
     use GeneratesMovimiento;
+
     protected $table = 'reportes';
 
     public $timestamps = false;

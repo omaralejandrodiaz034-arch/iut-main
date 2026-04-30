@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant Usuario
+    participant AuditoriaController
+    participant Auditoria
+    participant DB
+
+    %% LISTAR REGISTROS DE AUDITORÍA
+    rect rgb(200, 230, 255)
+    note right of Usuario: Listar Registros de Auditoría
+    Usuario->>AuditoriaController: GET /auditoria (index)
+    AuditoriaController->>Usuario: Verificar permisos (isAdmin)
+    
+    alt No es Admin
+        AuditoriaController-->>Usuario: Error 403 (Acceso no autorizado)
+    else Es Admin
+        AuditoriaController->>AuditoriaController: Validar filtros (tabla, operacion, usuario_id, fecha_desde, fecha_hasta)
+        AuditoriaController->>Auditoria: Query con filtros y ordenamiento
+        Auditoria->>DB: Aplicar filtros y ordenamiento por created_at DESC
+        DB-->>Auditoria: Resultados paginados
+        Auditoria-->>AuditoriaController: Collection de registros de auditoría
+        
+        AuditoriaController->>Auditoria: Obtener tablas distintas
+        Auditoria->>DB: SELECT DISTINCT tabla FROM auditoria ORDER BY tabla
+        DB-->>Auditoria: Lista de tablas
+        Auditoria-->>AuditoriaController: tablas
+        
+        AuditoriaController->>Auditoria: Obtener operaciones distintas
+        Auditoria->>DB: SELECT DISTINCT operacion FROM auditoria ORDER BY operacion
+        DB-->>Auditoria: Lista de operaciones
+        Auditoria-->>AuditoriaController: operaciones
+        
+        AuditoriaController-->>Usuario: Vista auditoria.index con registros filtrados
+    end
+    end

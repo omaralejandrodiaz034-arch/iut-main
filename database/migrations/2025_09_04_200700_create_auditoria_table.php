@@ -17,7 +17,6 @@ return new class extends Migration
                 ->nullOnDelete()
                 ->cascadeOnUpdate();
 
-
             // Tabla que fue modificada
             $table->string('tabla', 100);
 

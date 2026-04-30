@@ -365,8 +365,97 @@ class ReporteController extends Controller
             'Sin movimientos 12m' => $sinMovimientos,
         ];
 
+        // =====================================================
+        // 5. Usuarios por Rol
+        // =====================================================
+        $usuariosPorRol = Usuario::with('rol')
+            ->get()
+            ->groupBy(fn($u) => $u->rol?->nombre ?? 'Sin Rol')
+            ->map(fn($group) => $group->count())
+            ->toArray();
+
+        // =====================================================
+        // 6. Usuarios Activos vs Inactivos
+        // =====================================================
+        $usuariosActivos = Usuario::selectRaw('activo, COUNT(*) as count')
+            ->groupBy('activo')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                $label = $item->activo ? 'Activos' : 'Inactivos';
+                return [$label => (int) $item->count];
+            })
+            ->toArray();
+
+        // =====================================================
+        // 7. Dependencias por Unidad Administradora
+        // =====================================================
+        $dependenciasPorUnidad = Dependencia::with('unidadAdministradora')
+            ->get()
+            ->groupBy(fn($d) => optional($d->unidadAdministradora)->nombre ?? 'Sin Unidad')
+            ->map(fn($group) => $group->count())
+            ->toArray();
+
+        // =====================================================
+        // 8. Dependencias con/sin responsable
+        // =====================================================
+        $totalDeps = Dependencia::count();
+        $conResponsable = Dependencia::whereNotNull('responsable_id')->count();
+        $sinResponsable = max(0, $totalDeps - $conResponsable);
+        $dependenciasResponsable = [
+            'Con responsable' => $conResponsable,
+            'Sin responsable' => $sinResponsable,
+        ];
+
+        // =====================================================
+        // 9. Movimientos por Tipo
+        // =====================================================
+        $movimientosPorTipo = Movimiento::selectRaw('tipo, COUNT(*) as count')
+            ->groupBy('tipo')
+            ->orderBy('tipo')
+            ->get()
+            ->mapWithKeys(fn($item) => [$item->tipo => (int)$item->count])
+            ->toArray();
+
+        // =====================================================
+        // 10. Movimientos por Usuario (Top 10)
+        // =====================================================
+        $movimientosPorUsuario = Movimiento::with('usuario')
+            ->selectRaw('usuario_id, COUNT(*) as count')
+            ->whereNotNull('usuario_id')
+            ->groupBy('usuario_id')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->get()
+            ->mapWithKeys(function ($item) {
+                $nombre = optional($item->usuario)->nombre_completo ?? 'Sin usuario';
+                return [$nombre => (int)$item->count];
+            })
+            ->toArray();
+
+        // =====================================================
+        // 11. Movimientos por Fecha (progresivo)
+        // =====================================================
+        $movFechas = Movimiento::select('fecha')->get()->pluck('fecha')->filter();
+        $movGrouped = $movFechas->map(function ($d) use ($granularity) {
+            if (!$d) return null;
+            $dt = Carbon::parse($d);
+            return match ($granularity) {
+                'daily' => $dt->format('Y-m-d'),
+                'weekly' => $dt->copy()->startOfWeek()->format('Y-m-d'),
+                default => $dt->format('Y-m'),
+            };
+        })->filter()->countBy()->sortKeys();
+
+        $acumMov = [];
+        $tot = 0;
+        foreach ($movGrouped as $period => $cnt) {
+            $tot += $cnt;
+            $acumMov[(string)$period] = (int)$tot;
+        }
+        $movimientosPorFecha = $acumMov;
 
         return view('reportes.graficas', compact(
+            // Bienes
             'bienesPorTipo',
             'bienesPorEstado',
             'bienesPorRegistro',
@@ -374,12 +463,20 @@ class ReporteController extends Controller
             'registroOrganismos',
             'registroUnidades',
             'registroDependencias',
-            // Nuevas métricas
             'valorPorEstado',
             'topDependenciasValor',
             'fotoCoverage',
-            'movimientoCoverage'
-        , 'granularity'));
+            'movimientoCoverage',
+            // Entidades
+            'usuariosPorRol',
+            'usuariosActivos',
+            'dependenciasPorUnidad',
+            'dependenciasResponsable',
+            'movimientosPorTipo',
+            'movimientosPorUsuario',
+            'movimientosPorFecha',
+            'granularity'
+        ));
 
     }
 
@@ -504,12 +601,166 @@ class ReporteController extends Controller
                     $estado = $it->estado instanceof \App\Enums\EstadoBien
                         ? $it->estado
                         : \App\Enums\EstadoBien::tryFrom($it->estado);
-
                     $label = $estado ? $estado->label() : ((string) $it->estado);
                     $data[(string)$label] = (int)$it->count;
                 }
                 $title = 'Bienes por Estado';
                 break;
+
+            // === USUARIOS ===
+            case 'usuariosPorRol':
+                $q = Usuario::query();
+                if ($request->filled('buscar')) {
+                    $buscar = $request->get('buscar');
+                    $q->where(function($sub) use ($buscar) {
+                        $sub->where('nombre', 'like', "%{$buscar}%")
+                            ->orWhere('apellido', 'like', "%{$buscar}%")
+                            ->orWhere('cedula', 'like', "%{$buscar}%");
+                    });
+                }
+                if ($request->filled('rol_id')) $q->where('rol_id', $request->get('rol_id'));
+                if ($request->has('activo')) $q->where('activo', $request->get('activo'));
+                $items = $q->with('rol')->get()->groupBy(fn($u) => $u->rol?->nombre ?? 'Sin Rol')->map(fn($g) => $g->count());
+                $data = $items->toArray();
+                $title = 'Usuarios por Rol';
+                break;
+
+            case 'usuariosActivos':
+                $q = Usuario::query();
+                if ($request->filled('buscar')) {
+                    $buscar = $request->get('buscar');
+                    $q->where(function($sub) use ($buscar) {
+                        $sub->where('nombre', 'like', "%{$buscar}%")
+                            ->orWhere('apellido', 'like', "%{$buscar}%")
+                            ->orWhere('cedula', 'like', "%{$buscar}%");
+                    });
+                }
+                if ($request->filled('rol_id')) $q->where('rol_id', $request->get('rol_id'));
+                if ($request->has('activo')) $q->where('activo', $request->get('activo'));
+                $items = $q->selectRaw('activo, COUNT(*) as count')->groupBy('activo')->get();
+                foreach ($items as $it) {
+                    $label = $it->activo ? 'Activos' : 'Inactivos';
+                    $data[$label] = (int)$it->count;
+                }
+                $title = 'Usuarios Activos vs Inactivos';
+                break;
+
+            // === DEPENDENCIAS ===
+            case 'dependenciasPorUnidad':
+                $q = Dependencia::query();
+                if ($request->filled('search')) {
+                    $search = $request->get('search');
+                    $q->where(function($sub) use ($search) {
+                        $sub->where('nombre', 'like', "%{$search}%")
+                            ->orWhere('codigo', 'like', "%{$search}%");
+                    });
+                }
+                if ($request->filled('unidad_id')) $q->where('unidad_administradora_id', $request->get('unidad_id'));
+                if ($request->filled('responsable_id')) $q->where('responsable_id', $request->get('responsable_id'));
+                $items = $q->with('unidadAdministradora')->get()->groupBy(fn($d) => optional($d->unidadAdministradora)->nombre ?? 'Sin Unidad')->map(fn($g) => $g->count());
+                $data = $items->toArray();
+                $title = 'Dependencias por Unidad';
+                break;
+
+            case 'dependenciasResponsable':
+                $q = Dependencia::query();
+                if ($request->filled('search')) {
+                    $search = $request->get('search');
+                    $q->where(function($sub) use ($search) {
+                        $sub->where('nombre', 'like', "%{$search}%")
+                            ->orWhere('codigo', 'like', "%{$search}%");
+                    });
+                }
+                if ($request->filled('unidad_id')) $q->where('unidad_administradora_id', $request->get('unidad_id'));
+                if ($request->filled('responsable_id')) $q->where('responsable_id', $request->get('responsable_id'));
+                $total = (clone $q)->count();
+                $con = (clone $q)->whereNotNull('responsable_id')->count();
+                $sin = max(0, $total - $con);
+                $data = ['Con responsable' => $con, 'Sin responsable' => $sin];
+                $title = 'Dependencias: con/sin responsable';
+                break;
+
+            // === MOVIMIENTOS ===
+            case 'movimientosPorTipo':
+                $q = Movimiento::query();
+                if ($request->filled('tipo')) $q->where('tipo', $request->get('tipo'));
+                if ($request->filled('usuario')) {
+                    $usuario = trim($request->get('usuario'));
+                    $q->whereHas('usuario', fn($sub) => $sub->where('nombre', 'like', "%{$usuario}%")->orWhere('correo', 'like', "%{$usuario}%"));
+                }
+                if ($request->filled('entidad')) {
+                    $ent = $request->get('entidad');
+                    $q->where(function($sub) use ($ent) {
+                        $sub->orWhereRaw("LOWER(SUBSTRING_INDEX(subject_type, '\\\\', -1)) LIKE ?", ['%'.strtolower($ent).'%']);
+                        $sub->orWhere('subject_type', 'like', "%{$ent}%");
+                    });
+                }
+                if ($request->filled('fecha_desde')) $q->whereDate('fecha', '>=', $request->get('fecha_desde'));
+                if ($request->filled('fecha_hasta')) $q->whereDate('fecha', '<=', $request->get('fecha_hasta'));
+                $items = (clone $q)->selectRaw('tipo, COUNT(*) as count')->groupBy('tipo')->orderBy('tipo')->get();
+                foreach ($items as $it) $data[$it->tipo] = (int)$it->count;
+                $title = 'Movimientos por Tipo';
+                break;
+
+            case 'movimientosPorUsuario':
+                $q = Movimiento::query();
+                if ($request->filled('tipo')) $q->where('tipo', $request->get('tipo'));
+                if ($request->filled('usuario')) {
+                    $usuario = trim($request->get('usuario'));
+                    $q->whereHas('usuario', fn($sub) => $sub->where('nombre', 'like', "%{$usuario}%")->orWhere('correo', 'like', "%{$usuario}%"));
+                }
+                if ($request->filled('entidad')) {
+                    $ent = $request->get('entidad');
+                    $q->where(function($sub) use ($ent) {
+                        $sub->orWhereRaw("LOWER(SUBSTRING_INDEX(subject_type, '\\\\', -1)) LIKE ?", ['%'.strtolower($ent).'%']);
+                        $sub->orWhere('subject_type', 'like', "%{$ent}%");
+                    });
+                }
+                if ($request->filled('fecha_desde')) $q->whereDate('fecha', '>=', $request->get('fecha_desde'));
+                if ($request->filled('fecha_hasta')) $q->whereDate('fecha', '<=', $request->get('fecha_hasta'));
+                $items = (clone $q)->with('usuario')->selectRaw('usuario_id, COUNT(*) as count')->whereNotNull('usuario_id')->groupBy('usuario_id')->orderByDesc('count')->limit(10)->get();
+                foreach ($items as $it) {
+                    $nombre = optional($it->usuario)->nombre_completo ?? 'Sin usuario';
+                    $data[$nombre] = (int)$it->count;
+                }
+                $title = 'Top 10 Usuarios por Movimientos';
+                break;
+
+            case 'movimientosPorFecha':
+                $q = Movimiento::query();
+                if ($request->filled('tipo')) $q->where('tipo', $request->get('tipo'));
+                if ($request->filled('usuario')) {
+                    $usuario = trim($request->get('usuario'));
+                    $q->whereHas('usuario', fn($sub) => $sub->where('nombre', 'like', "%{$usuario}%")->orWhere('correo', 'like', "%{$usuario}%"));
+                }
+                if ($request->filled('entidad')) {
+                    $ent = $request->get('entidad');
+                    $q->where(function($sub) use ($ent) {
+                        $sub->orWhereRaw("LOWER(SUBSTRING_INDEX(subject_type, '\\\\', -1)) LIKE ?", ['%'.strtolower($ent).'%']);
+                        $sub->orWhere('subject_type', 'like', "%{$ent}%");
+                    });
+                }
+                if ($request->filled('fecha_desde')) $q->whereDate('fecha', '>=', $request->get('fecha_desde'));
+                if ($request->filled('fecha_hasta')) $q->whereDate('fecha', '<=', $request->get('fecha_hasta'));
+                $dates = (clone $q)->select('fecha')->get()->pluck('fecha')->filter();
+                $grouped = $dates->map(function($d) use ($granularity) {
+                    if (!$d) return null;
+                    $dt = Carbon::parse($d);
+                    return match ($granularity) {
+                        'daily' => $dt->format('Y-m-d'),
+                        'weekly' => $dt->copy()->startOfWeek()->format('Y-m-d'),
+                        default => $dt->format('Y-m'),
+                    };
+                })->filter()->countBy()->sortKeys();
+                $acc = []; $s = 0;
+                foreach ($grouped as $k => $c) {
+                    $s += $c;
+                    $acc[$k] = (int)$s;
+                }
+                $data = $acc;
+                $title = 'Movimientos por Fecha (progresivo)';
+                break;
+
             default:
                 abort(400, 'Parámetro "chart" inválido');
         }

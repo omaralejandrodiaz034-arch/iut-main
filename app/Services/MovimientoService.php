@@ -41,13 +41,14 @@ class MovimientoService
         try {
             $userId = $usuarioId ?? self::resolveAuthenticatedUserId();
 
-            if (!is_int($userId)) {
+            if (! is_int($userId)) {
                 // Durante ciertos flujos (p. ej., creación de usuario antes del login) no habrá usuario autenticado.
                 // No registrar movimiento en ese caso; sólo dejar constancia para diagnóstico y salir sin error.
                 logger()->info('MovimientoService: sin usuario autenticado; se omite registro de movimiento.', [
                     'subject' => is_object($subject) ? get_class($subject) : gettype($subject),
                     'tipo' => $tipo,
                 ]);
+
                 return;
             }
 

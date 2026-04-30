@@ -127,6 +127,7 @@
 
 <script>
     const sugerenciaInicial = "{{ $proximoCodigo ?? '' }}";
+    const unidadesData = @json($sugerenciasPorUnidad ?? []);
 
     function restaurarSugerencia() {
         const codigoInput = document.getElementById('codigo');
@@ -144,27 +145,26 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        const nombreInput = document.getElementById('nombre');
         const codigoInput = document.getElementById('codigo');
-        const errorNombre = document.getElementById('error-nombre');
         const errorCodigo = document.getElementById('error-codigo');
         const errorCeros = document.getElementById('error-ceros');
         const recuperarContenedor = document.getElementById('recuperar-contenedor');
         const btnRecuperar = document.getElementById('btnRecuperar');
+        const nombreInput = document.getElementById('nombre');
+        const errorNombre = document.getElementById('error-nombre');
+        const unidadSelect = document.getElementById('unidad_administradora_id');
+        const responsableSelect = document.getElementById('responsable_id');
         const form = document.getElementById('dependenciaForm');
 
-        // Validación de Nombre
-        nombreInput.addEventListener('input', function(e) {
-            let original = e.target.value;
-            let filtrado = original.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-            if (original !== filtrado) {
-                errorNombre.classList.remove('hidden');
-                setTimeout(() => errorNombre.classList.add('hidden'), 2500);
-            }
-            e.target.value = filtrado.slice(0, 40);
+        // Actualizar código sugerido al cambiar unidad
+        unidadSelect.addEventListener('change', function() {
+            const unidadId = this.value;
+            const nuevoCodigo = unidadesData[unidadId] || sugerenciaInicial;
+            codigoInput.value = nuevoCodigo;
+            recuperarContenedor.classList.add('hidden');
         });
 
-        // Validación de Código
+        // 1. Lógica de Código
         codigoInput.addEventListener('input', function(e) {
             let original = e.target.value;
             let filtrado = original.replace(/[^0-9]/g, '');
@@ -176,7 +176,7 @@
 
             e.target.value = filtrado.slice(0, 8);
 
-            // Validar ceros
+            // Validar si son puros ceros
             const esTodoCeros = e.target.value.length > 0 && /^0+$/.test(e.target.value);
             if (esTodoCeros) {
                 errorCeros.classList.remove('hidden');
@@ -184,7 +184,7 @@
                 errorCeros.classList.add('hidden');
             }
 
-            // Mostrar aviso de restauración
+            // Mostrar aviso de recuperación si cambia o está incompleto
             if (e.target.value !== sugerenciaInicial || e.target.value.length < 8) {
                 recuperarContenedor.classList.remove('hidden');
             } else {
@@ -203,21 +203,44 @@
             }
         });
 
-        // Estado de carga y validación final
-        form.addEventListener('submit', function(e) {
-            const val = codigoInput.value;
-            const esTodoCeros = /^0+$/.test(val);
+        // 2. Restricción de Nombre
+        nombreInput.addEventListener('input', function(e) {
+            let val = e.target.value;
+            let filtered = val.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
 
-            if (val.length < 8 || esTodoCeros) {
+            if (val !== filtered) {
+                errorNombre.classList.remove('hidden');
+                setTimeout(() => errorNombre.classList.add('hidden'), 2500);
+            }
+            e.target.value = filtered.slice(0, 40);
+        });
+
+        // 3. Validación final y Efecto de carga
+        form.addEventListener('submit', function(e) {
+            const codVal = codigoInput.value;
+            const esTodoCeros = /^0+$/.test(codVal);
+            const nombreVal = nombreInput.value.trim();
+            const unidadVal = unidadSelect.value;
+
+            // Validaciones de bloqueo
+            if (codVal.length < 8 || esTodoCeros || nombreVal === "" || unidadVal === "") {
                 e.preventDefault();
-                errorCeros.classList.remove('hidden');
-                codigoInput.focus();
+
+                if (esTodoCeros) {
+                    errorCeros.classList.remove('hidden');
+                    codigoInput.focus();
+                }
+
+                if(nombreVal === "") nombreInput.focus();
+
                 return;
             }
 
+            // Si pasa validaciones, mostrar carga
             const btn = document.getElementById('btnGuardar');
             const icon = document.getElementById('btnIcon');
             const text = document.getElementById('btnText');
+
             btn.disabled = true;
             btn.classList.add('opacity-80', 'cursor-wait');
             icon.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;

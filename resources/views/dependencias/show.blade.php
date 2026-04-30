@@ -60,7 +60,19 @@ use Illuminate\Support\Str;
                         <p class="text-base font-medium text-gray-800">{{ $dependencia->unidadAdministradora->nombre ?? '—' }}</p>
                     </div>
 
-                   <div>
+                    <div>
+                        <p class="text-sm text-gray-600">Rango de códigos reservados para Bienes</p>
+                        @if($dependencia->code_max > 0)
+                            <p class="text-base font-medium text-green-600">
+                                {{ str_pad($dependencia->code_min, 8, '0', STR_PAD_LEFT) }} - {{ str_pad($dependencia->code_max, 8, '0', STR_PAD_LEFT) }}
+                            </p>
+                            <p class="text-xs text-gray-500">({{ $dependencia->code_max - $dependencia->code_min + 1 }} códigos disponibles)</p>
+                        @else
+                            <p class="text-base font-medium text-gray-400">Sin reservar</p>
+                        @endif
+                    </div>
+
+                    <div>
                         <p class="text-sm text-gray-600">Responsable</p>
                         @if($dependencia->responsable)
                             <p class="text-base font-medium text-gray-800">

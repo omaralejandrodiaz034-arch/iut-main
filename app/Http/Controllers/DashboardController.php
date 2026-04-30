@@ -10,7 +10,6 @@ use App\Models\Movimiento;
 use App\Models\Organismo;
 use App\Models\UnidadAdministradora;
 use App\Models\Usuario;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -18,17 +17,17 @@ class DashboardController extends Controller
     public function index()
     {
         // ── KPIs generales ──────────────────────────────────────────────
-        $totalBienes        = Bien::count();
-        $totalActivos       = Bien::where('estado', EstadoBien::ACTIVO->value)->count();
-        $totalDañados       = Bien::where('estado', EstadoBien::DANADO->value)->count();
+        $totalBienes = Bien::count();
+        $totalActivos = Bien::where('estado', EstadoBien::ACTIVO->value)->count();
+        $totalDañados = Bien::where('estado', EstadoBien::DANADO->value)->count();
         $totalMantenimiento = Bien::where('estado', EstadoBien::EN_MANTENIMIENTO->value)->count();
-        $totalExtraviados   = Bien::where('estado', EstadoBien::EXTRAVIADO->value)->count();
+        $totalExtraviados = Bien::where('estado', EstadoBien::EXTRAVIADO->value)->count();
         $totalDesincorporados = Bien::where('estado', EstadoBien::DESINCORPORADO->value)->count();
 
-        $totalOrganismos    = Organismo::count();
-        $totalUnidades      = UnidadAdministradora::count();
-        $totalDependencias  = Dependencia::count();
-        $totalUsuarios      = Usuario::where('activo', true)->count();
+        $totalOrganismos = Organismo::count();
+        $totalUnidades = UnidadAdministradora::count();
+        $totalDependencias = Dependencia::count();
+        $totalUsuarios = Usuario::where('activo', true)->count();
 
         // Valor total del inventario
         $valorTotal = Bien::whereNotNull('precio')
@@ -37,12 +36,12 @@ class DashboardController extends Controller
 
         // ── Distribución por estado ──────────────────────────────────────
         $porEstado = collect(EstadoBien::cases())->mapWithKeys(fn ($e) => [
-            $e->label() => Bien::where('estado', $e->value)->count()
+            $e->label() => Bien::where('estado', $e->value)->count(),
         ])->filter(fn ($v) => $v > 0);
 
         // ── Distribución por tipo ────────────────────────────────────────
         $porTipo = collect(TipoBien::cases())->mapWithKeys(fn ($t) => [
-            $t->label() => Bien::where('tipo_bien', $t->value)->count()
+            $t->label() => Bien::where('tipo_bien', $t->value)->count(),
         ])->filter(fn ($v) => $v > 0);
 
         // ── Top 5 dependencias con más bienes ───────────────────────────

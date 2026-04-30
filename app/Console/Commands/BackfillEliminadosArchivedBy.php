@@ -2,13 +2,14 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Eliminado;
 use App\Models\Usuario;
+use Illuminate\Console\Command;
 
 class BackfillEliminadosArchivedBy extends Command
 {
     protected $signature = 'eliminados:backfill-archived-by {--dry-run}';
+
     protected $description = 'Backfill _archived_by inside Eliminado.data using deleted_by user id when missing';
 
     public function handle()
@@ -23,7 +24,7 @@ class BackfillEliminadosArchivedBy extends Command
         $progress = $this->output->createProgressBar($count);
         $progress->start();
 
-        Eliminado::cursor()->each(function($e) use ($dry, $progress) {
+        Eliminado::cursor()->each(function ($e) use ($dry, $progress) {
             $data = $e->data ?? [];
             $hasArchived = is_array($data) && array_key_exists('_archived_by', $data) && ! empty($data['_archived_by']);
             if (! $hasArchived && ! empty($e->deleted_by)) {
@@ -44,6 +45,7 @@ class BackfillEliminadosArchivedBy extends Command
 
         $progress->finish();
         $this->info("\nDone. Run with --dry-run to preview without saving.");
+
         return 0;
     }
 }

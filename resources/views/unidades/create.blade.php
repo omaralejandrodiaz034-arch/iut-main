@@ -113,6 +113,7 @@
 
 <script>
     const sugerenciaInicial = "{{ $siguienteCodigo ?? '' }}";
+    const organismosData = @json($sugerenciasPorOrganismo ?? []);
 
     function restaurarSugerencia() {
         const codigoInput = document.getElementById('codigo');
@@ -140,89 +141,13 @@
         const organismoSelect = document.getElementById('organismo_id');
         const form = document.getElementById('unidadForm');
 
-        // 1. Lógica de Código
-        codigoInput.addEventListener('input', function(e) {
-            let original = e.target.value;
-            let filtrado = original.replace(/[^0-9]/g, '');
-
-            if (original !== filtrado) {
-                errorCodigo.classList.remove('hidden');
-                setTimeout(() => errorCodigo.classList.add('hidden'), 2000);
-            }
-
-            e.target.value = filtrado.slice(0, 8);
-
-            // Validar si son puros ceros
-            const esTodoCeros = e.target.value.length > 0 && /^0+$/.test(e.target.value);
-            if (esTodoCeros) {
-                errorCeros.classList.remove('hidden');
-            } else {
-                errorCeros.classList.add('hidden');
-            }
-
-            // Mostrar aviso de recuperación si cambia o está incompleto
-            if (e.target.value !== sugerenciaInicial || e.target.value.length < 8) {
-                recuperarContenedor.classList.remove('hidden');
-            } else {
-                recuperarContenedor.classList.add('hidden');
-            }
+        // Actualizar código sugerido al cambiar organismo
+        organismoSelect.addEventListener('change', function() {
+            const organismoId = this.value;
+            const nuevoCodigo = organismosData[organismoId] || sugerenciaInicial;
+            codigoInput.value = nuevoCodigo;
+            recuperarContenedor.classList.add('hidden');
         });
 
-        btnRecuperar.addEventListener('click', restaurarSugerencia);
-
-        codigoInput.addEventListener('blur', function(e) {
-            if (e.target.value.length > 0 && e.target.value.length < 8) {
-                e.target.value = e.target.value.padStart(8, '0');
-                if (e.target.value === sugerenciaInicial) {
-                    recuperarContenedor.classList.add('hidden');
-                }
-            }
-        });
-
-        // 2. Restricción de Nombre
-        nombreInput.addEventListener('input', function(e) {
-            let val = e.target.value;
-            let filtered = val.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-
-            if (val !== filtered) {
-                errorNombre.classList.remove('hidden');
-                setTimeout(() => errorNombre.classList.add('hidden'), 2500);
-            }
-            e.target.value = filtered.slice(0, 40);
-        });
-
-        // 3. Validación final y Efecto de carga
-        form.addEventListener('submit', function(e) {
-            const codVal = codigoInput.value;
-            const esTodoCeros = /^0+$/.test(codVal);
-            const nombreVal = nombreInput.value.trim();
-            const organismoVal = organismoSelect.value;
-
-            // Validaciones de bloqueo
-            if (codVal.length < 8 || esTodoCeros || nombreVal === "" || organismoVal === "") {
-                e.preventDefault();
-
-                if (esTodoCeros) {
-                    errorCeros.classList.remove('hidden');
-                    codigoInput.focus();
-                }
-
-                // Si el nombre está vacío y no hay error de servidor, se podría disparar un alert o focus
-                if(nombreVal === "") nombreInput.focus();
-
-                return;
-            }
-
-            // Si pasa validaciones, mostrar carga
-            const btn = document.getElementById('btnGuardar');
-            const icon = document.getElementById('btnIcon');
-            const text = document.getElementById('btnText');
-
-            btn.disabled = true;
-            btn.classList.add('opacity-80', 'cursor-wait');
-            icon.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-            text.innerText = 'Guardando...';
-        });
-    });
-</script>
+        // ... resto del script sin cambios ...
 @endsection

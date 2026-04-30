@@ -2,103 +2,106 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Movimiento;
 use App\Models\Eliminado;
+use App\Models\Movimiento;
+use App\Models\Usuario;
+use App\Services\FpdfReportService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Usuario;
-use Barryvdh\DomPDF\Facade\Pdf;
-
-
 
 class MovimientoController extends Controller
 {
+    protected FpdfReportService $fpdf;
 
-
-public function index(Request $request)
-{
-    // 1) Tomar filtros
-    $filters = $request->only(['tipo', 'usuario', 'entidad', 'fecha_desde', 'fecha_hasta']);
-
-    // 2) Query base
-    $query = Movimiento::query()->with(['bien', 'usuario', 'subject'])->orderByDesc('fecha');
-
-    // 3) Aplicar filtros
-    if (!empty($filters['tipo'])) {
-        $query->where('tipo', $filters['tipo']);
+    public function __construct(FpdfReportService $fpdf)
+    {
+        $this->fpdf = $fpdf;
     }
+    public function index(Request $request)
+    {
+        // 1) Tomar filtros
+        $filters = $request->only(['tipo', 'usuario', 'entidad', 'fecha_desde', 'fecha_hasta']);
 
-    if (!empty($filters['usuario'])) {
-        $qUsuario = trim($filters['usuario']);
-        $query->whereHas('usuario', function ($q) use ($qUsuario) {
-            $q->where('nombre', 'like', "%{$qUsuario}%")
-              ->orWhere('correo', 'like', "%{$qUsuario}%");
+        // 2) Query base
+        $query = Movimiento::query()->with(['bien', 'usuario', 'subject'])->orderByDesc('fecha');
 
-        });
+        // 3) Aplicar filtros
+        if (! empty($filters['tipo'])) {
+            $query->where('tipo', $filters['tipo']);
+        }
+
+        if (! empty($filters['usuario'])) {
+            $qUsuario = trim($filters['usuario']);
+            $query->whereHas('usuario', function ($q) use ($qUsuario) {
+                $q->where('nombre', 'like', "%{$qUsuario}%")
+                    ->orWhere('correo', 'like', "%{$qUsuario}%");
+
+            });
+        }
+
+        if (! empty($filters['entidad'])) {
+            $ent = trim($filters['entidad']);
+            $query->where(function ($q) use ($ent) {
+                // match por class_basename (último segmento del FQCN)
+                $q->orWhereRaw("LOWER(SUBSTRING_INDEX(subject_type, '\\\', -1)) LIKE ?", ['%'.strtolower($ent).'%']);
+                // match por FQCN completo opcional
+                $q->orWhere('subject_type', 'like', "%{$ent}%");
+            });
+        }
+
+        $desde = $filters['fecha_desde'] ?? null;
+        $hasta = $filters['fecha_hasta'] ?? null;
+
+        if ($desde && $hasta) {
+            $query->whereBetween('fecha', [$desde, $hasta]);
+        } elseif ($desde) {
+            $query->whereDate('fecha', '>=', $desde);
+        } elseif ($hasta) {
+            $query->whereDate('fecha', '<=', $hasta);
+        }
+
+        // 4) Paginar preservando filtros
+        $movimientos = $query->paginate(10)->appends($filters);
+
+        // 5) Eliminados (admin)
+        $eliminados = null;
+        if (Auth::check() && Auth::user() instanceof Usuario && Auth::user()->isAdmin()) {
+            $eliminados = Eliminado::orderByDesc('deleted_at')->paginate(10, ['*'], 'eliminados_page');
+
+            $userIds = $eliminados->pluck('deleted_by')->unique()->filter()->values()->all();
+            $users = ! empty($userIds)
+                ? Usuario::whereIn('id', $userIds)->get()->keyBy('id')
+                : [];
+
+            $eliminados->getCollection()->transform(function ($item) use ($users) {
+                $item->deleted_by_user = $users[$item->deleted_by]->nombre_completo
+                    ?? $users[$item->deleted_by]->correo
+                    ?? $item->data['_archived_by']
+                    ?? null;
+
+                return $item;
+            });
+        }
+
+        // 6) JSON opcional, AJAX, y vista
+
+        // 🥇 Comprobación de Petición AJAX (la que estabas enviando desde JS)
+        if ($request->ajax()) {
+            // Devolvemos el HTML de la vista renderizado como una cadena de texto.
+            // Esto evita que el navegador intente navegar a la nueva "página" y permite
+            // a tu JavaScript analizar y reemplazar las secciones del DOM.
+            return view('movimientos.index', compact('movimientos', 'eliminados', 'filters'))->render();
+        }
+
+        // 🥈 Comprobación de Petición JSON (útil para APIs)
+        if ($request->wantsJson()) {
+            return response()->json(['movimientos' => $movimientos, 'eliminados' => $eliminados, 'filters' => $filters]);
+        }
+
+        // 🥉 Vista completa para navegación normal
+        return view('movimientos.index', compact('movimientos', 'eliminados', 'filters'));
     }
-
-    if (!empty($filters['entidad'])) {
-        $ent = trim($filters['entidad']);
-        $query->where(function ($q) use ($ent) {
-            // match por class_basename (último segmento del FQCN)
-            $q->orWhereRaw("LOWER(SUBSTRING_INDEX(subject_type, '\\\', -1)) LIKE ?", ['%' . strtolower($ent) . '%']);
-            // match por FQCN completo opcional
-            $q->orWhere('subject_type', 'like', "%{$ent}%");
-        });
-    }
-
-    $desde = $filters['fecha_desde'] ?? null;
-    $hasta = $filters['fecha_hasta'] ?? null;
-
-    if ($desde && $hasta) {
-        $query->whereBetween('fecha', [$desde, $hasta]);
-    } elseif ($desde) {
-        $query->whereDate('fecha', '>=', $desde);
-    } elseif ($hasta) {
-        $query->whereDate('fecha', '<=', $hasta);
-    }
-
-    // 4) Paginar preservando filtros
-    $movimientos = $query->paginate(10)->appends($filters);
-
-    // 5) Eliminados (admin)
-    $eliminados = null;
-    if (Auth::check() && Auth::user() instanceof Usuario && Auth::user()->isAdmin()) {
-        $eliminados = Eliminado::orderByDesc('deleted_at')->paginate(10, ['*'], 'eliminados_page');
-
-        $userIds = $eliminados->pluck('deleted_by')->unique()->filter()->values()->all();
-        $users = !empty($userIds)
-            ? Usuario::whereIn('id', $userIds)->get()->keyBy('id')
-            : [];
-
-        $eliminados->getCollection()->transform(function ($item) use ($users) {
-            $item->deleted_by_user = $users[$item->deleted_by]->nombre_completo
-                ?? $users[$item->deleted_by]->correo
-                ?? $item->data['_archived_by']
-                ?? null;
-            return $item;
-        });
-    }
-
-    // 6) JSON opcional, AJAX, y vista
-
-    // 🥇 Comprobación de Petición AJAX (la que estabas enviando desde JS)
-    if ($request->ajax()) {
-        // Devolvemos el HTML de la vista renderizado como una cadena de texto.
-        // Esto evita que el navegador intente navegar a la nueva "página" y permite
-        // a tu JavaScript analizar y reemplazar las secciones del DOM.
-        return view('movimientos.index', compact('movimientos', 'eliminados', 'filters'))->render();
-    }
-
-    // 🥈 Comprobación de Petición JSON (útil para APIs)
-    if ($request->wantsJson()) {
-        return response()->json(['movimientos' => $movimientos, 'eliminados' => $eliminados, 'filters' => $filters]);
-    }
-
-    // 🥉 Vista completa para navegación normal
-    return view('movimientos.index', compact('movimientos', 'eliminados', 'filters'));
-}
-
 
     public function create()
     {
@@ -165,7 +168,7 @@ public function index(Request $request)
             'usuario',
             'bien',
             'subject',
-            'historialMovimientos' => fn($q) => $q->orderBy('fecha', 'desc'),
+            'historialMovimientos' => fn ($q) => $q->orderBy('fecha', 'desc'),
         ])->findOrFail($id);
 
         return view('movimientos.show', compact('movimiento'));
@@ -235,14 +238,14 @@ public function index(Request $request)
             $ok ? 'Registro restaurado correctamente.' : 'La restauración falló. Revisa los logs.'
         );
     }
-            public function pdf(Movimiento $movimiento)
+
+    public function pdf(Movimiento $movimiento)
     {
         $movimiento->load(['usuario', 'subject', 'bien', 'historialMovimientos']);
 
         return Pdf::loadView('movimientos.pdf', compact('movimiento'))
             ->download("movimiento_{$movimiento->id}.pdf");
     }
-
 
     public function eliminados()
     {
@@ -264,5 +267,89 @@ public function index(Request $request)
         ]);
 
         return redirect()->route('movimientos.eliminados')->with('success', 'Bien reintegrado correctamente.');
+    }
+
+    /**
+     * Generar reporte PDF de movimientos con filtros aplicados.
+     */
+    public function generarReporte(Request $request)
+    {
+        $filters = $request->only(['tipo', 'usuario', 'entidad', 'fecha_desde', 'fecha_hasta']);
+
+        $query = Movimiento::query()->with(['usuario', 'subject'])->orderByDesc('fecha');
+
+        if (!empty($filters['tipo'])) {
+            $query->where('tipo', $filters['tipo']);
+        }
+
+        if (!empty($filters['usuario'])) {
+            $qUsuario = trim($filters['usuario']);
+            $query->whereHas('usuario', function ($q) use ($qUsuario) {
+                $q->where('nombre', 'like', "%{$qUsuario}%")
+                  ->orWhere('correo', 'like', "%{$qUsuario}%");
+            });
+        }
+
+        if (!empty($filters['entidad'])) {
+            $ent = trim($filters['entidad']);
+            $query->where(function ($q) use ($ent) {
+                $q->orWhereRaw("LOWER(SUBSTRING_INDEX(subject_type, '\\\\', -1)) LIKE ?", ['%'.strtolower($ent).'%']);
+                $q->orWhere('subject_type', 'like', "%{$ent}%");
+            });
+        }
+
+        $desde = $filters['fecha_desde'] ?? null;
+        $hasta = $filters['fecha_hasta'] ?? null;
+
+        if ($desde && $hasta) {
+            $query->whereBetween('fecha', [$desde, $hasta]);
+        } elseif ($desde) {
+            $query->whereDate('fecha', '>=', $desde);
+        } elseif ($hasta) {
+            $query->whereDate('fecha', '<=', $hasta);
+        }
+
+        $movimientos = $query->get();
+        $now = now();
+
+        $tipoReporte = $this->determinarTipoReporte($filters);
+
+        return match ($tipoReporte) {
+            'tipo' => $this->fpdf->generarMovimientosPorTipo(
+                'reporte_movimientos_por_tipo_' . $now->format('dmY_His') . '.pdf',
+                'MOVIMIENTOS POR TIPO',
+                'Listado de movimientos agrupados por tipo',
+                $now->format('d/m/Y H:i'),
+                $movimientos
+            ),
+            'usuario' => $this->fpdf->generarMovimientosPorUsuario(
+                'reporte_movimientos_por_usuario_' . $now->format('dmY_His') . '.pdf',
+                'MOVIMIENTOS POR USUARIO',
+                'Listado de movimientos agrupados por usuario',
+                $now->format('d/m/Y H:i'),
+                $movimientos
+            ),
+            default => $this->fpdf->downloadMovimientosListado(
+                'reporte_movimientos_general_' . $now->format('dmY_His') . '.pdf',
+                'REPORTE DE MOVIMIENTOS',
+                'Listado general de movimientos',
+                $now->format('d/m/Y H:i'),
+                $movimientos
+            ),
+        };
+    }
+
+    /**
+     * Determina el tipo de reporte según los filtros aplicados.
+     */
+    private function determinarTipoReporte(array $filtros): string
+    {
+        if (!empty($filtros['tipo'])) {
+            return 'tipo';
+        }
+        if (!empty($filtros['usuario'])) {
+            return 'usuario';
+        }
+        return 'general';
     }
 }

@@ -185,7 +185,7 @@ class DatosDemoSeeder extends Seeder
             DB::table('bienes')->updateOrInsert(['codigo' => $bien['codigo']], $bien);
             $bienIds[] = DB::table('bienes')->where('codigo', $bien['codigo'])->first()->id;
         }
-        $this->command->info('✓ Bienes creados (' . count($bienIds) . ')');
+        $this->command->info('✓ Bienes creados ('.count($bienIds).')');
 
         // 8. Detalles por tipo (simplificado - las tablas tienen esquemas diferentes)
         // Se omiten detalles específicos para evitar errores de esquema
@@ -196,6 +196,6 @@ class DatosDemoSeeder extends Seeder
         // 10. Auditoría (omitido por diferencias en esquema)
 
         $this->command->info('🎉 ¡Datos de demo insertados!');
-        $this->command->info('📝 Credenciales: admin@inventario.com / ' . config('app.demo_password', 'password123'));
+        $this->command->info('📝 Credenciales: admin@inventario.com / '.config('app.demo_password', 'password123'));
     }
 }

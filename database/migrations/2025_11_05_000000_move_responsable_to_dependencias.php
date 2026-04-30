@@ -8,39 +8,38 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     public function up(): void
-{
-    // ⚠️ Quitar este bloque porque ya existe en create_dependencias_table
-    /*
-    Schema::table('dependencias', function (Blueprint $table) {
-        $table->foreignId('responsable_id')->nullable()->after('nombre')
-            ->constrained('responsables')->nullOnDelete()->cascadeOnUpdate();
-        $table->index('responsable_id', 'idx_dep_responsable');
-    });
-    */
+    {
+        // ⚠️ Quitar este bloque porque ya existe en create_dependencias_table
+        /*
+        Schema::table('dependencias', function (Blueprint $table) {
+            $table->foreignId('responsable_id')->nullable()->after('nombre')
+                ->constrained('responsables')->nullOnDelete()->cascadeOnUpdate();
+            $table->index('responsable_id', 'idx_dep_responsable');
+        });
+        */
 
-    // 2) Migrar datos desde bienes
-    $dependencias = DB::table('dependencias')->select('id')->get();
-    foreach ($dependencias as $dep) {
-        $resp = DB::table('bienes')
-            ->where('dependencia_id', $dep->id)
-            ->whereNotNull('responsable_id')
-            ->value('responsable_id');
+        // 2) Migrar datos desde bienes
+        $dependencias = DB::table('dependencias')->select('id')->get();
+        foreach ($dependencias as $dep) {
+            $resp = DB::table('bienes')
+                ->where('dependencia_id', $dep->id)
+                ->whereNotNull('responsable_id')
+                ->value('responsable_id');
 
-        if ($resp) {
-            DB::table('dependencias')->where('id', $dep->id)->update(['responsable_id' => $resp]);
+            if ($resp) {
+                DB::table('dependencias')->where('id', $dep->id)->update(['responsable_id' => $resp]);
+            }
         }
+
+        // 3) Eliminar columna responsable_id de bienes
+        Schema::table('bienes', function (Blueprint $table) {
+            if (Schema::hasColumn('bienes', 'responsable_id')) {
+                $table->dropForeign(['responsable_id']);
+                $table->dropIndex('idx_bien_responsable');
+                $table->dropColumn('responsable_id');
+            }
+        });
     }
-
-    // 3) Eliminar columna responsable_id de bienes
-    Schema::table('bienes', function (Blueprint $table) {
-        if (Schema::hasColumn('bienes', 'responsable_id')) {
-            $table->dropForeign(['responsable_id']);
-            $table->dropIndex('idx_bien_responsable');
-            $table->dropColumn('responsable_id');
-        }
-    });
-}
-
 
     public function down(): void
     {

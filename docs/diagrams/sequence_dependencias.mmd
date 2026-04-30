@@ -1,0 +1,140 @@
+sequenceDiagram
+    participant Usuario
+    participant DependenciaController
+    participant Dependencia
+    participant UnidadAdministradora
+    participant Responsable
+    participant CodigoUnicoService
+    participant DB
+    participant Pdf
+
+    %% LISTAR DEPENDENCIAS
+    rect rgb(200, 230, 255)
+    note right of Usuario: Listar Dependencias con Filtros
+    Usuario->>DependenciaController: GET /dependencias (index)
+    DependenciaController->>DependenciaController: Validar filtros (search, unidad_id, responsable_id)
+    DependenciaController->>Dependencia: Query con relaciones (unidadAdministradora, responsable)
+    Dependencia->>DB: Aplicar filtros y ordenamiento
+    DB-->>Dependencia: Resultados paginados
+    Dependencia-->>DependenciaController: Collection de dependencias
+    DependenciaController->>UnidadAdministradora: Cargar todas las unidades
+    UnidadAdministradora->>DB: SELECT FROM unidades_administradoras
+    DB-->>UnidadAdministradora: Lista de unidades
+    UnidadAdministradora-->>DependenciaController: Unidades disponibles
+    DependenciaController->>Responsable: Cargar todos los responsables
+    Responsable->>DB: SELECT FROM responsables
+    DB-->>Responsable: Lista de responsables
+    Responsable-->>DependenciaController: Responsables disponibles
+    DependenciaController-->>Usuario: Vista dependencias.index con datos filtrados
+    end
+
+    %% CREAR DEPENDENCIA
+    rect rgb(255, 240, 200)
+    note right of Usuario: Crear Nueva Dependencia
+    Usuario->>DependenciaController: GET /dependencias/create (create)
+    DependenciaController->>UnidadAdministradora: Cargar todas las unidades
+    UnidadAdministradora->>DB: SELECT FROM unidades_administradoras
+    DB-->>UnidadAdministradora: Lista de unidades
+    UnidadAdministradora-->>DependenciaController: Unidades disponibles
+    DependenciaController->>Responsable: Cargar todos los responsables
+    Responsable->>DB: SELECT FROM responsables
+    DB-->>Responsable: Lista de responsables
+    Responsable-->>DependenciaController: Responsables disponibles
+    DependenciaController->>CodigoUnicoService: obtenerSiguienteCodigo()
+    CodigoUnicoService->>DB: SELECT MAX(codigo) FROM todas_las_tablas
+    DB-->>CodigoUnicoService: Último código global
+    CodigoUnicoService-->>DependenciaController: Código siguiente sugerido (8 dígitos)
+    DependenciaController-->>Usuario: Vista dependencias.create con código sugerido
+    
+    Usuario->>DependenciaController: POST /dependencias (store)
+    DependenciaController->>DependenciaController: Validar datos (unidad_administradora_id, codigo, nombre, responsable_id)
+    
+    DependenciaController->>CodigoUnicoService: codigoExiste(codigo)
+    CodigoUnicoService->>DB: Verificar código en todas las tablas
+    DB-->>CodigoUnicoService: Código disponible/no disponible
+    CodigoUnicoService-->>DependenciaController: Resultado verificación
+    
+    alt Código ya existe
+        DependenciaController-->>Usuario: Error de validación (código duplicado)
+    else Código disponible
+        DependenciaController->>Dependencia: Create con datos validados
+        Dependencia->>DB: INSERT INTO dependencias
+        DB-->>Dependencia: Dependencia creada
+        Dependencia-->>DependenciaController: Dependencia guardada
+        DependenciaController-->>Usuario: Redirect a dependencias.index con mensaje de éxito
+    end
+    end
+
+    %% VER DETALLE DE DEPENDENCIA
+    rect rgb(230, 255, 230)
+    note right of Usuario: Ver Detalle de Dependencia
+    Usuario->>DependenciaController: GET /dependencias/{id} (show)
+    DependenciaController->>Dependencia: Cargar dependencia con relaciones
+    Dependencia->>DB: SELECT con unidadAdministradora, bienes, responsable
+    DB-->>Dependencia: Datos completos de la dependencia
+    Dependencia-->>DependenciaController: Dependencia con relaciones
+    DependenciaController-->>Usuario: Vista dependencias.show con detalles
+    end
+
+    %% EDITAR DEPENDENCIA
+    rect rgb(255, 230, 255)
+    note right of Usuario: Editar Dependencia Existente
+    Usuario->>DependenciaController: GET /dependencias/{id}/edit (edit)
+    DependenciaController->>Dependencia: Buscar dependencia por ID
+    Dependencia->>DB: SELECT FROM dependencias WHERE id = ?
+    DB-->>Dependencia: Datos de la dependencia
+    DependenciaController->>UnidadAdministradora: Cargar todas las unidades
+    UnidadAdministradora->>DB: SELECT FROM unidades_administradoras
+    DB-->>UnidadAdministradora: Lista de unidades
+    UnidadAdministradora-->>DependenciaController: Unidades disponibles
+    DependenciaController->>Responsable: Cargar todos los responsables
+    Responsable->>DB: SELECT FROM responsables
+    DB-->>Responsable: Lista de responsables
+    Responsable-->>DependenciaController: Responsables disponibles
+    DependenciaController-->>Usuario: Vista dependencias.edit con datos
+    
+    Usuario->>DependenciaController: PUT /dependencias/{id} (update)
+    DependenciaController->>DependenciaController: Validar datos (con unique ignore)
+    
+    alt Cambió código
+        DependenciaController->>CodigoUnicoService: codigoExiste(codigo, 'dependencias', id)
+        CodigoUnicoService->>DB: Verificar código en todas las tablas (ignorando ID actual)
+        DB-->>CodigoUnicoService: Código disponible/no disponible
+        CodigoUnicoService-->>DependenciaController: Resultado verificación
+        
+        alt Código no disponible
+            DependenciaController-->>Usuario: Error de validación (código duplicado)
+        else Código disponible
+            DependenciaController->>Dependencia: Update con datos validados
+            Dependencia->>DB: UPDATE dependencias SET ...
+            DB-->>Dependencia: Dependencia actualizada
+            Dependencia-->>DependenciaController: Dependencia actualizada
+            DependenciaController-->>Usuario: Redirect con mensaje de éxito
+        end
+    else No cambió código
+        DependenciaController->>Dependencia: Update con datos validados
+        Dependencia->>DB: UPDATE dependencias SET ...
+        DB-->>Dependencia: Dependencia actualizada
+        Dependencia-->>DependenciaController: Dependencia actualizada
+        DependenciaController-->>Usuario: Redirect con mensaje de éxito
+    end
+    end
+
+    %% EXPORTAR DEPENDENCIA A PDF
+    rect rgb(255, 255, 200)
+    note right of Usuario: Exportar Dependencia a PDF
+    Usuario->>DependenciaController: GET /dependencias/{id}/pdf (exportPdf)
+    DependenciaController->>Dependencia: Cargar dependencia con relaciones
+    Dependencia->>DB: SELECT con unidadAdministradora, bienes, responsable
+    DB-->>Dependencia: Dependencia completa
+    DependenciaController->>Pdf: loadView('dependencias.pdf', dependencia)
+    Pdf-->>DependenciaController: PDF generado
+    DependenciaController-->>Usuario: Descargar dependencia_{codigo}_{nombre}.pdf
+    end
+
+    %% ELIMINAR DEPENDENCIA (NO PERMITIDO)
+    rect rgb(255, 200, 200)
+    note right of Usuario: Intentar Eliminar Dependencia
+    Usuario->>DependenciaController: DELETE /dependencias/{id} (destroy)
+    DependenciaController-->>Usuario: Error 403 (No se pueden eliminar dependencias)
+    end

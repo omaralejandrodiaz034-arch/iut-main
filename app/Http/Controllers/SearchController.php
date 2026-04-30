@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Bien;
 use App\Models\Dependencia;
-use App\Models\Organismo;
-use App\Models\Responsable;
 use App\Models\UnidadAdministradora;
 use App\Models\Usuario;
 use Illuminate\Http\Request;
@@ -20,7 +18,7 @@ class SearchController extends Controller
             return response()->json(['results' => []]);
         }
 
-        $like = '%' . $q . '%';
+        $like = '%'.$q.'%';
         $results = [];
 
         // Bienes (limitado a 5 resultados)
@@ -28,10 +26,10 @@ class SearchController extends Controller
             ->orWhere('descripcion', 'LIKE', $like)
             ->limit(5)->get()
             ->each(fn ($b) => $results[] = [
-                'type'  => 'Bien',
-                'icon'  => '📦',
+                'type' => 'Bien',
+                'icon' => '📦',
                 'label' => "{$b->codigo} — {$b->descripcion}",
-                'url'   => route('bienes.show', $b),
+                'url' => route('bienes.show', $b),
             ]);
 
         // Dependencias (limitado a 4 resultados)
@@ -39,10 +37,10 @@ class SearchController extends Controller
             ->orWhere('codigo', 'LIKE', $like)
             ->limit(4)->get()
             ->each(fn ($d) => $results[] = [
-                'type'  => 'Dependencia',
-                'icon'  => '📂',
+                'type' => 'Dependencia',
+                'icon' => '📂',
                 'label' => $d->nombre,
-                'url'   => route('dependencias.show', $d),
+                'url' => route('dependencias.show', $d),
             ]);
 
         // Unidades (limitado a 3 resultados)
@@ -50,10 +48,10 @@ class SearchController extends Controller
             ->orWhere('codigo', 'LIKE', $like)
             ->limit(3)->get()
             ->each(fn ($u) => $results[] = [
-                'type'  => 'Unidad',
-                'icon'  => '🏢',
+                'type' => 'Unidad',
+                'icon' => '🏢',
                 'label' => $u->nombre,
-                'url'   => route('unidades.show', $u),
+                'url' => route('unidades.show', $u),
             ]);
 
         // Usuarios (limitado a 3 resultados)
@@ -62,10 +60,10 @@ class SearchController extends Controller
             ->orWhere('cedula', 'LIKE', $like)
             ->limit(3)->get()
             ->each(fn ($u) => $results[] = [
-                'type'  => 'Usuario',
-                'icon'  => '👤',
+                'type' => 'Usuario',
+                'icon' => '👤',
                 'label' => "{$u->nombre} {$u->apellido} — {$u->cedula}",
-                'url'   => route('usuarios.show', $u),
+                'url' => route('usuarios.show', $u),
             ]);
 
         // Limitar total de resultados para mejor rendimiento
