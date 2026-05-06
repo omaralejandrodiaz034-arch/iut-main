@@ -145,14 +145,13 @@ class BienController extends Controller
      */
     public function create()
     {
-        $codigoSugerido = CodigoUnicoService::obtenerSiguienteCodigo();
         $dependencias = Dependencia::with('responsable')->get();
-        
+
         $tiposBien = collect(TipoBien::cases())->mapWithKeys(
-            fn(TipoBien $tipo) => [$tipo->value => $tipo->label()]
+            fn (TipoBien $tipo) => [$tipo->value => $tipo->label()]
         );
 
-        return view('bienes.create', compact('dependencias', 'tiposBien', 'codigoSugerido'));
+        return view('bienes.create', compact('dependencias', 'tiposBien'));
     }
 
     /**

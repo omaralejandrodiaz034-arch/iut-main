@@ -81,7 +81,7 @@
                         {{-- Código del Bien con Sugerencia --}}
                         <div>
                             <label for="codigo" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Código del Bien</label>
-                            <input type="text" name="codigo" id="codigo" value="{{ old('codigo', $codigoSugerido ?? '') }}"
+                            <input type="text" name="codigo" id="codigo" value="{{ old('codigo') }}"
                                 maxlength="8" inputmode="numeric" placeholder="Ej: 00000001"
                                 class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 dark:border-gray-600 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                                 required pattern="\d{8}" title="El código debe contener exactamente 8 dígitos numéricos">
@@ -209,21 +209,71 @@
                 });
             }
 
-            /* 2. Lógica de Código con Sugerencia */
+            /* 2. Lógica de Código con Sugerencia por Dependencia */
             const codigoInput = document.getElementById('codigo');
             const sugerenciaContainer = document.getElementById('sugerencia-container');
             const spanSugerencia = document.getElementById('span-sugerencia');
             const btnSugerencia = document.getElementById('btn-sugerencia');
 
-            // El código que vino del servidor originalmente
-            const codigoOriginalSugerido = "{{ $codigoSugerido ?? '' }}";
-            let usuarioModifico = false;
+            const baseUrl = "{{ url('bienes') }}";
+            let codigoSugeridoDependencia = null;
 
+            function actualizarSugerencia(codigo) {
+                codigoSugeridoDependencia = codigo;
+                spanSugerencia.textContent = codigo;
+                sugerenciaContainer.classList.remove('hidden');
+            }
+
+            function ocultarSugerencia() {
+                codigoSugeridoDependencia = null;
+                sugerenciaContainer.classList.add('hidden');
+            }
+
+            function obtenerSugerencia(dependenciaId) {
+                if (!dependenciaId) {
+                    ocultarSugerencia();
+                    return;
+                }
+
+                fetch(`${baseUrl}/${dependenciaId}/recomendar-codigo`)
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(data => {
+                                if (data.success === false && data.error === 'rango_exhausto') {
+                                    alert(data.mensaje);
+                                    ocultarSugerencia();
+                                } else {
+                                    throw new Error('Error al obtener sugerencia');
+                                }
+                            }).catch(() => { throw new Error('Error de red'); });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.success) {
+                            actualizarSugerencia(data.codigo);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error:', err);
+                        ocultarSugerencia();
+                    });
+            }
+
+            // Cambio de dependencia: limpiar código y cargar nueva sugerencia
+            depSelect.addEventListener('change', function () {
+                const depId = this.value;
+                codigoInput.value = '';
+                ocultarSugerencia();
+                if (depId) obtenerSugerencia(depId);
+            });
+
+            // Input: sanitización y control de sugerencia
             if (codigoInput) {
                 codigoInput.addEventListener('input', function (e) {
                     let original = e.target.value;
                     let cleaned = original.replace(/\D/g, '');
-                    
+
                     // Limitar a 8 dígitos
                     if (cleaned.length > 8) {
                         cleaned = cleaned.slice(0, 8);
@@ -232,51 +282,29 @@
                     if (original !== cleaned) {
                         e.target.value = cleaned;
                     }
-                    
-                    // Marcar que el usuario modificó el código
-                    usuarioModifico = true;
-                    
-                    // Mostrar sugerencia solo si el usuario borró o cambió el código sugerido
-                    if (codigoOriginalSugerido && cleaned !== codigoOriginalSugerido && sugerenciaContainer) {
-                        spanSugerencia.textContent = codigoOriginalSugerido;
+
+                    if (codigoSugeridoDependencia && cleaned !== codigoSugeridoDependencia) {
+                        spanSugerencia.textContent = codigoSugeridoDependencia;
                         sugerenciaContainer.classList.remove('hidden');
                     } else if (sugerenciaContainer) {
                         sugerenciaContainer.classList.add('hidden');
                     }
                 });
 
-                // NO auto-llenar con ceros en blur - esto puede crear códigos incorrectos
-                // En lugar, validar que tenga 8 dígitos
+                // Formatear a 8 dígitos al perder el foco
                 codigoInput.addEventListener('blur', function () {
-                    if (this.value && this.value.length > 0 && this.value.length !== 8) {
-                        this.classList.add('border-red-500');
-                        // Mostrar mensaje de error si no existe
-                        let errorMsg = document.getElementById('codigo-length-error');
-                        if (!errorMsg && this.parentNode) {
-                            errorMsg = document.createElement('p');
-                            errorMsg.id = 'codigo-length-error';
-                            errorMsg.className = 'text-red-500 text-xs mt-1';
-                            errorMsg.textContent = 'El código debe tener exactamente 8 dígitos';
-                            this.parentNode.appendChild(errorMsg);
-                        }
-                    } else if (this.value && this.value.length === 8) {
-                        this.classList.remove('border-red-500');
-                        const errorMsg = document.getElementById('codigo-length-error');
-                        if (errorMsg) errorMsg.remove();
+                    if (this.value && this.value.length > 0) {
+                        this.value = this.value.padStart(8, '0');
                     }
                 });
             }
 
+            // Botón: aplicar sugerencia
             if (btnSugerencia && sugerenciaContainer) {
                 btnSugerencia.addEventListener('click', function () {
-                    if (codigoInput && codigoOriginalSugerido) {
-                        codigoInput.value = codigoOriginalSugerido;
+                    if (codigoSugeridoDependencia) {
+                        codigoInput.value = codigoSugeridoDependencia;
                         sugerenciaContainer.classList.add('hidden');
-                        usuarioModifico = false;
-                        // Limpiar error si existe
-                        codigoInput.classList.remove('border-red-500');
-                        const errorMsg = document.getElementById('codigo-length-error');
-                        if (errorMsg) errorMsg.remove();
                     }
                 });
             }
