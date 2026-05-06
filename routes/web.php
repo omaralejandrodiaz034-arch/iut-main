@@ -173,5 +173,5 @@ Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () 
     Route::resource('reportes', ReporteController::class);
     Route::get('reportes/pdf/{tipo}', [ReporteController::class, 'generarPdf'])->name('reportes.pdf');
     Route::get('graficas', [ReporteController::class, 'graficas'])->name('graficas');
-    Route::get('graficas/pdf', [ReporteController::class, 'graficasPdf'])->name('graficas.pdf');
+    Route::middleware('throttle:5,1')->get('graficas/pdf', [ReporteController::class, 'graficasPdf'])->name('graficas.pdf');
 });

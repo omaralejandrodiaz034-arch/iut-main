@@ -10,7 +10,7 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
-/* ── Modal Manager ──────────────────────────────────────────── */
+/* Modal Manager */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -39,13 +39,11 @@
     word-wrap: break-word;
 }
 
-/* Asegurar que el texto del modal no se desborde */
 .modal-content * {
     word-wrap: break-word;
     overflow-wrap: break-word;
 }
 
-/* Estilos específicos para mensajes largos en modales */
 #delete-modal-message,
 .modal-message {
     word-break: break-word;
@@ -62,4 +60,43 @@
 @keyframes modal-in {
     from { opacity: 0; transform: scale(0.95) translateY(-8px); }
     to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Login page custom styles */
+.login-bg-gradient {
+    background: radial-gradient(circle at top right, #fdfbfb 0%, #ebedee 100%);
+}
+
+.login-glass-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.login-btn-vinotinto {
+    background: linear-gradient(135deg, #800020 0%, #5a0016 100%);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.login-btn-vinotinto:hover {
+    box-shadow: 0 10px 20px -5px rgba(128, 0, 32, 0.4);
+    transform: translateY(-1px);
+}
+
+.login-input-elegant {
+    transition: all 0.2s ease-in-out;
+    border: 1.5px solid #e5e7eb;
+}
+
+.login-input-elegant:focus {
+    border-color: #800020;
+    box-shadow: 0 0 0 4px rgba(128, 0, 32, 0.1);
+}
+
+.banner-img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
 }

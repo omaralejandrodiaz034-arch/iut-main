@@ -19,9 +19,9 @@
         <div class="flex items-center gap-2">
             <span class="text-sm text-gray-500">Granularidad:</span>
             <select id="granularitySelect" class="border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="daily">Diaria</option>
-                <option value="weekly">Semanal</option>
-                <option value="monthly" selected>Mensual</option>
+                <option value="daily" {{ ($granularity ?? 'monthly') == 'daily' ? 'selected' : '' }}>Diaria</option>
+                <option value="weekly" {{ ($granularity ?? 'monthly') == 'weekly' ? 'selected' : '' }}>Semanal</option>
+                <option value="monthly" {{ ($granularity ?? 'monthly') == 'monthly' ? 'selected' : '' }}>Mensual</option>
             </select>
             <button id="refreshCharts" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,18 +32,6 @@
         </div>
     </div>
 
-    <!-- Skeleton loader container -->
-    <div id="chartsLoader" class="hidden">
-        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            @for ($i = 0; $i < 6; $i++)
-            <div class="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
-                <div class="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-                <div class="h-48 bg-gray-100 rounded"></div>
-            </div>
-            @endfor
-        </div>
-    </div>
-
     <!-- Charts Grid -->
     <div id="chartsContainer" class="space-y-8">
         
@@ -51,15 +39,15 @@
         <div class="space-y-6">
             <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">📦 Bienes del Inventario</h2>
             <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartTipo" data-type="pie" data-data="{{ json_encode($bienesPorTipo ?? []) }}" data-palette="CHART_PALETTE">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Bienes por Tipo</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartTipo"></canvas>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartEstado" data-type="bar" data-data="{{ json_encode($bienesPorEstado ?? []) }}" data-color="#3B82F6">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Bienes por Estado</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartEstado"></canvas>
                     </div>
                 </div>
@@ -70,15 +58,15 @@
         <div class="space-y-6">
             <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">📈 Registro Progresivo</h2>
             <div class="grid gap-6 md:grid-cols-2">
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartRegistro" data-type="line" data-data="{{ json_encode($bienesPorRegistro ?? []) }}" data-color="#10B981" data-granularity="{{ $granularity ?? 'monthly' }}">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Bienes por Registro</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartRegistro"></canvas>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartDesincorporados" data-type="line" data-data="{{ json_encode($bienesDesincorporados ?? []) }}" data-color="#EF4444" data-granularity="{{ $granularity ?? 'monthly' }}">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Bienes Desincorporados</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartDesincorporados"></canvas>
                     </div>
                 </div>
@@ -94,21 +82,21 @@
         <div class="space-y-6">
             <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">🏢 Entidades Registradas</h2>
             <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartDependencia" data-type="line" data-data="{{ json_encode($registroDependencias ?? []) }}" data-color="#8B5CF6" data-granularity="{{ $granularity ?? 'monthly' }}">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Registro de Dependencias</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartDependencia"></canvas>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartUnidad" data-type="line" data-data="{{ json_encode($registroUnidades ?? []) }}" data-color="#06B6D4" data-granularity="{{ $granularity ?? 'monthly' }}">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Registro de Unidades Administradoras</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartUnidad"></canvas>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartOrganismo" data-type="line" data-data="{{ json_encode($registroOrganismos ?? []) }}" data-color="#F59E0B" data-granularity="{{ $granularity ?? 'monthly' }}">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Registro de Organismos</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartOrganismo"></canvas>
                     </div>
                 </div>
@@ -119,15 +107,15 @@
         <div class="space-y-6">
             <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">👥 Usuarios</h2>
             <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartUsuariosRol" data-type="doughnut" data-data="{{ json_encode($usuariosPorRol ?? []) }}" data-palette="CHART_PALETTE">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Usuarios por Rol</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartUsuariosRol"></canvas>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartUsuariosActivos" data-type="doughnut" data-data="{{ json_encode($usuariosActivos ?? []) }}" data-colors='["#10B981", "#EF4444"]'>
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Usuarios Activos vs Inactivos</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartUsuariosActivos"></canvas>
                     </div>
                 </div>
@@ -138,15 +126,15 @@
         <div class="space-y-6">
             <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">📍 Dependencias</h2>
             <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartDepsUnidad" data-type="bar" data-data="{{ json_encode($dependenciasPorUnidad ?? []) }}" data-horizontal="true" data-color="#8B5CF6">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Dependencias por Unidad</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartDepsUnidad"></canvas>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartDepsResponsable" data-type="doughnut" data-data="{{ json_encode($dependenciasResponsable ?? []) }}" data-colors='["#3B82F6", "#EF4444"]'>
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Dependencias con/sin responsable</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartDepsResponsable"></canvas>
                     </div>
                 </div>
@@ -157,21 +145,21 @@
         <div class="space-y-6">
             <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">📊 Movimientos</h2>
             <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartMovTipo" data-type="bar" data-data="{{ json_encode($movimientosPorTipo ?? []) }}" data-color="#06B6D4">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Movimientos por Tipo</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartMovTipo"></canvas>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartMovUsuario" data-type="bar" data-data="{{ json_encode($movimientosPorUsuario ?? []) }}" data-horizontal="true" data-color="#F97316">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Top 10 Usuarios por Movimientos</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartMovUsuario"></canvas>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartMovFecha" data-type="line" data-data="{{ json_encode($movimientosPorFecha ?? []) }}" data-color="#F59E0B" data-granularity="{{ $granularity ?? 'monthly' }}">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Movimientos por Fecha (Progresivo)</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartMovFecha"></canvas>
                     </div>
                 </div>
@@ -182,15 +170,15 @@
         <div class="space-y-6">
             <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">💰 Valores Económicos</h2>
             <div class="grid gap-6 md:grid-cols-2">
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartValorEstado" data-type="bar" data-data="{{ json_encode($valorPorEstado ?? []) }}" data-currency="true" data-color="#10B981">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Valor total por Estado (Bs.)</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartValorEstado"></canvas>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartTopDeps" data-type="bar" data-data="{{ json_encode($topDependenciasValor ?? []) }}" data-horizontal="true" data-currency="true" data-color="#8B5CF6">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Top 10 Dependencias por Valor (Bs.)</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartTopDeps"></canvas>
                     </div>
                 </div>
@@ -201,15 +189,15 @@
         <div class="space-y-6">
             <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">📷 Fotografías</h2>
             <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartFotos" data-type="doughnut" data-data="{{ json_encode($fotoCoverage ?? []) }}" data-colors='["#10B981", "#F59E0B", "#EF4444"]'>
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Cobertura de Fotografías</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartFotos"></canvas>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col" id="card-chartMovimientos" data-type="doughnut" data-data="{{ json_encode($movimientoCoverage ?? []) }}" data-colors='["#F59E0B", "#EF4444"]'>
+                <div class="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Bienes sin Movimientos (12 meses)</h3>
-                    <div class="flex-1 relative">
+                    <div class="h-64">
                         <canvas id="chartMovimientos"></canvas>
                     </div>
                 </div>
@@ -228,533 +216,506 @@
 
 @endsection
 
-    @push('scripts')
+@push('styles')
+<style>
+    canvas {
+        max-width: 100%;
+        height: auto !important;
+    }
+</style>
+@endpush
+
+@push('scripts')
+<!-- Cargar Chart.js desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <script>
+// Esperar a que el DOM esté completamente cargado
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ===== DATOS DEL SERVIDOR =====
+    // Pasar los datos de PHP a JavaScript de forma segura
+    const serverData = {
+        bienesPorTipo: @json($bienesPorTipo ?? []),
+        bienesPorEstado: @json($bienesPorEstado ?? []),
+        bienesPorRegistro: @json($bienesPorRegistro ?? []),
+        bienesDesincorporados: @json($bienesDesincorporados ?? []),
+        registroDependencias: @json($registroDependencias ?? []),
+        registroUnidades: @json($registroUnidades ?? []),
+        registroOrganismos: @json($registroOrganismos ?? []),
+        usuariosPorRol: @json($usuariosPorRol ?? []),
+        usuariosActivos: @json($usuariosActivos ?? []),
+        dependenciasPorUnidad: @json($dependenciasPorUnidad ?? []),
+        dependenciasResponsable: @json($dependenciasResponsable ?? []),
+        movimientosPorTipo: @json($movimientosPorTipo ?? []),
+        movimientosPorUsuario: @json($movimientosPorUsuario ?? []),
+        movimientosPorFecha: @json($movimientosPorFecha ?? []),
+        valorPorEstado: @json($valorPorEstado ?? []),
+        topDependenciasValor: @json($topDependenciasValor ?? []),
+        fotoCoverage: @json($fotoCoverage ?? []),
+        movimientoCoverage: @json($movimientoCoverage ?? []),
+        granularity: @json($granularity ?? 'monthly')
+    };
+
     // ===== CONFIGURACIÓN GLOBAL =====
     const CHART_PALETTE = [
         '#3B82F6', '#10B981', '#F59E0B', '#EF4444',
         '#8B5CF6', '#06B6D4', '#F97316', '#6366F1'
     ];
 
-    // Formatters
-    const formatNumber = (v, currency = false) => {
-        if (v === null || v === undefined) return '-';
-        try {
-            const num = Number(v) || 0;
-            if (currency) {
-                return num.toLocaleString('es-VE', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                }) + ' Bs.';
-            }
-            return num.toLocaleString('es-VE');
-        } catch (e) {
-            return v;
-        }
-    };
-
-    // Common chart options
-    const commonOptions = ({ yLabel = '', currency = false, stacked = false, indexAxis = 'x', granularity = 'monthly' } = {}) => {
-        const granularityLabel = granularity === 'daily' ? 'Diaria' :
-                                 granularity === 'weekly' ? 'Semanal' : 'Mensual';
-        return {
-            responsive: true,
-            maintainAspectRatio: false,
-            indexAxis,
-            interaction: { intersect: false, mode: 'nearest' },
-            elements: {
-                bar: { maxBarThickness: 60, borderWidth: 0 },
-                line: { tension: 0.25 }
-            },
-            layout: { padding: 8 },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: val => currency ? formatNumber(val, true) : formatNumber(val, false),
-                        maxTicksLimit: 8,
-                        autoSkip: true
-                    },
-                    title: yLabel ? { display: true, text: yLabel } : undefined
-                },
-                x: {
-                    beginAtZero: true,
-                    ticks: { maxRotation: 45, minRotation: 0, autoSkip: true }
-                }
-            },
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => {
-                            const v = ctx.raw;
-                            return `${ctx.dataset.label || ''}: ${currency ? formatNumber(v, true) : formatNumber(v, false)}`;
-                        }
-                    }
-                },
-                title: { display: false }
-            }
-        };
+    // Verificar si hay datos
+    const hasData = (data) => {
+        return data && typeof data === 'object' && Object.keys(data).length > 0;
     };
 
     // ===== CHART MANAGER =====
-    const ChartManager = {
-        charts: new Map(),
+    const charts = {};
 
-        create(id, config) {
-            const canvas = document.getElementById(id);
-            if (!canvas) {
-                console.warn(`Canvas #${id} no encontrado`);
-                return null;
+    // Helper para crear datasets con datos vacíos
+    const getEmptyDataHandler = (defaultLabel = 'Sin datos') => {
+        return {
+            labels: [defaultLabel],
+            datasets: [{
+                data: [1],
+                backgroundColor: ['#9CA3AF']
+            }]
+        };
+    };
+
+    // ===== DEFINICIÓN DE GRÁFICOS =====
+    
+    // 1. Bienes por Tipo (Pie)
+    if (document.getElementById('chartTipo')) {
+        const data = serverData.bienesPorTipo;
+        charts.chartTipo = new Chart(document.getElementById('chartTipo'), {
+            type: 'pie',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    data: Object.values(data),
+                    backgroundColor: CHART_PALETTE,
+                    borderWidth: 0
+                }]
+            } : getEmptyDataHandler('Sin datos de bienes por tipo'),
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} bienes` } }
+                }
             }
-            
-            // Destruir chart existente
-            if (this.charts.has(id)) {
-                this.charts.get(id).destroy();
+        });
+    }
+
+    // 2. Bienes por Estado (Bar)
+    if (document.getElementById('chartEstado')) {
+        const data = serverData.bienesPorEstado;
+        charts.chartEstado = new Chart(document.getElementById('chartEstado'), {
+            type: 'bar',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Cantidad',
+                    data: Object.values(data),
+                    backgroundColor: '#3B82F6',
+                    borderRadius: 8
+                }]
+            } : getEmptyDataHandler(),
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Cantidad' } } }
             }
+        });
+    }
 
-            const ctx = canvas.getContext('2d');
-            const chart = new Chart(ctx, config);
-            this.charts.set(id, chart);
-            return chart;
-        },
-
-        update(id, data) {
-            const chart = this.charts.get(id);
-            if (chart) {
-                chart.data = data;
-                chart.update('none');
+    // 3. Bienes por Registro (Line - Progresivo)
+    if (document.getElementById('chartRegistro')) {
+        const data = serverData.bienesPorRegistro;
+        charts.chartRegistro = new Chart(document.getElementById('chartRegistro'), {
+            type: 'line',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Cantidad Acumulada',
+                    data: Object.values(data),
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#10B981'
+                }]
+            } : getEmptyDataHandler(),
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw}` } } },
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Cantidad Acumulada' } } }
             }
-        },
+        });
+    }
 
-        destroy(id) {
-            const chart = this.charts.get(id);
-            if (chart) {
-                chart.destroy();
-                this.charts.delete(id);
+    // 4. Bienes Desincorporados (Line)
+    if (document.getElementById('chartDesincorporados')) {
+        const data = serverData.bienesDesincorporados;
+        charts.chartDesincorporados = new Chart(document.getElementById('chartDesincorporados'), {
+            type: 'line',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Cantidad Desincorporada',
+                    data: Object.values(data),
+                    borderColor: '#EF4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#EF4444'
+                }]
+            } : getEmptyDataHandler(),
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Cantidad' } } }
             }
-        },
+        });
+    }
 
-        destroyAll() {
-            this.charts.forEach(chart => chart.destroy());
-            this.charts.clear();
+    // 5. Registro de Dependencias (Line)
+    if (document.getElementById('chartDependencia')) {
+        const data = serverData.registroDependencias;
+        charts.chartDependencia = new Chart(document.getElementById('chartDependencia'), {
+            type: 'line',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Dependencias',
+                    data: Object.values(data),
+                    borderColor: '#8B5CF6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                }]
+            } : getEmptyDataHandler(),
+            options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    // 6. Registro de Unidades (Line)
+    if (document.getElementById('chartUnidad')) {
+        const data = serverData.registroUnidades;
+        charts.chartUnidad = new Chart(document.getElementById('chartUnidad'), {
+            type: 'line',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Unidades',
+                    data: Object.values(data),
+                    borderColor: '#06B6D4',
+                    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                }]
+            } : getEmptyDataHandler(),
+            options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    // 7. Registro de Organismos (Line)
+    if (document.getElementById('chartOrganismo')) {
+        const data = serverData.registroOrganismos;
+        charts.chartOrganismo = new Chart(document.getElementById('chartOrganismo'), {
+            type: 'line',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Organismos',
+                    data: Object.values(data),
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                }]
+            } : getEmptyDataHandler(),
+            options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    // 8. Usuarios por Rol (Doughnut)
+    if (document.getElementById('chartUsuariosRol')) {
+        const data = serverData.usuariosPorRol;
+        charts.chartUsuariosRol = new Chart(document.getElementById('chartUsuariosRol'), {
+            type: 'doughnut',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    data: Object.values(data),
+                    backgroundColor: CHART_PALETTE,
+                    borderWidth: 0
+                }]
+            } : getEmptyDataHandler(),
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    // 9. Usuarios Activos vs Inactivos (Doughnut)
+    if (document.getElementById('chartUsuariosActivos')) {
+        const data = serverData.usuariosActivos;
+        charts.chartUsuariosActivos = new Chart(document.getElementById('chartUsuariosActivos'), {
+            type: 'doughnut',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    data: Object.values(data),
+                    backgroundColor: ['#10B981', '#EF4444'],
+                    borderWidth: 0
+                }]
+            } : getEmptyDataHandler(),
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    // 10. Dependencias por Unidad (Bar horizontal)
+    if (document.getElementById('chartDepsUnidad')) {
+        const data = serverData.dependenciasPorUnidad;
+        charts.chartDepsUnidad = new Chart(document.getElementById('chartDepsUnidad'), {
+            type: 'bar',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Dependencias',
+                    data: Object.values(data),
+                    backgroundColor: '#8B5CF6',
+                    borderRadius: 8
+                }]
+            } : getEmptyDataHandler(),
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, title: { display: true, text: 'Cantidad' } } }
+            }
+        });
+    }
+
+    // 11. Dependencias con/sin responsable (Doughnut)
+    if (document.getElementById('chartDepsResponsable')) {
+        const data = serverData.dependenciasResponsable;
+        charts.chartDepsResponsable = new Chart(document.getElementById('chartDepsResponsable'), {
+            type: 'doughnut',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    data: Object.values(data),
+                    backgroundColor: ['#3B82F6', '#EF4444'],
+                    borderWidth: 0
+                }]
+            } : getEmptyDataHandler(),
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    // 12. Movimientos por Tipo (Bar)
+    if (document.getElementById('chartMovTipo')) {
+        const data = serverData.movimientosPorTipo;
+        charts.chartMovTipo = new Chart(document.getElementById('chartMovTipo'), {
+            type: 'bar',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Movimientos',
+                    data: Object.values(data),
+                    backgroundColor: '#06B6D4',
+                    borderRadius: 8
+                }]
+            } : getEmptyDataHandler(),
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Cantidad' } } }
+            }
+        });
+    }
+
+    // 13. Top 10 Usuarios por Movimientos (Bar horizontal)
+    if (document.getElementById('chartMovUsuario')) {
+        const data = serverData.movimientosPorUsuario;
+        charts.chartMovUsuario = new Chart(document.getElementById('chartMovUsuario'), {
+            type: 'bar',
+            data: hasData(data) ? {
+                labels: Object.keys(data).slice(0, 10),
+                datasets: [{
+                    label: 'Movimientos',
+                    data: Object.values(data).slice(0, 10),
+                    backgroundColor: '#F97316',
+                    borderRadius: 8
+                }]
+            } : getEmptyDataHandler(),
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, title: { display: true, text: 'Cantidad' } } }
+            }
+        });
+    }
+
+    // 14. Movimientos por Fecha (Line)
+    if (document.getElementById('chartMovFecha')) {
+        const data = serverData.movimientosPorFecha;
+        charts.chartMovFecha = new Chart(document.getElementById('chartMovFecha'), {
+            type: 'line',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Movimientos',
+                    data: Object.values(data),
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                }]
+            } : getEmptyDataHandler(),
+            options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    // 15. Valor por Estado (Bar)
+    if (document.getElementById('chartValorEstado')) {
+        const data = serverData.valorPorEstado;
+        charts.chartValorEstado = new Chart(document.getElementById('chartValorEstado'), {
+            type: 'bar',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Valor (Bs.)',
+                    data: Object.values(data),
+                    backgroundColor: '#10B981',
+                    borderRadius: 8
+                }]
+            } : getEmptyDataHandler(),
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toLocaleString('es-VE')} Bs.` } } },
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Valor (Bs.)' } } }
+            }
+        });
+    }
+
+    // 16. Top Dependencias por Valor (Bar horizontal)
+    if (document.getElementById('chartTopDeps')) {
+        const data = serverData.topDependenciasValor;
+        charts.chartTopDeps = new Chart(document.getElementById('chartTopDeps'), {
+            type: 'bar',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Valor (Bs.)',
+                    data: Object.values(data),
+                    backgroundColor: '#8B5CF6',
+                    borderRadius: 8
+                }]
+            } : getEmptyDataHandler(),
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                indexAxis: 'y',
+                plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toLocaleString('es-VE')} Bs.` } } },
+                scales: { x: { beginAtZero: true, title: { display: true, text: 'Valor (Bs.)' } } }
+            }
+        });
+    }
+
+    // 17. Cobertura de Fotografías (Doughnut)
+    if (document.getElementById('chartFotos')) {
+        const data = serverData.fotoCoverage;
+        charts.chartFotos = new Chart(document.getElementById('chartFotos'), {
+            type: 'doughnut',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    data: Object.values(data),
+                    backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+                    borderWidth: 0
+                }]
+            } : getEmptyDataHandler(),
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    // 18. Bienes sin Movimientos (Doughnut)
+    if (document.getElementById('chartMovimientos')) {
+        const data = serverData.movimientoCoverage;
+        charts.chartMovimientos = new Chart(document.getElementById('chartMovimientos'), {
+            type: 'doughnut',
+            data: hasData(data) ? {
+                labels: Object.keys(data),
+                datasets: [{
+                    data: Object.values(data),
+                    backgroundColor: ['#F59E0B', '#EF4444'],
+                    borderWidth: 0
+                }]
+            } : getEmptyDataHandler(),
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    // ===== FUNCIONES DE UTILIDAD =====
+    const showToast = (message) => {
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+        if (toast && toastMessage) {
+            toastMessage.textContent = message;
+            toast.classList.remove('translate-y-full', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.add('translate-y-full', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 3000);
         }
     };
 
-    // ===== TOAST NOTIFICATIONS =====
-    const showToast = (message, type = 'info') => {
-        const toast = document.getElementById('toast');
-        const toastMessage = document.getElementById('toastMessage');
-        if (!toast || !toastMessage) return;
-        
-        toastMessage.textContent = message;
-        toast.className = `fixed bottom-4 right-4 transform translate-y-0 opacity-100 transition-all duration-300 z-50`;
-        
-        setTimeout(() => {
-            toast.className = `fixed bottom-4 right-4 transform translate-y-full opacity-0 transition-all duration-300 z-50`;
-        }, 3000);
-    };
-
-    // ===== CHART DEFINITIONS =====
-    const chartDefinitions = {
-        chartTipo: () => ({
-            type: 'pie',
-            data: {
-                labels: Object.keys({{ json_encode($bienesPorTipo ?? ['Sin datos' => 0]) }}),
-                datasets: [{
-                    data: Object.values({{ json_encode($bienesPorTipo ?? ['Sin datos' => 0]) }}),
-                    backgroundColor: CHART_PALETTE
-                }]
-            },
-            options: {
-                ...commonOptions(),
-                plugins: { ...commonOptions().plugins, title: { display: true, text: 'Distribución de Bienes por Tipo' } }
-            }
-        }),
-
-        chartEstado: () => ({
-            type: 'bar',
-            data: {
-                labels: Object.keys({{ json_encode($bienesPorEstado ?? ['Sin datos' => 0]) }}),
-                datasets: [{
-                    label: 'Cantidad',
-                    data: Object.values({{ json_encode($bienesPorEstado ?? ['Sin datos' => 0]) }}),
-                    backgroundColor: '#3B82F6',
-                    maxBarThickness: 40
-                }]
-            },
-            options: commonOptions()
-        }),
-
-        chartRegistro: () => {
-            const gran = {{ json_encode($granularity ?? 'monthly') }};
-            const label = gran === 'daily' ? 'Diaria' : gran === 'weekly' ? 'Semanal' : 'Mensual';
-            return {
-                type: 'line',
-                data: {
-                    labels: Object.keys({{ json_encode($bienesPorRegistro ?? ['Sin datos' => 0]) }}),
-                    datasets: [{
-                        label: 'Cantidad Acumulada',
-                        data: Object.values({{ json_encode($bienesPorRegistro ?? ['Sin datos' => 0]) }}),
-                        backgroundColor: '#10B98133',
-                        borderColor: '#10B981',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.25,
-                        pointRadius: 2
-                    }]
-                },
-                options: {
-                    ...commonOptions({ granularity: gran }),
-                    plugins: { ...commonOptions().plugins, title: { display: true, text: `Registro progresivo de Bienes (${label})` } }
-                }
-            };
-        },
-
-        chartDesincorporados: () => {
-            const gran = {{ json_encode($granularity ?? 'monthly') }};
-            const label = gran === 'daily' ? 'Diaria' : gran === 'weekly' ? 'Semanal' : 'Mensual';
-            return {
-                type: 'line',
-                data: {
-                    labels: Object.keys({{ json_encode($bienesDesincorporados ?? ['Sin datos' => 0]) }}),
-                    datasets: [{
-                        label: 'Cantidad Desincorporada',
-                        data: Object.values({{ json_encode($bienesDesincorporados ?? ['Sin datos' => 0]) }}),
-                        backgroundColor: '#EF444433',
-                        borderColor: '#EF4444',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.25,
-                        pointRadius: 2
-                    }]
-                },
-                options: {
-                    ...commonOptions({ granularity: gran }),
-                    plugins: { ...commonOptions().plugins, title: { display: true, text: `Bienes Desincorporados (${label})` } }
-                }
-            };
-        },
-
-        chartDependencia: () => {
-            const gran = {{ json_encode($granularity ?? 'monthly') }};
-            const label = gran === 'daily' ? 'Diaria' : gran === 'weekly' ? 'Semanal' : 'Mensual';
-            return {
-                type: 'line',
-                data: {
-                    labels: Object.keys({{ json_encode($registroDependencias ?? ['Sin datos' => 0]) }}),
-                    datasets: [{
-                        label: 'Dependencias Registradas',
-                        data: Object.values({{ json_encode($registroDependencias ?? ['Sin datos' => 0]) }}),
-                        backgroundColor: '#8B5CF633',
-                        borderColor: '#8B5CF6',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.25,
-                        pointRadius: 2
-                    }]
-                },
-                options: {
-                    ...commonOptions({ granularity: gran }),
-                    plugins: { ...commonOptions().plugins, title: { display: true, text: `Registro de Dependencias (${label})` } }
-                }
-            };
-        },
-
-        chartUnidad: () => {
-            const gran = {{ json_encode($granularity ?? 'monthly') }};
-            const label = gran === 'daily' ? 'Diaria' : gran === 'weekly' ? 'Semanal' : 'Mensual';
-            return {
-                type: 'line',
-                data: {
-                    labels: Object.keys({{ json_encode($registroUnidades ?? ['Sin datos' => 0]) }}),
-                    datasets: [{
-                        label: 'Unidades Registradas',
-                        data: Object.values({{ json_encode($registroUnidades ?? ['Sin datos' => 0]) }}),
-                        backgroundColor: '#06B6D433',
-                        borderColor: '#06B6D4',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.25,
-                        pointRadius: 2
-                    }]
-                },
-                options: {
-                    ...commonOptions({ granularity: gran }),
-                    plugins: { ...commonOptions().plugins, title: { display: true, text: `Registro de Unidades Administradoras (${label})` } }
-                }
-            };
-        },
-
-        chartOrganismo: () => {
-            const gran = {{ json_encode($granularity ?? 'monthly') }};
-            const label = gran === 'daily' ? 'Diaria' : gran === 'weekly' ? 'Semanal' : 'Mensual';
-            return {
-                type: 'line',
-                data: {
-                    labels: Object.keys({{ json_encode($registroOrganismos ?? ['Sin datos' => 0]) }}),
-                    datasets: [{
-                        label: 'Organismos Registrados',
-                        data: Object.values({{ json_encode($registroOrganismos ?? ['Sin datos' => 0]) }}),
-                        backgroundColor: '#F59E0B33',
-                        borderColor: '#F59E0B',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.25,
-                        pointRadius: 2
-                    }]
-                },
-                options: {
-                    ...commonOptions({ granularity: gran }),
-                    plugins: { ...commonOptions().plugins, title: { display: true, text: `Registro de Organismos (${label})` } }
-                }
-            };
-        },
-
-        chartUsuariosRol: () => ({
-            type: 'doughnut',
-            data: {
-                labels: Object.keys({{ json_encode($usuariosPorRol ?? ['Sin datos' => 0]) }}),
-                datasets: [{
-                    data: Object.values({{ json_encode($usuariosPorRol ?? ['Sin datos' => 0]) }}),
-                    backgroundColor: CHART_PALETTE
-                }]
-            },
-            options: {
-                ...commonOptions(),
-                plugins: { ...commonOptions().plugins, title: { display: true, text: 'Usuarios por Rol' } }
-            }
-        }),
-
-        chartUsuariosActivos: () => ({
-            type: 'doughnut',
-            data: {
-                labels: Object.keys({{ json_encode($usuariosActivos ?? ['Sin datos' => 0]) }}),
-                datasets: [{
-                    data: Object.values({{ json_encode($usuariosActivos ?? ['Sin datos' => 0]) }}),
-                    backgroundColor: ['#10B981', '#EF4444']
-                }]
-            },
-            options: {
-                ...commonOptions(),
-                plugins: { ...commonOptions().plugins, title: { display: true, text: 'Usuarios Activos vs Inactivos' } }
-            }
-        }),
-
-        chartDepsUnidad: () => ({
-            type: 'bar',
-            data: {
-                labels: Object.keys({{ json_encode($dependenciasPorUnidad ?? ['Sin datos' => 0]) }}),
-                datasets: [{
-                    label: 'Número de Dependencias',
-                    data: Object.values({{ json_encode($dependenciasPorUnidad ?? ['Sin datos' => 0]) }}),
-                    backgroundColor: '#8B5CF6',
-                    barThickness: 18
-                }]
-            },
-            options: commonOptions({ indexAxis: 'y' })
-        }),
-
-        chartDepsResponsable: () => ({
-            type: 'doughnut',
-            data: {
-                labels: Object.keys({{ json_encode($dependenciasResponsable ?? ['Sin datos' => 0]) }}),
-                datasets: [{
-                    data: Object.values({{ json_encode($dependenciasResponsable ?? ['Sin datos' => 0]) }}),
-                    backgroundColor: ['#3B82F6', '#EF4444']
-                }]
-            },
-            options: {
-                ...commonOptions(),
-                plugins: { ...commonOptions().plugins, title: { display: true, text: 'Dependencias: con/sin responsable' } }
-            }
-        }),
-
-        chartMovTipo: () => ({
-            type: 'bar',
-            data: {
-                labels: Object.keys({{ json_encode($movimientosPorTipo ?? ['Sin datos' => 0]) }}),
-                datasets: [{
-                    label: 'Cantidad',
-                    data: Object.values({{ json_encode($movimientosPorTipo ?? ['Sin datos' => 0]) }}),
-                    backgroundColor: '#06B6D4',
-                    maxBarThickness: 60
-                }]
-            },
-            options: commonOptions()
-        }),
-
-        chartMovUsuario: () => ({
-            type: 'bar',
-            data: {
-                labels: Object.keys({{ json_encode($movimientosPorUsuario ?? ['Sin datos' => 0]) }}),
-                datasets: [{
-                    label: 'Movimientos',
-                    data: Object.values({{ json_encode($movimientosPorUsuario ?? ['Sin datos' => 0]) }}),
-                    backgroundColor: '#F97316',
-                    barThickness: 16
-                }]
-            },
-            options: commonOptions({ indexAxis: 'y' })
-        }),
-
-        chartMovFecha: () => {
-            const gran = {{ json_encode($granularity ?? 'monthly') }};
-            const label = gran === 'daily' ? 'Diaria' : gran === 'weekly' ? 'Semanal' : 'Mensual';
-            return {
-                type: 'line',
-                data: {
-                    labels: Object.keys({{ json_encode($movimientosPorFecha ?? ['Sin datos' => 0]) }}),
-                    datasets: [{
-                        label: 'Movimientos Acumulados',
-                        data: Object.values({{ json_encode($movimientosPorFecha ?? ['Sin datos' => 0]) }}),
-                        backgroundColor: '#F59E0B33',
-                        borderColor: '#F59E0B',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.25,
-                        pointRadius: 2
-                    }]
-                },
-                options: {
-                    ...commonOptions({ granularity: gran }),
-                    plugins: { ...commonOptions().plugins, title: { display: true, text: `Movimientos por Fecha (${label})` } }
-                }
-            };
-        },
-
-        chartValorEstado: () => ({
-            type: 'bar',
-            data: {
-                labels: Object.keys({{ json_encode($valorPorEstado ?? ['Sin datos' => 0]) }}),
-                datasets: [{
-                    label: 'Valor (Bs.)',
-                    data: Object.values({{ json_encode($valorPorEstado ?? ['Sin datos' => 0]) }}),
-                    backgroundColor: '#10B981',
-                    maxBarThickness: 60
-                }]
-            },
-            options: commonOptions({ currency: true })
-        }),
-
-        chartTopDeps: () => ({
-            type: 'bar',
-            data: {
-                labels: Object.keys({{ json_encode($topDependenciasValor ?? ['Sin datos' => 0]) }}),
-                datasets: [{
-                    label: 'Valor (Bs.)',
-                    data: Object.values({{ json_encode($topDependenciasValor ?? ['Sin datos' => 0]) }}),
-                    backgroundColor: '#8B5CF6',
-                    maxBarThickness: 60
-                }]
-            },
-            options: commonOptions({ currency: true, indexAxis: 'y' })
-        }),
-
-        chartFotos: () => ({
-            type: 'doughnut',
-            data: {
-                labels: Object.keys({{ json_encode($fotoCoverage ?? ['Sin datos' => 0]) }}),
-                datasets: [{
-                    data: Object.values({{ json_encode($fotoCoverage ?? ['Sin datos' => 0]) }}),
-                    backgroundColor: ['#10B981', '#F59E0B', '#EF4444']
-                }]
-            },
-            options: { ...commonOptions(), plugins: { ...commonOptions().plugins, title: { display: true, text: 'Cobertura de Fotografías' } } }
-        }),
-
-        chartMovimientos: () => ({
-            type: 'doughnut',
-            data: {
-                labels: Object.keys({{ json_encode($movimientoCoverage ?? ['Sin datos' => 0]) }}),
-                datasets: [{
-                    data: Object.values({{ json_encode($movimientoCoverage ?? ['Sin datos' => 0]) }}),
-                    backgroundColor: ['#F59E0B', '#EF4444']
-                }]
-            },
-            options: {
-                ...commonOptions(),
-                plugins: { ...commonOptions().plugins, title: { display: true, text: 'Bienes sin Movimientos (12 meses)' } }
-            }
-        })
-    };
-
-    // ===== INITIALIZATION =====
-    const initCharts = () => {
-        const loader = document.getElementById('chartsLoader');
-        const container = document.getElementById('chartsContainer');
-
-        if (loader) loader.classList.remove('hidden');
-        if (container) container.style.display = 'none';
-
-        requestAnimationFrame(() => {
-            ChartManager.destroyAll();
-
-            Object.keys(chartDefinitions).forEach(id => {
-                try {
-                    const config = chartDefinitions[id]();
-                    ChartManager.create(id, config);
-                } catch (err) {
-                    console.error(`Error creando chart ${id}:`, err);
-                }
-            });
-
-            setTimeout(() => {
-                if (loader) loader.classList.add('hidden');
-                if (container) container.style.display = 'block';
-            }, 200);
-        });
-    };
-
-    // ===== GRANULARIDAD =====
     const updateGranularity = (value) => {
-        const params = new URLSearchParams(window.location.search);
-        params.set('granularity', value);
-        window.location.search = params.toString();
+        const url = new URL(window.location.href);
+        url.searchParams.set('granularity', value);
+        window.location.href = url.toString();
     };
 
-    // ===== REFRESH =====
     const refreshCharts = () => {
-        initCharts();
-        showToast('Gráficas actualizadas correctamente', 'success');
+        Object.values(charts).forEach(chart => {
+            if (chart && typeof chart.update === 'function') {
+                chart.update();
+            }
+        });
+        showToast('Gráficas actualizadas correctamente');
     };
 
     // ===== EVENT LISTENERS =====
-    document.addEventListener('DOMContentLoaded', () => {
-        initCharts();
+    const granularitySelect = document.getElementById('granularitySelect');
+    if (granularitySelect) {
+        granularitySelect.addEventListener('change', (e) => updateGranularity(e.target.value));
+    }
 
-        const granSelect = document.getElementById('granularitySelect');
-        if (granSelect) {
-            const currentGran = {{ json_encode($granularity ?? 'monthly') }};
-            granSelect.value = currentGran;
-            granSelect.addEventListener('change', (e) => updateGranularity(e.target.value));
-        }
+    const refreshBtn = document.getElementById('refreshCharts');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', refreshCharts);
+    }
 
-        const refreshBtn = document.getElementById('refreshCharts');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', refreshCharts);
-        }
-
-        document.querySelectorAll('.download-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const chart = this.getAttribute('data-chart');
-                const params = new URLSearchParams(window.location.search);
-                if (chart) params.set('chart', chart);
-                const g = document.getElementById('granularitySelect')?.value;
-                if (g) params.set('granularity', g);
-                const url = `${window.location.pathname.replace(/\/graficas.*$/, '')}/graficas/pdf?${params.toString()}`;
-                window.open(url, '_blank');
-            });
-        });
-    });
-
-    // ===== RECALCULAR EN RESIZE =====
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            ChartManager.charts.forEach(chart => chart.resize());
-        }, 250);
-    });
+    // Mensaje de éxito
+    console.log('✅ Todas las gráficas fueron inicializadas correctamente');
+});
 </script>
 @endpush

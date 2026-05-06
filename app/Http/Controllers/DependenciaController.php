@@ -5,12 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Dependencia;
 use App\Models\Responsable;
 use App\Models\UnidadAdministradora;
-use App\Services\CodigoUnicoService;
 use App\Services\FpdfReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class DependenciaController extends Controller
@@ -102,19 +99,19 @@ class DependenciaController extends Controller
 
         $query = Dependencia::with(['unidadAdministradora', 'responsable', 'bienes']);
 
-        if (!empty($validated['search'])) {
+        if (! empty($validated['search'])) {
             $search = $validated['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('nombre', 'like', "%{$search}%")
-                  ->orWhere('codigo', 'like', "%{$search}%");
+                    ->orWhere('codigo', 'like', "%{$search}%");
             });
         }
 
-        if (!empty($validated['unidad_id'])) {
+        if (! empty($validated['unidad_id'])) {
             $query->where('unidad_administradora_id', $validated['unidad_id']);
         }
 
-        if (!empty($validated['responsable_id'])) {
+        if (! empty($validated['responsable_id'])) {
             $query->where('responsable_id', $validated['responsable_id']);
         }
 
@@ -125,21 +122,21 @@ class DependenciaController extends Controller
 
         return match ($tipoReporte) {
             'unidad' => $this->fpdf->generarDependenciasPorUnidad(
-                'reporte_dependencias_por_unidad_' . $now->format('dmY_His') . '.pdf',
+                'reporte_dependencias_por_unidad_'.$now->format('dmY_His').'.pdf',
                 'DEPENDENCIAS POR UNIDAD ADMINISTRADORA',
                 'Listado de dependencias agrupadas por unidad administradora',
                 $now->format('d/m/Y H:i'),
                 $dependencias
             ),
             'responsable' => $this->fpdf->generarDependenciasPorResponsable(
-                'reporte_dependencias_por_responsable_' . $now->format('dmY_His') . '.pdf',
+                'reporte_dependencias_por_responsable_'.$now->format('dmY_His').'.pdf',
                 'DEPENDENCIAS POR RESPONSABLE',
                 'Listado de dependencias agrupadas por responsable',
                 $now->format('d/m/Y H:i'),
                 $dependencias
             ),
             default => $this->fpdf->downloadDependenciasListado(
-                'reporte_dependencias_general_' . $now->format('dmY_His') . '.pdf',
+                'reporte_dependencias_general_'.$now->format('dmY_His').'.pdf',
                 'REPORTE DE DEPENDENCIAS',
                 'Listado general de dependencias',
                 $now->format('d/m/Y H:i'),
@@ -153,12 +150,13 @@ class DependenciaController extends Controller
      */
     private function determinarTipoReporte(array $filtros): string
     {
-        if (!empty($filtros['unidad_id'])) {
+        if (! empty($filtros['unidad_id'])) {
             return 'unidad';
         }
-        if (!empty($filtros['responsable_id'])) {
+        if (! empty($filtros['responsable_id'])) {
             return 'responsable';
         }
+
         return 'general';
     }
 }

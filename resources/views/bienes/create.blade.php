@@ -127,7 +127,7 @@
                         </div>
                     </div>
 
-                    {{-- Descripción con Límite de 50 --}}
+                    {{-- Descripción con Límite de 255 --}}
                     <div>
                         <div class="flex justify-between items-center mb-2">
                             <label for="descripcion" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Descripción
@@ -143,29 +143,29 @@
                 {{-- Sección 3: Valores y Archivos --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Precio (Bs.)</label>
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Precio (Bs.)</label>
                         <input type="number" name="precio" step="0.01" min="0" value="{{ old('precio', '0.00') }}"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Adquisición</label>
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Fecha de Adquisición</label>
                         <input type="date" name="fecha_registro" id="fecha_registro"
                             min="2000-01-01" max="{{ now()->format('Y-m-d') }}"
                             value="{{ old('fecha_registro', now()->format('Y-m-d')) }}"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Fotografía</label>
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Fotografía</label>
                         <input type="file" name="fotografia" accept="image/*"
-                            class="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            class="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-blue-300">
                     </div>
                 </div>
 
                 <div id="campos-tipo-bien" class="transition-all duration-300"></div>
 
-                <div class="flex justify-end gap-4 pt-8 border-t border-gray-100">
+                <div class="flex justify-end gap-4 pt-8 border-t border-gray-100 dark:border-gray-800">
                     <a href="{{ route('bienes.index') }}"
-                        class="px-6 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</a>
+                        class="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition">Cancelar</a>
                     <button type="submit"
                         class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition">Guardar
                         Activo</button>
@@ -177,238 +177,334 @@
 
 @push('scripts')
     <script>
-        /* 1. Lógica de Responsable */
-        const dependenciasData = {
-            @foreach($dependencias as $d)
-                '{{ $d->id }}': '{{ $d->responsable ? $d->responsable->nombre : "Sin responsable asignado" }}',
-            @endforeach
-        };
+        document.addEventListener('DOMContentLoaded', function() {
+            /* 1. Lógica de Responsable */
+            const dependenciasData = {
+                @foreach($dependencias as $d)
+                    '{{ $d->id }}': '{{ $d->responsable ? addslashes($d->responsable->nombre) : "Sin responsable asignado" }}',
+                @endforeach
+            };
 
-        const depSelect = document.getElementById('dependencia_id');
-        const respDisplay = document.getElementById('responsable_display');
+            const depSelect = document.getElementById('dependencia_id');
+            const respDisplay = document.getElementById('responsable_display');
 
-        depSelect.addEventListener('change', function () {
-            respDisplay.textContent = dependenciasData[this.value] || 'Seleccione una dependencia...';
-            respDisplay.classList.toggle('text-gray-900', !!this.value);
-            respDisplay.classList.toggle('font-bold', !!this.value);
-        });
-
-        /* 2. Lógica de Código con Sugerencia */
-        const codigoInput = document.getElementById('codigo');
-        const codigoError = document.getElementById('codigo-error');
-        const sugerenciaContainer = document.getElementById('sugerencia-container');
-        const spanSugerencia = document.getElementById('span-sugerencia');
-        const btnSugerencia = document.getElementById('btn-sugerencia');
-
-        // El código que vino del servidor originalmente
-        const codigoOriginalSugerido = "{{ $codigoSugerido ?? '' }}";
-
-        codigoInput.addEventListener('input', function (e) {
-            const original = e.target.value;
-            const cleaned = original.replace(/\D/g, '');
-
-            if (original !== cleaned) {
-                // Si codigoError no existe en el HTML original, esta línea no hará nada o dará error si no se maneja
-                if(codigoError) {
-                    codigoError.classList.remove('hidden');
-                    setTimeout(() => codigoError.classList.add('hidden'), 2000);
+            if (depSelect && respDisplay) {
+                // Disparar evento inicial si hay valor preseleccionado
+                if (depSelect.value) {
+                    respDisplay.textContent = dependenciasData[depSelect.value] || 'Seleccione una dependencia...';
+                    respDisplay.classList.toggle('text-gray-900', !!depSelect.value);
+                    respDisplay.classList.toggle('font-bold', !!depSelect.value);
                 }
+
+                depSelect.addEventListener('change', function () {
+                    const responsable = dependenciasData[this.value];
+                    respDisplay.textContent = responsable || 'Seleccione una dependencia...';
+                    if (responsable && responsable !== 'Sin responsable asignado') {
+                        respDisplay.classList.add('text-gray-900', 'font-bold');
+                        respDisplay.classList.remove('text-gray-500', 'italic');
+                    } else {
+                        respDisplay.classList.remove('text-gray-900', 'font-bold');
+                        respDisplay.classList.add('text-gray-500', 'italic');
+                    }
+                });
             }
-            e.target.value = cleaned;
 
-            if (codigoOriginalSugerido && cleaned !== codigoOriginalSugerido) {
-                spanSugerencia.textContent = codigoOriginalSugerido;
-                sugerenciaContainer.classList.remove('hidden');
-            } else {
-                sugerenciaContainer.classList.add('hidden');
+            /* 2. Lógica de Código con Sugerencia */
+            const codigoInput = document.getElementById('codigo');
+            const sugerenciaContainer = document.getElementById('sugerencia-container');
+            const spanSugerencia = document.getElementById('span-sugerencia');
+            const btnSugerencia = document.getElementById('btn-sugerencia');
+
+            // El código que vino del servidor originalmente
+            const codigoOriginalSugerido = "{{ $codigoSugerido ?? '' }}";
+            let usuarioModifico = false;
+
+            if (codigoInput) {
+                codigoInput.addEventListener('input', function (e) {
+                    let original = e.target.value;
+                    let cleaned = original.replace(/\D/g, '');
+                    
+                    // Limitar a 8 dígitos
+                    if (cleaned.length > 8) {
+                        cleaned = cleaned.slice(0, 8);
+                    }
+
+                    if (original !== cleaned) {
+                        e.target.value = cleaned;
+                    }
+                    
+                    // Marcar que el usuario modificó el código
+                    usuarioModifico = true;
+                    
+                    // Mostrar sugerencia solo si el usuario borró o cambió el código sugerido
+                    if (codigoOriginalSugerido && cleaned !== codigoOriginalSugerido && sugerenciaContainer) {
+                        spanSugerencia.textContent = codigoOriginalSugerido;
+                        sugerenciaContainer.classList.remove('hidden');
+                    } else if (sugerenciaContainer) {
+                        sugerenciaContainer.classList.add('hidden');
+                    }
+                });
+
+                // NO auto-llenar con ceros en blur - esto puede crear códigos incorrectos
+                // En lugar, validar que tenga 8 dígitos
+                codigoInput.addEventListener('blur', function () {
+                    if (this.value && this.value.length > 0 && this.value.length !== 8) {
+                        this.classList.add('border-red-500');
+                        // Mostrar mensaje de error si no existe
+                        let errorMsg = document.getElementById('codigo-length-error');
+                        if (!errorMsg && this.parentNode) {
+                            errorMsg = document.createElement('p');
+                            errorMsg.id = 'codigo-length-error';
+                            errorMsg.className = 'text-red-500 text-xs mt-1';
+                            errorMsg.textContent = 'El código debe tener exactamente 8 dígitos';
+                            this.parentNode.appendChild(errorMsg);
+                        }
+                    } else if (this.value && this.value.length === 8) {
+                        this.classList.remove('border-red-500');
+                        const errorMsg = document.getElementById('codigo-length-error');
+                        if (errorMsg) errorMsg.remove();
+                    }
+                });
             }
-        });
 
-        btnSugerencia.addEventListener('click', function () {
-            codigoInput.value = codigoOriginalSugerido;
-            sugerenciaContainer.classList.add('hidden');
-        });
-
-        codigoInput.addEventListener('blur', function () {
-            if (this.value && this.value.length > 0) {
-                this.value = this.value.padStart(8, '0');
+            if (btnSugerencia && sugerenciaContainer) {
+                btnSugerencia.addEventListener('click', function () {
+                    if (codigoInput && codigoOriginalSugerido) {
+                        codigoInput.value = codigoOriginalSugerido;
+                        sugerenciaContainer.classList.add('hidden');
+                        usuarioModifico = false;
+                        // Limpiar error si existe
+                        codigoInput.classList.remove('border-red-500');
+                        const errorMsg = document.getElementById('codigo-length-error');
+                        if (errorMsg) errorMsg.remove();
+                    }
+                });
             }
-        });
 
-        /* 3. Límite de Caracteres en Descripción */
-        const descTextarea = document.getElementById('descripcion');
-        const charCount = document.getElementById('char-count');
+            /* 3. Límite de Caracteres en Descripción */
+            const descTextarea = document.getElementById('descripcion');
+            const charCount = document.getElementById('char-count');
 
-        descTextarea.addEventListener('input', function () {
-            const len = this.value.length;
-            charCount.textContent = `${len} / 255`;
-            charCount.classList.toggle('text-red-500', len >= 255);
-        });
+            if (descTextarea && charCount) {
+                function updateCharCount() {
+                    const len = descTextarea.value.length;
+                    charCount.textContent = `${len} / 255`;
+                    if (len >= 255) {
+                        charCount.classList.add('text-red-500');
+                        charCount.classList.remove('text-gray-400');
+                    } else {
+                        charCount.classList.remove('text-red-500');
+                        charCount.classList.add('text-gray-400');
+                    }
+                }
+                
+                descTextarea.addEventListener('input', updateCharCount);
+                updateCharCount(); // Inicializar
+            }
 
-        if (descTextarea) descTextarea.dispatchEvent(new Event('input'));
-
-        /* 4. Campos Dinámicos */
-        const camposPorTipo = {
-            'ELECTRONICO': {
-                isParent: true,
-                subtipos: {
-                    'MONITOR': ['serial', 'pantalla'],
-                    'PC': ['serial', 'procesador', 'memoria', 'almacenamiento'],
-                    'IMPRESORA': ['serial', 'modelo'],
-                    'TELEVISOR': ['serial', 'pantalla', 'modelo']
+            /* 4. Campos Dinámicos */
+            const camposPorTipo = {
+                'ELECTRONICO': {
+                    isParent: true,
+                    subtipos: {
+                        'MONITOR': ['serial', 'pantalla'],
+                        'PC': ['serial', 'procesador', 'memoria', 'almacenamiento'],
+                        'IMPRESORA': ['serial', 'modelo'],
+                        'TELEVISOR': ['serial', 'pantalla', 'modelo']
+                    },
+                    fields: [
+                        { name: 'subtipo', label: 'Subtipo', type: 'select', options: ['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR'], required: true },
+                        { name: 'serial', label: 'Número de Serie', type: 'text' },
+                        { name: 'modelo', label: 'Modelo', type: 'text' },
+                        { name: 'procesador', label: 'Procesador', type: 'text' },
+                        { name: 'memoria', label: 'RAM/Memoria', type: 'text' },
+                        { name: 'almacenamiento', label: 'Almacenamiento', type: 'text' },
+                        { name: 'pantalla', label: 'Pulgadas de Pantalla', type: 'text' }
+                    ]
                 },
-                fields: [
-                    { name: 'subtipo', label: 'Subtipo', type: 'select', options: ['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR'], required: true },
-                    { name: 'serial', label: 'Número de Serie', type: 'text' },
-                    { name: 'modelo', label: 'Modelo', type: 'text' },
-                    { name: 'procesador', label: 'Procesador', type: 'text' },
-                    { name: 'memoria', label: 'RAM/Memoria', type: 'text' },
-                    { name: 'almacenamiento', label: 'Almacenamiento', type: 'text' },
-                    { name: 'pantalla', label: 'Pulgadas de Pantalla', type: 'text' }
-                ]
-            },
-            'VEHICULO': {
-                fields: [
-                    { name: 'placa', label: 'Número de Placa', type: 'text' },
-                    { name: 'marca', label: 'Marca', type: 'text' },
-                    { name: 'motor', label: 'Serial de Motor', type: 'text' },
-                    { name: 'chasis', label: 'Serial de Carrocería', type: 'text' }
-                ]
-            },
-            'MOBILIARIO': {
-                fields: [
-                    { name: 'material', label: 'Material', type: 'text' },
-                    { name: 'color', label: 'Color', type: 'text' },
-                    { name: 'dimensiones', label: 'Dimensiones', type: 'text' }
-                ]
-            },
-            'OTROS': {
-                fields: [
-                    { name: 'especificaciones', label: 'Especificaciones Extra', type: 'textarea' }
-                ]
-            }
-        };
-
-        const tipoBienSelect = document.getElementById('tipo_bien');
-        const container = document.getElementById('campos-tipo-bien');
-
-        tipoBienSelect.addEventListener('change', function () {
-            const tipo = this.value;
-            container.innerHTML = '';
-            if (!tipo || !camposPorTipo[tipo]) return;
-
-            const config = camposPorTipo[tipo];
-            let html = `<div class="bg-blue-50/50 border border-blue-100 p-6 rounded-xl space-y-4 animate-fade-in">
-                            <h3 class="text-blue-800 font-bold text-sm uppercase flex items-center gap-2">
-                                <x-heroicon-o-information-circle class="w-5 h-5" /> Detalles Técnicos del ${tipo}
-                            </h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
-
-            config.fields.forEach(campo => {
-                if (campo.type === 'select') {
-                    html += `<div>
-                                <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label}</label>
-                                <select name="${campo.name}" id="subtipo_selector" required class="w-full px-4 py-2 border border-blue-200 rounded-lg outline-none bg-white">
-                                    <option value="">Seleccione...</option>
-                                    ${campo.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                                </select>
-                            </div>`;
-                } else if (campo.type === 'textarea') {
-                    html += `<div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label}</label>
-                                <textarea name="${campo.name}" data-field="${campo.name}" class="dynamic-field w-full px-4 py-2 border border-blue-200 rounded-lg bg-white uppercase"></textarea>
-                            </div>`;
-                } else {
-                    const isReadonly = config.isParent ? 'readonly' : '';
-                    const bgClass = config.isParent ? 'bg-gray-100' : 'bg-white';
-                    const defaultValue = config.isParent ? 'S/N' : '';
-
-                    html += `<div>
-                                <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label}</label>
-                                <input type="text" name="${campo.name}" data-field="${campo.name}"
-                                    class="dynamic-field w-full px-4 py-2 border border-blue-200 rounded-lg ${bgClass} uppercase"
-                                    ${isReadonly} value="${defaultValue}">
-                            </div>`;
+                'VEHICULO': {
+                    fields: [
+                        { name: 'placa', label: 'Número de Placa', type: 'text' },
+                        { name: 'marca', label: 'Marca', type: 'text' },
+                        { name: 'motor', label: 'Serial de Motor', type: 'text' },
+                        { name: 'chasis', label: 'Serial de Carrocería', type: 'text' }
+                    ]
+                },
+                'MOBILIARIO': {
+                    fields: [
+                        { name: 'material', label: 'Material', type: 'text' },
+                        { name: 'color', label: 'Color', type: 'text' },
+                        { name: 'dimensiones', label: 'Dimensiones', type: 'text' }
+                    ]
+                },
+                'OTROS': {
+                    fields: [
+                        { name: 'especificaciones', label: 'Especificaciones Extra', type: 'textarea' }
+                    ]
                 }
-            });
+            };
 
-            html += `</div></div>`;
-            container.innerHTML = html;
+            const tipoBienSelect = document.getElementById('tipo_bien');
+            const container = document.getElementById('campos-tipo-bien');
 
-            if (config.isParent) {
-                const selector = document.getElementById('subtipo_selector');
-                selector.addEventListener('change', function() {
-                    const st = this.value;
-                    const camposVisibles = config.subtipos[st] || [];
+            if (tipoBienSelect && container) {
+                function loadDynamicFields() {
+                    const tipo = tipoBienSelect.value;
+                    container.innerHTML = '';
+                    
+                    if (!tipo || !camposPorTipo[tipo]) return;
 
-                    document.querySelectorAll('.dynamic-field').forEach(input => {
-                        const fieldName = input.getAttribute('data-field');
-                        if (camposVisibles.includes(fieldName)) {
-                            input.classList.remove('bg-gray-100');
-                            input.classList.add('bg-white');
-                            input.removeAttribute('readonly');
-                            if(input.value === 'S/N') input.value = '';
+                    const config = camposPorTipo[tipo];
+                    let html = `<div class="bg-blue-50/50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-6 rounded-xl space-y-4">
+                                    <h3 class="text-blue-800 dark:text-blue-300 font-bold text-sm uppercase flex items-center gap-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Detalles Técnicos del ${tipo}
+                                    </h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+
+                    config.fields.forEach(campo => {
+                        if (campo.type === 'select') {
+                            html += `<div>
+                                        <label class="block text-xs font-bold text-blue-700 dark:text-blue-400 mb-1">${campo.label} ${campo.required ? '<span class="text-red-500">*</span>' : ''}</label>
+                                        <select name="${campo.name}" id="subtipo_selector" ${campo.required ? 'required' : ''} class="w-full px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg outline-none bg-white dark:bg-gray-800">
+                                            <option value="">Seleccione...</option>
+                                            ${campo.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                        </select>
+                                    </div>`;
+                        } else if (campo.type === 'textarea') {
+                            html += `<div class="md:col-span-2">
+                                        <label class="block text-xs font-bold text-blue-700 dark:text-blue-400 mb-1">${campo.label}</label>
+                                        <textarea name="${campo.name}" data-field="${campo.name}" class="dynamic-field w-full px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800" rows="2"></textarea>
+                                    </div>`;
                         } else {
-                            input.classList.add('bg-gray-100');
-                            input.classList.remove('bg-white');
-                            input.setAttribute('readonly', true);
-                            input.value = 'S/N';
+                            const isReadonly = config.isParent ? 'readonly' : '';
+                            const bgClass = config.isParent ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800';
+                            const defaultValue = config.isParent ? 'S/N' : '';
+
+                            html += `<div>
+                                        <label class="block text-xs font-bold text-blue-700 dark:text-blue-400 mb-1">${campo.label}</label>
+                                        <input type="text" name="${campo.name}" data-field="${campo.name}"
+                                            class="dynamic-field w-full px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg ${bgClass}"
+                                            ${isReadonly} value="${defaultValue}">
+                                    </div>`;
                         }
                     });
+
+                    html += `</div></div>`;
+                    container.innerHTML = html;
+
+                    if (config.isParent) {
+                        const selector = document.getElementById('subtipo_selector');
+                        if (selector) {
+                            selector.addEventListener('change', function() {
+                                const st = this.value;
+                                const camposVisibles = config.subtipos[st] || [];
+
+                                document.querySelectorAll('.dynamic-field').forEach(input => {
+                                    const fieldName = input.getAttribute('data-field');
+                                    if (camposVisibles.includes(fieldName)) {
+                                        input.classList.remove('bg-gray-100', 'dark:bg-gray-700');
+                                        input.classList.add('bg-white', 'dark:bg-gray-800');
+                                        input.removeAttribute('readonly');
+                                        if(input.value === 'S/N') input.value = '';
+                                    } else {
+                                        input.classList.add('bg-gray-100', 'dark:bg-gray-700');
+                                        input.classList.remove('bg-white', 'dark:bg-gray-800');
+                                        input.setAttribute('readonly', true);
+                                        input.value = 'S/N';
+                                    }
+                                });
+                            });
+                        }
+                    }
+                }
+
+                tipoBienSelect.addEventListener('change', loadDynamicFields);
+                
+                // Cargar campos si ya hay un valor seleccionado (ej: después de error de validación)
+                if (tipoBienSelect.value) {
+                    loadDynamicFields();
+                }
+            }
+
+            /* 5. Validación antes de enviar */
+            const form = document.querySelector('form[action*="bienes"]');
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    const codigo = document.getElementById('codigo');
+                    const codigoValue = codigo ? codigo.value.trim() : '';
+                    const descripcion = document.getElementById('descripcion');
+                    const descripcionValue = descripcion ? descripcion.value.trim() : '';
+                    const tipo = tipoBienSelect ? tipoBienSelect.value : '';
+                    const estado = document.getElementById('estado');
+                    const estadoValue = estado ? estado.value : '';
+                    const dependenciaSel = depSelect ? depSelect.value : '';
+
+                    // Validación de código
+                    if (!codigoValue || codigoValue.length !== 8 || !/^\d{8}$/.test(codigoValue)) {
+                        e.preventDefault();
+                        alert('El código debe contener exactamente 8 dígitos numéricos.');
+                        if (codigo) codigo.focus();
+                        return;
+                    }
+
+                    // Validación de descripción
+                    if (!descripcionValue) {
+                        e.preventDefault();
+                        alert('La descripción es obligatoria.');
+                        if (descripcion) descripcion.focus();
+                        return;
+                    }
+
+                    // Validación de dependencia
+                    if (!dependenciaSel) {
+                        e.preventDefault();
+                        alert('Debe asignar una dependencia antes de guardar el bien.');
+                        if (depSelect) depSelect.focus();
+                        return;
+                    }
+
+                    // Validación de tipo
+                    if (!tipo) {
+                        e.preventDefault();
+                        alert('Debe seleccionar el tipo de bien.');
+                        if (tipoBienSelect) tipoBienSelect.focus();
+                        return;
+                    }
+
+                    // Validación de estado
+                    if (!estadoValue) {
+                        e.preventDefault();
+                        alert('Debe seleccionar el estado del bien.');
+                        if (estado) estado.focus();
+                        return;
+                    }
+
+                    // Validación de Fecha
+                    const fechaInput = document.getElementById('fecha_registro');
+                    if (fechaInput && fechaInput.value) {
+                        const fechaSeleccionada = new Date(fechaInput.value);
+                        const fechaMinima = new Date('2000-01-01');
+                        const fechaMaxima = new Date();
+
+                        if (fechaSeleccionada < fechaMinima) {
+                            e.preventDefault();
+                            alert('La fecha de adquisición no puede ser anterior al año 2000.');
+                            fechaInput.focus();
+                            return;
+                        }
+                        
+                        if (fechaSeleccionada > fechaMaxima) {
+                            e.preventDefault();
+                            alert('La fecha de adquisición no puede ser futura.');
+                            fechaInput.focus();
+                            return;
+                        }
+                    }
                 });
             }
         });
-
-        if (tipoBienSelect.value) tipoBienSelect.dispatchEvent(new Event('change'));
-
-        /* 5. Validación antes de enviar */
-        const form = document.querySelector('form[action*="bienes"]');
-        if (form) {
-            form.addEventListener('submit', function (e) {
-                const codigo = document.getElementById('codigo').value.trim();
-                const descripcion = document.getElementById('descripcion').value.trim();
-                const tipo = tipoBienSelect.value;
-                const estado = document.getElementById('estado')?.value || '';
-                const dependenciaSel = depSelect.value;
-
-                // Validación de Fecha (A partir del año 2000)
-                const fechaInput = document.getElementById('fecha_registro');
-                const fechaSeleccionada = new Date(fechaInput.value);
-                const fechaMinima = new Date('2000-01-01');
-
-                if (fechaInput.value && fechaSeleccionada < fechaMinima) {
-                    e.preventDefault();
-                    alert('La fecha de adquisición no puede ser anterior al año 2000.');
-                    return;
-                }
-
-                if (!dependenciaSel) {
-                    e.preventDefault();
-                    alert('Debe asignar una dependencia antes de guardar el bien.');
-                    return;
-                }
-
-                if (!codigo || codigo.length !== 8) {
-                    e.preventDefault();
-                    alert('El código debe contener exactamente 8 dígitos.');
-                    return;
-                }
-                if (!descripcion) {
-                    e.preventDefault();
-                    alert('La descripción es obligatoria.');
-                    return;
-                }
-                if (!tipo) {
-                    e.preventDefault();
-                    alert('Debe seleccionar el tipo de bien.');
-                    return;
-                }
-                if (!estado) {
-                    e.preventDefault();
-                    alert('Debe seleccionar el estado del bien.');
-                    return;
-                }
-            });
-        }
     </script>
 @endpush

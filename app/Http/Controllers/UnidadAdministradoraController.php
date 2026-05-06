@@ -86,7 +86,7 @@ class UnidadAdministradoraController extends Controller
             $siguienteCodigo = $sugerenciasPorOrganismo[$organismoSeleccionado];
         }
 
-        if (!$siguienteCodigo) {
+        if (! $siguienteCodigo) {
             $siguienteCodigo = CodigoUnicoService::obtenerSiguienteCodigo();
         }
 
@@ -194,9 +194,9 @@ class UnidadAdministradoraController extends Controller
                     if ($organismo && $organismo->code_max > 0) {
                         $codigoNum = (int) $value;
                         if ($codigoNum < $organismo->code_min || $codigoNum > $organismo->code_max) {
-                            $fail("El código debe estar dentro del rango del organismo: ".
-                                  str_pad((string)$organismo->code_min, 8, '0', STR_PAD_LEFT)." - ".
-                                  str_pad((string)$organismo->code_max, 8, '0', STR_PAD_LEFT));
+                            $fail('El código debe estar dentro del rango del organismo: '.
+                                  str_pad((string) $organismo->code_min, 8, '0', STR_PAD_LEFT).' - '.
+                                  str_pad((string) $organismo->code_max, 8, '0', STR_PAD_LEFT));
                         }
                     }
                 },
@@ -226,15 +226,15 @@ class UnidadAdministradoraController extends Controller
 
         $query = UnidadAdministradora::with(['organismo', 'dependencias']);
 
-        if (!empty($validated['search'])) {
+        if (! empty($validated['search'])) {
             $search = $validated['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('nombre', 'like', "%{$search}%")
-                  ->orWhere('codigo', 'like', "%{$search}%");
+                    ->orWhere('codigo', 'like', "%{$search}%");
             });
         }
 
-        if (!empty($validated['organismo_id'])) {
+        if (! empty($validated['organismo_id'])) {
             $query->where('organismo_id', $validated['organismo_id']);
         }
 
@@ -245,14 +245,14 @@ class UnidadAdministradoraController extends Controller
 
         return match ($tipoReporte) {
             'organismo' => $this->fpdf->generarUnidadesPorOrganismo(
-                'reporte_unidades_por_organismo_' . $now->format('dmY_His') . '.pdf',
+                'reporte_unidades_por_organismo_'.$now->format('dmY_His').'.pdf',
                 'UNIDADES POR ORGANISMO',
                 'Listado de unidades agrupadas por organismo',
                 $now->format('d/m/Y H:i'),
                 $unidades
             ),
             default => $this->fpdf->downloadUnidadesListado(
-                'reporte_unidades_general_' . $now->format('dmY_His') . '.pdf',
+                'reporte_unidades_general_'.$now->format('dmY_His').'.pdf',
                 'REPORTE DE UNIDADES ADMINISTRADORAS',
                 'Listado general de unidades',
                 $now->format('d/m/Y H:i'),
@@ -266,9 +266,10 @@ class UnidadAdministradoraController extends Controller
      */
     private function determinarTipoReporte(array $filtros): string
     {
-        if (!empty($filtros['organismo_id'])) {
+        if (! empty($filtros['organismo_id'])) {
             return 'organismo';
         }
+
         return 'general';
     }
 }

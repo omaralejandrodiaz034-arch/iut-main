@@ -22,7 +22,7 @@ return new class extends Migration
         });
 
         // Inicializar rangos para datos existentes
-        $this-> inicializarRangosOrganismos();
+        $this->inicializarRangosOrganismos();
         $this->inicializarRangosUnidades();
     }
 

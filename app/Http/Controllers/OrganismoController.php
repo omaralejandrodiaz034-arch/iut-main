@@ -17,6 +17,7 @@ class OrganismoController extends Controller
     {
         $this->fpdf = $fpdf;
     }
+
     /**
      * Listar todos los organismos con filtros.
      */
@@ -178,23 +179,23 @@ class OrganismoController extends Controller
 
         $query = Organismo::with(['unidadesAdministradoras']);
 
-        if (!empty($validated['buscar'])) {
+        if (! empty($validated['buscar'])) {
             $buscar = $validated['buscar'];
             $query->where(function ($q) use ($buscar) {
                 $q->where('nombre', 'like', "%{$buscar}%")
-                  ->orWhere('codigo', 'like', "%{$buscar}%");
+                    ->orWhere('codigo', 'like', "%{$buscar}%");
             });
         }
 
-        if (!empty($validated['codigo'])) {
-            $query->where('codigo', 'like', '%' . $validated['codigo'] . '%');
+        if (! empty($validated['codigo'])) {
+            $query->where('codigo', 'like', '%'.$validated['codigo'].'%');
         }
 
         $organismos = $query->orderBy('nombre')->get();
         $now = now();
 
         return $this->fpdf->downloadOrganismosListado(
-            'reporte_organismos_general_' . $now->format('dmY_His') . '.pdf',
+            'reporte_organismos_general_'.$now->format('dmY_His').'.pdf',
             'REPORTE DE ORGANISMOS',
             'Listado general de organismos',
             $now->format('d/m/Y H:i'),

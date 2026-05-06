@@ -18,6 +18,7 @@ class MovimientoController extends Controller
     {
         $this->fpdf = $fpdf;
     }
+
     public function index(Request $request)
     {
         // 1) Tomar filtros
@@ -278,19 +279,19 @@ class MovimientoController extends Controller
 
         $query = Movimiento::query()->with(['usuario', 'subject'])->orderByDesc('fecha');
 
-        if (!empty($filters['tipo'])) {
+        if (! empty($filters['tipo'])) {
             $query->where('tipo', $filters['tipo']);
         }
 
-        if (!empty($filters['usuario'])) {
+        if (! empty($filters['usuario'])) {
             $qUsuario = trim($filters['usuario']);
             $query->whereHas('usuario', function ($q) use ($qUsuario) {
                 $q->where('nombre', 'like', "%{$qUsuario}%")
-                  ->orWhere('correo', 'like', "%{$qUsuario}%");
+                    ->orWhere('correo', 'like', "%{$qUsuario}%");
             });
         }
 
-        if (!empty($filters['entidad'])) {
+        if (! empty($filters['entidad'])) {
             $ent = trim($filters['entidad']);
             $query->where(function ($q) use ($ent) {
                 $q->orWhereRaw("LOWER(SUBSTRING_INDEX(subject_type, '\\\\', -1)) LIKE ?", ['%'.strtolower($ent).'%']);
@@ -316,21 +317,21 @@ class MovimientoController extends Controller
 
         return match ($tipoReporte) {
             'tipo' => $this->fpdf->generarMovimientosPorTipo(
-                'reporte_movimientos_por_tipo_' . $now->format('dmY_His') . '.pdf',
+                'reporte_movimientos_por_tipo_'.$now->format('dmY_His').'.pdf',
                 'MOVIMIENTOS POR TIPO',
                 'Listado de movimientos agrupados por tipo',
                 $now->format('d/m/Y H:i'),
                 $movimientos
             ),
             'usuario' => $this->fpdf->generarMovimientosPorUsuario(
-                'reporte_movimientos_por_usuario_' . $now->format('dmY_His') . '.pdf',
+                'reporte_movimientos_por_usuario_'.$now->format('dmY_His').'.pdf',
                 'MOVIMIENTOS POR USUARIO',
                 'Listado de movimientos agrupados por usuario',
                 $now->format('d/m/Y H:i'),
                 $movimientos
             ),
             default => $this->fpdf->downloadMovimientosListado(
-                'reporte_movimientos_general_' . $now->format('dmY_His') . '.pdf',
+                'reporte_movimientos_general_'.$now->format('dmY_His').'.pdf',
                 'REPORTE DE MOVIMIENTOS',
                 'Listado general de movimientos',
                 $now->format('d/m/Y H:i'),
@@ -344,12 +345,13 @@ class MovimientoController extends Controller
      */
     private function determinarTipoReporte(array $filtros): string
     {
-        if (!empty($filtros['tipo'])) {
+        if (! empty($filtros['tipo'])) {
             return 'tipo';
         }
-        if (!empty($filtros['usuario'])) {
+        if (! empty($filtros['usuario'])) {
             return 'usuario';
         }
+
         return 'general';
     }
 }

@@ -19,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(FpdfReportService::class, function ($app) {
-            return new FpdfReportService();
+            return new FpdfReportService;
         });
     }
 

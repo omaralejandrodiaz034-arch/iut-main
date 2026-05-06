@@ -36,7 +36,7 @@ class UsuarioController extends Controller
 
         $query = Usuario::with('rol');
 
-        if (!empty($validated['buscar'])) {
+        if (! empty($validated['buscar'])) {
             $buscar = $validated['buscar'];
             $query->where(function ($q) use ($buscar) {
                 $q->where('nombre', 'like', "%{$buscar}%")
@@ -46,15 +46,15 @@ class UsuarioController extends Controller
             });
         }
 
-        if (!empty($validated['cedula'])) {
+        if (! empty($validated['cedula'])) {
             $query->where('cedula', 'like', '%'.$validated['cedula'].'%');
         }
 
-        if (!empty($validated['correo'])) {
+        if (! empty($validated['correo'])) {
             $query->where('correo', 'like', '%'.$validated['correo'].'%');
         }
 
-        if (!empty($validated['rol_id'])) {
+        if (! empty($validated['rol_id'])) {
             $query->where('rol_id', $validated['rol_id']);
         }
 
@@ -77,7 +77,7 @@ class UsuarioController extends Controller
 
     public function store(Request $request)
     {
-        if (!auth()->user()->isAdmin()) {
+        if (! auth()->user()->isAdmin()) {
             return response()->json(['message' => 'Acceso denegado.'], 403);
         }
 
@@ -88,7 +88,7 @@ class UsuarioController extends Controller
         $cedulaDigits = preg_replace('/\D/', '', $request->input('cedula'));
         $personaApi = $this->buscarPersonaEnApiPorCedula($cedulaDigits);
 
-        if (!$personaApi) {
+        if (! $personaApi) {
             return back()
                 ->withInput()
                 ->with('error', 'La cédula ingresada no existe en los registros autorizados. Solo se pueden crear usuarios que estén registrados en la base de datos institucional.');
@@ -154,7 +154,7 @@ class UsuarioController extends Controller
         }
 
         $jsonPath = storage_path('app/respuesta.json');
-        if (!file_exists($jsonPath)) {
+        if (! file_exists($jsonPath)) {
             return null;
         }
         $data = json_decode(file_get_contents($jsonPath), true);
@@ -202,7 +202,7 @@ class UsuarioController extends Controller
 
     public function update(Request $request, Usuario $usuario)
     {
-        if (!auth()->user()->canDeleteData()) {
+        if (! auth()->user()->canDeleteData()) {
             abort(403);
         }
 
@@ -231,7 +231,7 @@ class UsuarioController extends Controller
             $validated['is_admin'] = ((int) $validated['rol_id'] === (int) $rolAdmin->id);
         }
 
-        if (!empty($validated['hash_password'])) {
+        if (! empty($validated['hash_password'])) {
             $validated['hash_password'] = Hash::make($validated['hash_password']);
         } else {
             unset($validated['hash_password']);
@@ -244,7 +244,7 @@ class UsuarioController extends Controller
 
     public function destroy(Usuario $usuario)
     {
-        if (!auth()->user()->canDeleteUser($usuario)) {
+        if (! auth()->user()->canDeleteUser($usuario)) {
             if (request()->expectsJson()) {
                 return response()->json(['error' => 'No tienes permiso para eliminar este usuario. Solo los administradores pueden eliminar usuarios.'], 403);
             }
@@ -285,13 +285,13 @@ class UsuarioController extends Controller
                 return preg_replace('/\D/', '', $item['pin']) === preg_replace('/\D/', '', $request->cedula);
             });
 
-            if (!$persona) {
+            if (! $persona) {
                 Log::warning('Cédula no encontrada en JSON: '.$request->cedula);
                 throw new \Exception('La cédula no existe en el API');
             }
 
             $rolUser = DB::table('roles')->where('nombre', 'Usuario Normal')->first();
-            if (!$rolUser) {
+            if (! $rolUser) {
                 $rolId = DB::table('roles')->first()->id;
             } else {
                 $rolId = $rolUser->id;
@@ -336,25 +336,25 @@ class UsuarioController extends Controller
 
         $query = Usuario::with(['rol']);
 
-        if (!empty($validated['buscar'])) {
+        if (! empty($validated['buscar'])) {
             $buscar = $validated['buscar'];
             $query->where(function ($q) use ($buscar) {
                 $q->where('nombre', 'like', "%{$buscar}%")
-                  ->orWhere('apellido', 'like', "%{$buscar}%")
-                  ->orWhere('cedula', 'like', "%{$buscar}%")
-                  ->orWhere('correo', 'like', "%{$buscar}%");
+                    ->orWhere('apellido', 'like', "%{$buscar}%")
+                    ->orWhere('cedula', 'like', "%{$buscar}%")
+                    ->orWhere('correo', 'like', "%{$buscar}%");
             });
         }
 
-        if (!empty($validated['cedula'])) {
-            $query->where('cedula', 'like', '%' . $validated['cedula'] . '%');
+        if (! empty($validated['cedula'])) {
+            $query->where('cedula', 'like', '%'.$validated['cedula'].'%');
         }
 
-        if (!empty($validated['correo'])) {
-            $query->where('correo', 'like', '%' . $validated['correo'] . '%');
+        if (! empty($validated['correo'])) {
+            $query->where('correo', 'like', '%'.$validated['correo'].'%');
         }
 
-        if (!empty($validated['rol_id'])) {
+        if (! empty($validated['rol_id'])) {
             $query->where('rol_id', $validated['rol_id']);
         }
 
@@ -369,14 +369,14 @@ class UsuarioController extends Controller
 
         return match ($tipoReporte) {
             'rol' => $this->fpdf->generarUsuariosPorRol(
-                'reporte_usuarios_por_rol_' . $now->format('dmY_His') . '.pdf',
+                'reporte_usuarios_por_rol_'.$now->format('dmY_His').'.pdf',
                 'USUARIOS POR ROL',
                 'Listado de usuarios agrupados por rol',
                 $now->format('d/m/Y H:i'),
                 $usuarios
             ),
             default => $this->fpdf->downloadUsuariosListado(
-                'reporte_usuarios_general_' . $now->format('dmY_His') . '.pdf',
+                'reporte_usuarios_general_'.$now->format('dmY_His').'.pdf',
                 'REPORTE DE USUARIOS DEL SISTEMA',
                 'Listado general de usuarios',
                 $now->format('d/m/Y H:i'),
@@ -390,9 +390,10 @@ class UsuarioController extends Controller
      */
     private function determinarTipoReporte(array $filtros): string
     {
-        if (!empty($filtros['rol_id'])) {
+        if (! empty($filtros['rol_id'])) {
             return 'rol';
         }
+
         return 'general';
     }
 }

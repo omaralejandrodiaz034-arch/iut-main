@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión de Inventario de Bienes | UPTOS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <meta name="description" content="Sistema integral de gestión patrimonial para instituciones educativas venezolanas. Control total de bienes públicos con trazabilidad, auditoría y reportes oficiales.">
