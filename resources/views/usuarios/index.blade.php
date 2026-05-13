@@ -7,39 +7,32 @@
 <x-breadcrumbs :items="[['label' => 'Usuarios']]" />
 @endpush
 <div class="space-y-6 md:space-y-8">
-    <!-- Encabezado -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-3">
-            <span class="text-4xl drop-shadow-sm">👥</span>
-            Usuarios del Sistema
-        </h1>
+     <!-- Encabezado -->
+     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+         <h1 class="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-3">
+             <span class="text-4xl drop-shadow-sm">👥</span>
+             Usuarios del Sistema
+         </h1>
 
-         <a href="{{ route('usuarios.create') }}"
-            class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl shadow-sm transition-all hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Nuevo Usuario
-        </a>
+         <div class="flex items-center gap-3">
+             <a href="{{ route('usuarios.create') }}"
+                class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl shadow-sm transition-all hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2">
+                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                 </svg>
+                 Nuevo Usuario
+             </a>
 
-        <a href="{{ route('usuarios.reporte', request()->query()) }}"
-           class="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl shadow-sm transition-all hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
-           title="Generar reporte PDF con filtros aplicados">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            PDF
-        </a>
-
-        <a href="{{ route('graficas', request()->query()) }}"
-           title="Ver gráficas basadas en los filtros actuales"
-           class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl shadow-sm transition-all hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11 3v18M6 10h10M6 6h.01M6 14h.01M6 18h.01" />
-            </svg>
-            Gráficas
-        </a>
-    </div>
+             <a href="{{ route('usuarios.reporte', request()->query()) }}"
+                class="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl shadow-sm transition-all hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
+                title="Generar reporte PDF con filtros aplicados">
+                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                     <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                 </svg>
+                 PDF
+             </a>
+         </div>
+     </div>
 
     <!-- Mensaje de éxito (si existiera) -->
     @if(session('success'))

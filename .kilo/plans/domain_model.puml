@@ -1,0 +1,271 @@
+@startuml
+' Define skin parameters for better appearance
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName Courier
+skinparam handwritten true
+skinparam backgroundColor #FDFDFD
+skinparam roundCorner 20
+' Define colors for different packages/entities
+' Organismos package
+package "Organismos" #E8F4FD {
+  class Organismo {
+    - id : int
+    - codigo : string
+    - nombre : string
+    - code_min : int
+    - code_max : int
+    - created_at : timestamp
+    - updated_at : timestamp
+    --
+    + unidadesAdministradoras() : HasMany
+  }
+}
+
+package "UnidadesAdministradoras" #E8F4FD {
+  class UnidadAdministradora {
+    - id : int
+    - organismo_id : int
+    - codigo : string
+    - nombre : string
+    - code_min : int
+    - code_max : int
+    - created_at : timestamp
+    - updated_at : timestamp
+    --
+    + organismo() : BelongsTo
+    + dependencias() : HasMany
+    + scopeSearch() : void
+  }
+}
+
+package "Dependencias" #E8F4FD {
+  class Dependencia {
+    - id : int
+    - unidad_administradora_id : int
+    - responsable_id : int
+    - codigo : string
+    - nombre : string
+    - code_min : int
+    - code_max : int
+    - created_at : timestamp
+    - updated_at : timestamp
+    --
+    + unidadAdministradora() : BelongsTo
+    + responsable() : BelongsTo
+    + bienes() : HasMany
+    + scopeSearch() : void
+  }
+}
+
+package "TiposResponsables" #E8F4FD {
+  class TipoResponsable {
+    - id : int
+    - nombre : string
+    --
+    + responsables() : HasMany
+  }
+}
+
+package "Responsables" #E8F4FD {
+  class Responsable {
+    - id : int
+    - tipo_id : int
+    - cedula : string
+    - nombre : string
+    - correo : string
+    - telefono : string
+    --
+    + tipo() : BelongsTo
+    + dependencias() : HasMany
+    + bienes() : HasManyThrough
+    + getNombreCompletoAttribute() : string
+  }
+}
+
+package "Bienes" #FFF0F5 {
+  class Bien {
+    - id : int
+    - dependencia_id : int
+    - codigo : string
+    - descripcion : string
+    - precio : decimal
+    - fotografia : string
+    - estado : string
+    - fecha_registro : date
+    - tipo_bien : string
+    - caracteristicas : array
+    - created_at : timestamp
+    - updated_at : timestamp
+    --
+    + dependencia() : BelongsTo
+    + movimientos() : HasMany
+    + electronico() : HasOne
+    + mobiliario() : HasOne
+    + vehiculo() : HasOne
+    + otro() : HasOne
+    + desincorporado() : HasOne
+    + scopeSearch() : void
+  }
+}
+
+package "BienesDetalle" #FFF0F5 {
+  class BienElectronico {
+    - id : int
+    - bien_id : int
+    - subtipo : string
+    - procesador : string
+    - memoria : string
+    - almacenamiento : string
+    - pantalla : string
+    - serial : string
+    - garantia : date
+    - created_at : timestamp
+    - updated_at : timestamp
+  }
+  
+  class BienMobiliario {
+    - id : int
+    - bien_id : int
+    - material : string
+    - dimensiones : string
+    - color : string
+    - capacidad : string
+    - cantidad_piezas : int
+    - acabado : string
+    - created_at : timestamp
+    - updated_at : timestamp
+  }
+  
+  class BienVehiculo {
+    - id : int
+    - bien_id : int
+    - placa : string
+    - chasis : string
+    - motor : string
+    - tipo_combustible : string
+    - color : string
+    - kilometraje : int
+    - created_at : timestamp
+    - updated_at : timestamp
+  }
+  
+  class BienOtro {
+    - id : int
+    - bien_id : int
+    - especificaciones : text
+    - created_at : timestamp
+    - updated_at : timestamp
+  }
+  
+  class BienDesincorporado {
+    - id : int
+    - bien_id : int
+    - fecha_desincorporacion : date
+    - motivo : text
+    - valor_desincorporacion : decimal
+    - documento_soporte : string
+    - created_at : timestamp
+    - updated_at : timestamp
+  }
+}
+
+package "Movimientos" #F0FFF0 {
+  class Movimiento {
+    - id : int
+    - bien_id : int
+    - subject_type : string
+    - subject_id : int
+    - tipo : string
+    - fecha : timestamp
+    - observaciones : text
+    - usuario_id : int
+    - created_at : timestamp
+    - updated_at : timestamp
+  }
+  
+  class HistorialMovimiento {
+    - id : int
+    - movimiento_id : int
+    - fecha : timestamp
+    - detalle : text
+    - created_at : timestamp
+    - updated_at : timestamp
+  }
+}
+
+package "Usuarios" #F0F0FF {
+  class Usuario {
+    - id : int
+    - rol_id : int
+    - cedula : string
+    - nombre : string
+    - correo : string
+    - hash_password : string
+    - activo : boolean
+    - created_at : timestamp
+    - updated_at : timestamp
+    --
+    + rol() : BelongsTo
+  }
+  
+  class Rol {
+    - id : int
+    - nombre : string
+    --
+    + usuarios() : HasMany
+  }
+}
+
+package "Sistema" #FFFFE0 {
+  class Auditoria {
+    - id : int
+    - tipo : string
+    - descripcion : text
+    - usuario_id : int
+    - ip_address : string
+    - user_agent : text
+    - created_at : timestamp
+  }
+  
+  class Reporte {
+    - id : int
+    - titulo : string
+    - descripcion : text
+    - tipo : string
+    - formato : string
+    - parametros : json
+    - usuario_id : int
+    - fecha_generacion : timestamp
+    - created_at : timestamp
+    - updated_at : timestamp
+  }
+  
+  class Eliminado {
+    - id : int
+    - tipo : string
+    - datos : json
+    - fecha_eliminacion : timestamp
+    - created_at : timestamp
+    - updated_at : timestamp
+  }
+}
+
+' Relaciones
+Organismo "1" *-- "N" UnidadAdministradora : tiene >
+UnidadAdministradora "1" *-- "N" Dependencia : administra >
+Dependencia "1" *-- "N" Bien : contiene >
+Bien "1" -- "0..1" BienElectronico : tiene detalle >
+Bien "1" -- "0..1" BienMobiliario : tiene detalle >
+Bien "1" -- "0..1" BienVehiculo : tiene detalle >
+Bien "1" -- "0..1" BienOtro : tiene detalle >
+Bien "1" -- "0..1" BienDesincorporado : puede tener >
+Bien "1" *-- "N" Movimiento : genera >
+Movimiento "1" -- "1" HistorialMovimiento : tiene historial >
+Dependencia "1" -- "0..1" Responsable : puede tener >
+TipoResponsable "1" *-- "N" Responsable : clasifica >
+Usuario "1" *-- "N" Movimiento : realiza >
+Usuario "1" *-- "N" Reporte : genera >
+Usuario "1" *-- "N" Auditoria : puede generar >
+Rol "1" *-- "N" Usuario : asigna a >
+@enduml

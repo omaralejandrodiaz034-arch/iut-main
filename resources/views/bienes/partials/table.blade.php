@@ -1,5 +1,5 @@
 {{-- resources/views/bienes/partials/table.blade.php --}}
-<div class="bg-white border border-slate-200 shadow-sm rounded-3xl overflow-hidden reveal">
+<div class="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200">
             <thead class="bg-slate-50">
@@ -21,7 +21,7 @@
 
             <tbody class="divide-y divide-slate-100 bg-white">
                 @forelse($bienes as $bien)
-                    <tr class="group hover:bg-slate-50 transition-all duration-300 hover:shadow-inner">
+                    <tr>
                         <td class="px-6 py-5 text-sm font-black font-mono text-[#640B21] tracking-tight">
                             {{ str_pad($bien->codigo, 8, '0', STR_PAD_LEFT) }}
                         </td>
@@ -63,7 +63,7 @@
                             @if($bien->fotografia && file_exists(public_path('storage/' . $bien->fotografia)))
                                 <img src="{{ asset('storage/' . $bien->fotografia) }}"
                                      alt="Foto del bien"
-                                     class="w-20 h-20 md:w-28 md:h-28 object-cover rounded-2xl shadow-md border border-slate-200 group-hover:scale-105 transition-transform duration-500">
+                                     class="w-20 h-20 md:w-28 md:h-28 object-cover rounded-xl border border-slate-200">
                             @else
                                 <span class="text-slate-400 italic text-sm font-medium">Sin foto</span>
                             @endif

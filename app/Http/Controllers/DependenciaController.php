@@ -8,7 +8,9 @@ use App\Models\UnidadAdministradora;
 use App\Services\FpdfReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class DependenciaController extends Controller
 {
@@ -43,12 +45,48 @@ class DependenciaController extends Controller
 
     public function store(Request $request)
     {
-        // ... código existente sin cambios ...
+        $validated = $request->validate([
+            'unidad_administradora_id' => 'required|exists:unidades_administradoras,id',
+            'codigo' => [
+                'required',
+                'string',
+                'max:8',
+                'regex:/^[0-9]+$/',
+                Rule::unique('dependencias')
+                    ->where(function ($query) use ($request) {
+                        return $query->where('unidad_administradora_id', $request->unidad_administradora_id);
+                    }),
+            ],
+            'nombre' => 'required|string|max:40',
+            'responsable_id' => 'nullable|exists:responsables,id',
+        ]);
+
+        Dependencia::create($validated);
+
+        return redirect()
+            ->route('dependencias.index')
+            ->with('success', '✅ Dependencia registrada exitosamente.');
     }
 
     public function create(Request $request)
     {
-        // ... código existente sin cambios ...
+        $unidades = UnidadAdministradora::all();
+        $responsables = Responsable::all();
+
+        // Calcular el próximo código global y sugerencias por unidad
+        $sugerenciasPorUnidad = [];
+        foreach ($unidades as $unidad) {
+            $ultimoCodigo = Dependencia::where('unidad_administradora_id', $unidad->id)
+                ->whereRaw("codigo REGEXP '^[0-9]+$'")
+                ->max(DB::raw('CAST(codigo AS UNSIGNED)'));
+
+            $siguiente = $ultimoCodigo ? $ultimoCodigo + 1 : 1;
+            $sugerenciasPorUnidad[$unidad->id] = str_pad((string) $siguiente, 8, '0', STR_PAD_LEFT);
+        }
+
+        $proximoCodigo = $sugerenciasPorUnidad[$unidades->first()?->id] ?? '00000001';
+
+        return view('dependencias.create', compact('unidades', 'responsables', 'proximoCodigo', 'sugerenciasPorUnidad'));
     }
 
     public function show(Dependencia $dependencia)

@@ -146,101 +146,78 @@ class FpdfReportService
     /**
      * Genera el listado de bienes en formato vertical.
      */
-    public function downloadBienesListado(
-        string $fileName,
-        string $title,
-        ?string $subtitle,
-        string $generatedAt,
-        iterable $bienes
-    ) {
-        // Convertir iterable a array para poder iterar múltiples veces
-        $bienesArray = $bienes instanceof \Illuminate\Support\Collection ? $bienes->all() : iterator_to_array($bienes);
-
-        // 1. Extraer datos para los cuadros superiores (Organismo, Unidad, Responsables)
-        // Usamos el primer bien de la colección para rellenar la cabecera institucional
-        $primerBien = ! empty($bienesArray) ? reset($bienesArray) : null;
-
-        $datosCabecera = [
-            'org_codigo' => $primerBien?->dependencia?->unidadAdministradora?->organismo?->codigo ?? '0',
-            'org_nombre' => $primerBien?->dependencia?->unidadAdministradora?->organismo?->nombre ?? 'MINISTERIO DEL PODER POPULAR PARA LA EDUCACIÓN UNIVERSITARIA',
-            'uni_codigo' => $primerBien?->dependencia?->unidadAdministradora?->codigo ?? 'N/A',
-            'uni_nombre' => $primerBien?->dependencia?->unidadAdministradora?->nombre ?? 'N/A',
-            'dep_codigo' => $primerBien?->dependencia?->codigo ?? 'N/A',
-            'dep_nombre' => $primerBien?->dependencia?->nombre ?? 'N/A',
-            // Responsables (Asegúrate de que estas relaciones existan en tu modelo)
-            'res_p_cedula' => $primerBien?->dependencia?->unidadAdministradora?->responsable?->cedula ?? '3873777',
-            'res_p_nombre' => $primerBien?->dependencia?->unidadAdministradora?->responsable?->nombre_completo ?? 'ENRY GOMEZ MAIZ',
-            'res_u_cedula' => $primerBien?->dependencia?->responsable?->cedula ?? '',
-            'res_u_nombre' => $primerBien?->dependencia?->responsable?->nombre_completo ?? '',
-        ];
-
-        $pdf = $this->make('P');
-
-        // 2. Llamamos a renderHeader pasando los datos dinámicos
-        $this->renderHeader($pdf, $title, $subtitle, $generatedAt, $datosCabecera);
-
-        // 3. Configuración de la tabla de bienes (Anchos ajustados a Letter)
-        // [Código, Descripción, Precio, Dependencia, Fotos, Fecha]
-        $widths = [25, 80, 25, 25, 16, 25];
-        $headers = ['Código', 'Descripción', 'Precio Bs.', 'Dependencia', 'Fotos', 'Fecha'];
-
-        // Dibujar Encabezado de la Tabla
-        $pdf->SetFillColor(255, 255, 255); // Fondo blanco como en la imagen
-        $pdf->SetFont('Arial', 'B', 8);
-        foreach ($headers as $i => $header) {
-            $pdf->Cell($widths[$i], 7, $this->t($header), 1, 0, 'C');
-        }
-        $pdf->Ln();
-
-        // 4. Dibujar los Datos
-        $pdf->SetFont('Arial', '', 7);
-        $totalBs = 0;
-        $hasData = false;
-
-        foreach ($bienesArray as $bien) {
-            $hasData = true;
-
-            // Guardar posición inicial para controlar el alto de la fila si la descripción es larga
-            $x = $pdf->GetX();
-            $y = $pdf->GetY();
-
-            $pdf->Cell($widths[0], 6, $this->t((string) ($bien->codigo ?? '')), 1, 0, 'C');
-
-            // Descripción con truncado para no romper la celda
-            $pdf->Cell($widths[1], 6, $this->t($this->truncate((string) ($bien->descripcion ?? ''), 50)), 1);
-
-            // Precio
-            $precio = (float) ($bien->precio ?? 0);
-            $pdf->Cell($widths[2], 6, number_format($precio, 2, ',', '.'), 1, 0, 'R');
-            $totalBs += $precio;
-
-            // Dependencia (nombre corto)
-            $pdf->Cell($widths[3], 6, $this->t($this->truncate($bien->dependencia?->nombre ?? '', 15)), 1, 0, 'C');
-
-            // Fotos (SI/NO)
-            $pdf->Cell($widths[4], 6, ($bien->fotografia ? 'SI' : 'NO'), 1, 0, 'C');
-
-            // Fecha
-            $pdf->Cell($widths[5], 6, $bien->created_at ? $bien->created_at->format('d/m/Y') : '', 1, 1, 'C');
-        }
-
-        // 5. Espacio vacío si no hay datos
-        if (! $hasData) {
-            $pdf->Cell(array_sum($widths), 10, $this->t('No se encontraron registros.'), 1, 1, 'C');
-        }
-
-        // 6. Fila de Total (Pie de tabla igual a la imagen)
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell($widths[0] + $widths[1], 8, $this->t('Total Bs.:'), 1, 0, 'R');
-        $pdf->Cell($widths[2], 8, number_format($totalBs, 2, ',', '.'), 1, 0, 'C');
-        $pdf->Cell($widths[3] + $widths[4] + $widths[5], 8, '', 1, 1);
-
-        // 7. Retornar Respuesta
-        return response($pdf->Output('S'), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
-        ]);
+    /**
+ * Genera el listado de bienes en formato vertical.
+ */
+/**
+ * Genera el listado de bienes en formato vertical.
+ */
+/**
+ * Genera el listado de bienes en formato vertical.
+ */
+public function downloadBienesListado(
+    string $fileName,
+    string $title,
+    ?string $subtitle,
+    string $generatedAt,
+    iterable $bienes,
+    array $datosInstitucionales = []  // Nuevo parámetro
+) {
+    // Convertir iterable a array
+    $bienesArray = $bienes instanceof \Illuminate\Support\Collection ? $bienes->all() : iterator_to_array($bienes);
+    
+    $pdf = $this->make('P');
+    
+    // Pasar los datos institucionales (si existen) al renderHeader
+    $this->renderHeader($pdf, $title, $subtitle, $generatedAt, $datosInstitucionales);
+    
+    // Configuración de la tabla
+    $widths = [25, 80, 25, 25, 16, 25];
+    $headers = ['Código', 'Descripción', 'Precio Bs.', 'Dependencia', 'Fotos', 'Fecha'];
+    
+    // Encabezados de tabla
+    $pdf->SetFillColor(255, 255, 255);
+    $pdf->SetFont('Arial', 'B', 8);
+    foreach ($headers as $i => $header) {
+        $pdf->Cell($widths[$i], 7, $this->t($header), 1, 0, 'C');
     }
+    $pdf->Ln();
+    
+    // Datos
+    $pdf->SetFont('Arial', '', 7);
+    $totalBs = 0;
+    $hasData = false;
+    
+    foreach ($bienesArray as $bien) {
+        $hasData = true;
+        
+        $pdf->Cell($widths[0], 6, $this->t((string) ($bien->codigo ?? '')), 1, 0, 'C');
+        $pdf->Cell($widths[1], 6, $this->t($this->truncate((string) ($bien->descripcion ?? ''), 50)), 1);
+        
+        $precio = (float) ($bien->precio ?? 0);
+        $pdf->Cell($widths[2], 6, number_format($precio, 2, ',', '.'), 1, 0, 'R');
+        $totalBs += $precio;
+        
+        $pdf->Cell($widths[3], 6, $this->t($this->truncate($bien->dependencia?->nombre ?? '', 15)), 1, 0, 'C');
+        $pdf->Cell($widths[4], 6, ($bien->fotografia ? 'SI' : 'NO'), 1, 0, 'C');
+        $pdf->Cell($widths[5], 6, $bien->created_at ? $bien->created_at->format('d/m/Y') : '', 1, 1, 'C');
+    }
+    
+    if (! $hasData) {
+        $pdf->Cell(array_sum($widths), 10, $this->t('No se encontraron registros.'), 1, 1, 'C');
+    }
+    
+    // Total
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->Cell($widths[0] + $widths[1], 8, $this->t('Total Bs.:'), 1, 0, 'R');
+    $pdf->Cell($widths[2], 8, number_format($totalBs, 2, ',', '.'), 1, 0, 'C');
+    $pdf->Cell($widths[3] + $widths[4] + $widths[5], 8, '', 1, 1);
+    
+    return response($pdf->Output('S'), 200, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+    ]);
+}
 
     protected function t(string $text): string
     {

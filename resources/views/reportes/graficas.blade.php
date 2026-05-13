@@ -17,12 +17,26 @@
             </p>
         </div>
         <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-500">Granularidad:</span>
-            <select id="granularitySelect" class="border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="daily" {{ ($granularity ?? 'monthly') == 'daily' ? 'selected' : '' }}>Diaria</option>
-                <option value="weekly" {{ ($granularity ?? 'monthly') == 'weekly' ? 'selected' : '' }}>Semanal</option>
-                <option value="monthly" {{ ($granularity ?? 'monthly') == 'monthly' ? 'selected' : '' }}>Mensual</option>
-            </select>
+            <form method="GET" action="{{ route('graficas') }}" class="flex items-center gap-2">
+                @php
+                    $queryParams = request()->except('granularity');
+                @endphp
+                @foreach($queryParams as $key => $value)
+                    @if(is_array($value))
+                        @foreach($value as $v)
+                            <input type="hidden" name="{{ $key }}[]" value="{{ $v }}">
+                        @endforeach
+                    @else
+                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endif
+                @endforeach
+                <span class="text-sm text-gray-500">Granularidad:</span>
+                <select name="granularity" onchange="this.form.submit()" class="border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="daily" {{ ($granularity ?? 'monthly') == 'daily' ? 'selected' : '' }}>Diaria</option>
+                    <option value="weekly" {{ ($granularity ?? 'monthly') == 'weekly' ? 'selected' : '' }}>Semanal</option>
+                    <option value="monthly" {{ ($granularity ?? 'monthly') == 'monthly' ? 'selected' : '' }}>Mensual</option>
+                </select>
+            </form>
             <button id="refreshCharts" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -688,12 +702,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    const updateGranularity = (value) => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('granularity', value);
-        window.location.href = url.toString();
-    };
-
     const refreshCharts = () => {
         Object.values(charts).forEach(chart => {
             if (chart && typeof chart.update === 'function') {
@@ -704,11 +712,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // ===== EVENT LISTENERS =====
-    const granularitySelect = document.getElementById('granularitySelect');
-    if (granularitySelect) {
-        granularitySelect.addEventListener('change', (e) => updateGranularity(e.target.value));
-    }
-
     const refreshBtn = document.getElementById('refreshCharts');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', refreshCharts);

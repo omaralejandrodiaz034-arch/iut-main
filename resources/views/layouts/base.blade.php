@@ -11,6 +11,9 @@
     {{-- NO usar CDN de Tailwind, ya tienes Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    {{-- Alpine.js para dropdowns interactivos --}}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     {{-- Estilos globales del landing --}}
     <style>
         /* Reveal animation */

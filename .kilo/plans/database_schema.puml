@@ -1,0 +1,242 @@
+@startuml
+' Organismos
+entity organismos {
+  * id : bigint
+  --
+  codigo : varchar(50)
+  nombre : varchar(150)
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Unidades Administradoras
+entity unidades_administradoras {
+  * id : bigint
+  --
+  organismo_id : bigint
+  codigo : varchar(50)
+  nombre : varchar(150)
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Dependencias
+entity dependencias {
+  * id : bigint
+  --
+  unidad_administradora_id : bigint
+  responsable_id : bigint
+  codigo : varchar(50)
+  nombre : varchar(150)
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Tipos Responsables
+entity tipos_responsables {
+  * id : bigint
+  --
+  nombre : varchar(80)
+}
+
+' Responsables
+entity responsables {
+  * id : bigint
+  --
+  tipo_id : bigint
+  cedula : varchar(20)
+  nombre : varchar(150)
+  correo : varchar(150)
+  telefono : varchar(50)
+}
+
+' Bienes
+entity bienes {
+  * id : bigint
+  --
+  dependencia_id : bigint
+  codigo : varchar(8)
+  descripcion : varchar(255)
+  precio : decimal(15,2)
+  fotografia : varchar(255)
+  estado : varchar(50)
+  fecha_registro : date
+  tipo_bien : varchar(20)
+  caracteristicas : json
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Bienes Electrónicos
+entity bienes_electronicos {
+  * id : bigint
+  --
+  bien_id : bigint
+  subtipo : varchar(20)
+  procesador : varchar(255)
+  memoria : varchar(255)
+  almacenamiento : varchar(255)
+  pantalla : varchar(255)
+  serial : varchar(255)
+  garantia : date
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Bienes Muebles
+entity bienes_mobiliarios {
+  * id : bigint
+  --
+  bien_id : bigint
+  material : varchar(255)
+  dimensiones : varchar(255)
+  color : varchar(100)
+  capacidad : varchar(100)
+  cantidad_piezas : int
+  acabado : varchar(100)
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Bienes Vehículos
+entity bienes_vehiculos {
+  * id : bigint
+  --
+  bien_id : bigint
+  placa : varchar(20)
+  chasis : varchar(50)
+  motor : varchar(50)
+  tipo_combustible : varchar(50)
+  color : varchar(50)
+  kilometraje : int
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Bienes Otros
+entity bienes_otros {
+  * id : bigint
+  --
+  bien_id : bigint
+  especificaciones : text
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Bienes Desincorporados
+entity bienes_desincorporados {
+  * id : bigint
+  --
+  bien_id : bigint
+  fecha_desincorporacion : date
+  motivo : text
+  valor_desincorporacion : decimal(15,2)
+  documento_soporte : varchar(255)
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Movimientos
+entity movimientos {
+  * id : bigint
+  --
+  bien_id : bigint
+  subject_type : varchar(255)
+  subject_id : bigint
+  tipo : varchar(80)
+  fecha : timestamp
+  observaciones : text
+  usuario_id : bigint
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Historial Movimientos
+entity historial_movimientos {
+  * id : bigint
+  --
+  movimiento_id : bigint
+  fecha : timestamp
+  detalle : text
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Usuarios
+entity usuarios {
+  * id : bigint
+  --
+  rol_id : bigint
+  cedula : varchar(20)
+  nombre : varchar(150)
+  correo : varchar(150)
+  hash_password : varchar(255)
+  activo : boolean
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Roles
+entity roles {
+  * id : bigint
+  --
+  nombre : varchar(80)
+}
+
+' Auditoría
+entity auditoria {
+  * id : bigint
+  --
+  tipo : varchar(50)
+  descripcion : text
+  usuario_id : bigint
+  ip_address : varchar(45)
+  user_agent : text
+  created_at : timestamp
+}
+
+' Reportes
+entity reportes {
+  * id : bigint
+  --
+  titulo : varchar(255)
+  descripcion : text
+  tipo : varchar(50)
+  formato : varchar(20)
+  parametros : json
+  usuario_id : bigint
+  fecha_generacion : timestamp
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Eliminados
+entity eliminados {
+  * id : bigint
+  --
+  tipo : varchar(50)
+  datos : json
+  fecha_eliminacion : timestamp
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' Relationships
+organismos ||--|| unidades_administradoras : "has"
+unidades_administradoras ||--|| dependencias : "has"
+dependencias ||--|| responsables : "may have"
+tipos_responsables ||--|| responsables : "classifies"
+dependencias ||--|| bienes : "has"
+bienes ||--|| bienes_electronicos : "has details"
+bienes ||--|| bienes_mobiliarios : "has details"
+bienes ||--|| bienes_vehiculos : "has details"
+bienes ||--|| bienes_otros : "has details"
+bienes ||--|| bienes_desincorporados : "may have"
+bienes ||--|| movimientos : "has"
+usuarios ||--|| movimientos : "makes"
+movimientos ||--|| historial_movimientos : "has"
+usuarios ||--|| auditoria : "may generate"
+usuarios ||--|| reportes : "generates"
+roles ||--|| usuarios : "assigned to"
+
+@enduml
