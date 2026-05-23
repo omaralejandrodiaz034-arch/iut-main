@@ -526,6 +526,124 @@ document.addEventListener('DOMContentLoaded', function () {
     const fechaDesde = document.getElementById('fecha_desde');
     const fechaHasta = document.getElementById('fecha_hasta');
     const errorFechas = document.getElementById('error-msg-fechas');
+    window.generarReportePDF = function() {
+        // Validar fechas antes de generar PDF
+        if (!validarFechas()) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Rango de fechas inválido',
+                text: 'La fecha "hasta" debe ser igual o posterior a la fecha "desde".',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+        
+        // Mostrar indicador de carga
+        Swal.fire({
+            title: 'Generando reporte...',
+            text: 'Por favor espere mientras se genera el PDF',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Obtener todos los datos del formulario
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+        
+        // Construir URL para el reporte
+        let url = '{{ route("bienes.reporte") }}?' + params.toString();
+        
+        // Abrir el PDF en una nueva pestaña
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Verificar si es un PDF válido
+            if (blob.type === 'application/pdf') {
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                Swal.close();
+            } else {
+                // Si no es PDF, probablemente es HTML con error
+                return blob.text();
+            }
+        })
+        .then(text => {
+            if (text && text.includes('error')) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    html: 'No se pudo generar el reporte.<br>' + text.substring(0, 200),
+                    confirmButtonColor: '#d33'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error al generar PDF:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al generar PDF',
+                text: error.message || 'Ocurrió un error inesperado. Intente nuevamente.',
+                confirmButtonColor: '#d33'
+            });
+        });
+    };
+    
+    // Función específica para reporte de una dependencia
+    window.generarReporteDependencia = function(dependenciaId, dependenciaNombre) {
+        Swal.fire({
+            title: 'Generando reporte...',
+            text: `Reporte de la dependencia: ${dependenciaNombre}`,
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        let url = '{{ route("bienes.reporte") }}?dependencias[]=' + dependenciaId;
+        
+        fetch(url, {
+            method: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            Swal.close();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo generar el reporte',
+                confirmButtonColor: '#d33'
+            });
+        });
+    };
+    
+    // ========== BOTÓN DE PDF ==========
+    // Buscar botón de PDF por ID o clase
+    const btnPdf = document.getElementById('btnGenerarPdf') || document.querySelector('.btn-pdf');
+    
+    if (btnPdf) {
+        btnPdf.addEventListener('click', function(e) {
+            e.preventDefault();
+            generarReportePDF();
+        });
+    }
 
     // Validación rango fechas
     function validarFechas() {

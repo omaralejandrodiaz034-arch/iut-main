@@ -3,6 +3,7 @@
 @section('title', 'Desincorporar Bien')
 
 @section('content')
+@if(auth()->user()?->isAdmin())
 @push('breadcrumbs')
 <x-breadcrumbs :items="[['label' => 'Bienes', 'url' => route('bienes.index')], ['label' => $bien->codigo, 'url' => route('bienes.show', $bien)], ['label' => 'Desincorporar']]" />
 @endpush
@@ -107,4 +108,5 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 @endpush
 
+@endif
 @endsection

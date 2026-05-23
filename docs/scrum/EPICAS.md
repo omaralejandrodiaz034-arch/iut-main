@@ -37,8 +37,12 @@ graph TD
 - CRUD de Unidades Administradoras
 - CRUD de Dependencias
 - Visualización de jerarquía completa
+- ✅ Relaciones de responsables implementadas
 
-**Estado:** ✅ Implementado
+**Estado:** ✅ Implementado (Mayo 2026)
+- ✅ CRUD completo
+- ✅ Relaciones jerárquicas funcionando
+- ✅ Validaciones de códigos únicos
 
 **Historias Asociadas:**
 | ID | Historia | Puntos | Sprint |
@@ -99,7 +103,8 @@ graph TD
 - ✅ CRUD completo de bienes
 - ✅ Fotos y galería
 - ✅ Búsqueda y filtros
-- ❌ Importación desde Excel
+- ✅ Importación desde Excel (BienExcelController)
+- ⚠️ Tipos específicos (Electrónico, Muebliario, Vehículo) en tablas separadas
 
 **Historias Asociadas:**
 | ID | Historia | Puntos | Sprint |
@@ -150,7 +155,7 @@ graph TD
 
 **Estado:** ⚠️ Parcialmente implementado
 - ✅ Reportes PDF
-- ❌ Exportación a Excel
+- ✅ Exportación a Excel (BienExcelController)
 - ✅ Sistema de auditoría
 
 **Historias Asociadas:**
@@ -205,16 +210,16 @@ graph TD
 
 ---
 
-## Priorización de Épicas
+## Priorización de Épicas (Actualizado Mayo 2026)
 
 | Épica | Prioridad | Estado | Puntos Pendientes |
 |-------|----------|--------|-------------------|
-| E3 Gestión de Inventario | Crítica | ⚠️ Parcial | 13 |
-| E2 Usuarios y Accesos | Crítica | ⚠️ Parcial | 21 |
-| E5 Reportes y Auditoría | Alta | ⚠️ Parcial | 13 |
-| E6 Optimización y UX | Media | ❌ Pendiente | 40 |
 | E1 Estructura Organizacional | Crítica | ✅ Completado | 0 |
-| E4 Movimientos | Alta | ✅ Completado | 0 |
+| E2 Usuarios y Accesos | Crítica | ⚠️ Parcial | 8 |
+| E3 Gestión de Inventario | Crítica | ⚠️ Parcial | 21 |
+| E4 Movimientos y Trazabilidad | Alta | ✅ Completado | 0 |
+| E5 Reportes y Auditoría | Alta | ⚠️ Parcial | 13 |
+| E6 Optimización y UX | Media | ❌ Pendiente | 31 |
 
 ---
 

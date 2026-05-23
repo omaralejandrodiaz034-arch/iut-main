@@ -459,55 +459,38 @@ Implementar notificaciones, importación/exportación y códigos QR
 47 puntos
 
 ## Estado
-**⏳ PENDIENTE** - Funcionalidades por implementar
+**⚠️ EN PROGRESO (Mayo 2026)** - Import/Export completados, resto pendiente
 
 ## Historias de Usuario
 
-### HU-021: Notificaciones por Correo (8 pts)
+### HU-022: Importar Bienes desde Excel (13 pts) - ✅ COMPLETADO
 
 **Tareas:**
-- [ ] Configurar servidor SMTP en Laravel
-- [ ] Crear templates de email con Blade
-- [ ] Implementar envío al asignar bien
-- [ ] Implementar envío al remover responsabilidad
-- [ ] Implementar envío al registrar movimiento
-- [ ] Agregar opción de desactivar notificaciones en perfil
-- [ ] Testing de envío de correos
-
-**Responsable:** Desarrollador Backend
-**Criterio de Completitud:** Usuarios reciben notificaciones por correo
-
----
-
-### HU-022: Importar Bienes desde Excel (13 pts)
-
-**Tareas:**
-- [ ] Instalar librería de lectura de Excel
-- [ ] Crear template de Excel descargable
-- [ ] Crear formulario de carga de archivo
-- [ ] Implementar validación de formato
-- [ ] Implementar validación fila por fila
-- [ ] Crear reporte de errores detallado
-- [ ] Implementar importación en lote
-- [ ] Crear barra de progreso con AJAX
-- [ ] Testing de importación masiva
+- [x] Instalar librería PhpSpreadsheet
+- [x] Crear template de Excel descargable
+- [x] Crear formulario de carga de archivo
+- [x] Implementar validación de formato
+- [x] Implementar validación fila por fila
+- [x] Crear reporte de errores detallado
+- [x] Implementar importación en lote
+- [x] Testing de importación masiva
 
 **Responsable:** Desarrollador Full Stack
-**Criterio de Completitud:** Gerente puede importar hasta 500 bienes desde Excel
+**Implementación:** BienExcelController.php - método importar()
 
 ---
 
-### HU-023: Exportar Inventario a Excel (5 pts)
+### HU-023: Exportar Inventario a Excel (5 pts) - ✅ COMPLETADO
 
 **Tareas:**
-- [ ] Instalar librería de escritura de Excel
-- [ ] Implementar exportación de bienes
-- [ ] Incluir hoja resumen con totales
-- [ ] Generar nombre de archivo con fecha
-- [ ] Testing de exportación
+- [x] Instalar librería PhpSpreadsheet
+- [x] Implementar exportación de bienes
+- [x] Incluir hoja resumen con totales
+- [x] Generar nombre de archivo con fecha
+- [x] Testing de exportación
 
 **Responsable:** Desarrollador Backend
-**Criterio de Completitud:** Usuario puede exportar inventario a Excel
+**Implementación:** BienExcelController.php - método exportar()
 
 ---
 

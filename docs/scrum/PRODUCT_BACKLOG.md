@@ -503,15 +503,21 @@ Mejoras de rendimiento, usabilidad y funcionalidades avanzadas.
 
 ## 4. RESUMEN DE ESTIMACIÓN
 
-| Sprint | Puntos | Historias |
-|--------|--------|-----------|
-| Sprint 1 | 28 | HU-001 a HU-006 |
-| Sprint 2 | 28 | HU-007 a HU-010 |
-| Sprint 3 | 34 | HU-011 a HU-015 |
-| Sprint 4 | 31 | HU-016 a HU-020 |
-| Sprint 5 | 47 | HU-021 a HU-026 |
-| Sprint 6 | 29 | HU-027 a HU-030 |
-| **TOTAL** | **197** | **30 historias** |
+| Sprint | Puntos | Historias | Estado |
+|--------|--------|-----------|--------|
+| Sprint 1 | 28 | HU-001 a HU-006 | ✅ Completado |
+| Sprint 2 | 28 | HU-007 a HU-010 | ✅ Completado |
+| Sprint 3 | 34 | HU-011 a HU-015 | ✅ Completado |
+| Sprint 4 | 31 | HU-016 a HU-020 | ✅ Completado |
+| Sprint 5 | 21 | HU-021 a HU-026 (Parcial) | ⚠️ En progreso |
+| Sprint 6 | 9 | HU-027 a HU-030 (Pendiente) | ⏳ Pendiente |
+| **TOTAL** | **149** | **21 completadas, 9 pendientes** | |
+
+### Status Real (Mayo 2026):
+- **HU-022 (Import Excel)**: ✅ Implementado en BienExcelController.php
+- **HU-023 (Export Excel)**: ✅ Implementado en BienExcelController.php
+- **HU-026 (Perfil Usuario)**: ⚠️ Parcial - ProfileController existe, falta foto de perfil
+- **HU-027 a HU-030**: ❌ Pendientes
 
 ---
 

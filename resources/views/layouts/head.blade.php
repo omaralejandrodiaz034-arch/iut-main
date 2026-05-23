@@ -29,16 +29,19 @@
             {{-- Enlaces de Navegación --}}
             <div class="hidden lg:flex items-center space-x-0.5 text-xs font-medium">
 
+                @if(auth()->user()->isAdmin())
                 {{-- Dashboard --}}
                 <a href="{{ route('dashboard') }}"
                    class="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-slate-800 hover:text-indigo-300"
                    @class(['bg-slate-800 text-indigo-400 shadow-inner' => request()->routeIs('dashboard')])>
-                    <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
-                    </svg>
-                    <span>Panel</span>
-                </a>
+                     <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                     </svg>
+                     <span>Panel</span>
+                 </a>
+                 @endif
 
+                 @guest
                 <a href="{{ url('/') }}"
                    class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-slate-800 hover:text-indigo-300"
                    @class(['bg-slate-800 text-indigo-400 shadow-inner' => request()->is('/')])>
@@ -47,6 +50,7 @@
                     </svg>
                     <span>Inicio</span>
                 </a>
+                @endguest
 
                 <a href="{{ route('organismos.index') }}"
                    class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-slate-800 hover:text-indigo-300"
@@ -102,16 +106,18 @@
                     <span>Responsables</span>
                 </a>
 
+                @if(auth()->user()->isAdmin())
                 <a href="{{ route('usuarios.index') }}"
                    class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-slate-800 hover:text-indigo-300"
                    @class(['bg-slate-800 text-indigo-400 shadow-inner' => request()->routeIs('usuarios.*')])>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2m14-10a4 4 0 11-8 0 4 4 0 018 0z"/>
-                    </svg>
-                    <span>Usuarios</span>
-                </a>
+                     <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                         <path stroke-linecap="round" stroke-linejoin="round" d="M17 20v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2m14-10a4 4 0 11-8 0 4 4 0 018 0z"/>
+                     </svg>
+                     <span>Usuarios</span>
+                 </a>
+                 @endif
 
-                <a href="{{ route('reportes.index') }}"
+                 <a href="{{ route('reportes.index') }}"
                    class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-slate-800 hover:text-indigo-300"
                    @class(['bg-slate-800 text-indigo-400 shadow-inner' => request()->routeIs('reportes.*')])>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -159,11 +165,11 @@
                                 class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                                 👤 Mi Perfil
                             </a>
+                            @if(auth()->user()->isAdmin())
                             <a href="{{ route('dashboard') }}"
                                 class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                                 📊 Dashboard
                             </a>
-                            @if(auth()->user()->isAdmin())
                             <a href="{{ route('auditoria.index') }}"
                                 class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                                 🔍 Auditoría
@@ -215,14 +221,18 @@
             </div>
             
             {{-- Enlaces de navegación móvil --}}
+            @if(auth()->user()->isAdmin())
             <a href="{{ route('dashboard') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition @if(request()->routeIs('dashboard')) bg-slate-700 text-white @endif">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
                 <span>Panel</span>
             </a>
+            @endif
+            @guest
             <a href="{{ url('/') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition @if(request()->is('/')) bg-slate-700 text-white @endif">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12l9-7 9 7v8a2 2 0 01-2 2h-4a2 2 0 01-2-2V13H9v7a2 2 0 01-2 2H3z"/></svg>
                 <span>Inicio</span>
             </a>
+            @endguest
             <a href="{{ route('organismos.index') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition @if(request()->routeIs('organismos.*')) bg-slate-700 text-white @endif">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 21V7l4-3 4 3v14M4 21h16M10 11h4m-4 4h4"/></svg>
                 <span>Organismos</span>
@@ -243,10 +253,12 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 8h-7m0 0l3-3m-3 3l3 3M7 16h7m0 0l-3 3m3-3l-3-3"/></svg>
                 <span>Movimientos</span>
             </a>
+                @if(auth()->user()->isAdmin())
             <a href="{{ route('usuarios.index') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition @if(request()->routeIs('usuarios.*')) bg-slate-700 text-white @endif">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2m14-10a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2m14-10a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 <span>Usuarios</span>
             </a>
+                @endif
             <a href="{{ route('reportes.index') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition @if(request()->routeIs('reportes.*')) bg-slate-700 text-white @endif">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 7h6l4 4v6a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2zm3 5v4m3-2v2m3-4v4"/></svg>
                 <span>Reportes</span>

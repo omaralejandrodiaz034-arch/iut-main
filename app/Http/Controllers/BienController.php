@@ -494,6 +494,8 @@ class BienController extends Controller
      */
     public function showDesincorporarForm(Bien $bien)
     {
+        abort_unless(auth()->user()?->isAdmin(), 403, 'Solo los administradores pueden desincorporar bienes.');
+
         $this->cargarDatosEspecificos($bien);
         
         return view('bienes.desincorporar', compact('bien'));
@@ -504,6 +506,7 @@ class BienController extends Controller
      */
     public function desincorporar(Request $request, Bien $bien)
     {
+        abort_unless(auth()->user()?->isAdmin(), 403, 'Solo los administradores pueden desincorporar bienes.');
         $validated = $request->validate([
             'motivo' => 'required|string|min:10|max:2000',
         ]);
@@ -604,65 +607,335 @@ class BienController extends Controller
     /**
  * Generar reporte en PDF.
  */
-    public function generarReporte(Request $request)
-    {
-        try {
-            // Obtener todos los parámetros GET correctamente
-            $queryParams = $request->query();
-            
-            // Log para depuración (opcional, remover en producción)
-            \Log::info('Parámetros recibidos en reporte:', $queryParams);
-            
-            $validated = $request->validate([
-                'search' => ['nullable', 'string', 'max:255'],
-                'dependencias' => ['nullable', 'array'],
-                'dependencias.*' => ['exists:dependencias,id'],
-                'estado' => ['nullable', 'array'],
-                'estado.*' => ['string', Rule::in($this->getEstadosBienes())],
-                'tipo_bien' => ['nullable', 'string', Rule::in($this->getTiposBienes())],
-                'organismo_id' => ['nullable', 'exists:organismos,id'],
-                'unidad_id' => ['nullable', 'exists:unidades_administradoras,id'],
-                'fecha_desde' => ['nullable', 'date'],
-                'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde'],
-                'solo_desincorporados' => ['nullable', 'boolean'],
-            ]);
+    /**
+ * Generar reporte en PDF.
+ */
+/**
+ * Generar reporte en PDF.
+ */
+public function generarReporte(Request $request)
+{
+    try {
+        \Log::info('=== INICIO GENERAR REPORTE ===');
+        \Log::info('URL completa: ' . $request->fullUrl());
+        \Log::info('Todos los parámetros recibidos:', $request->all());
+        \Log::info('unidad_id raw: ' . print_r($request->input('unidad_id'), true));
+        \Log::info('unidad_id type: ' . gettype($request->input('unidad_id')));
+        
+        // Validación flexible
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'dependencias' => ['nullable', 'array'],
+            'dependencias.*' => ['exists:dependencias,id'],
+            'estado' => ['nullable', 'array'],
+            'estado.*' => ['string'],
+            'tipo_bien' => ['nullable', 'string'],
+            'organismo_id' => ['nullable', 'exists:organismos,id'],
+            'unidad_id' => ['nullable'],
+            'fecha_desde' => ['nullable', 'date'],
+            'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde'],
+            'solo_desincorporados' => ['nullable', 'boolean'],
+        ]);
 
-            $query = Bien::with([
-                'dependencia.responsable',
-                'dependencia.unidadAdministradora.organismo'
-            ]);
+        \Log::info('Validación pasada. Datos validados:', $validated);
 
-            // Aplicar filtros (incluyendo arrays correctamente)
-            $this->aplicarFiltrosReporte($query, $validated);
-
-            // Obtener resultados (usando chunk para evitar memory issues)
-            $bienes = collect();
-            $query->chunk(200, function ($chunk) use (&$bienes) {
-                $bienes = $bienes->concat($chunk);
-            });
+        // Validación manual de unidad_id
+        if (isset($validated['unidad_id']) && !empty($validated['unidad_id'])) {
+            $unidadIds = is_array($validated['unidad_id']) ? $validated['unidad_id'] : [$validated['unidad_id']];
+            \Log::info('Unidades a procesar: ', $unidadIds);
             
-            if ($bienes->isEmpty()) {
-                return back()->with('warning', 'No hay bienes que coincidan con los filtros seleccionados.');
+            foreach ($unidadIds as $id) {
+                if (!UnidadAdministradora::where('id', $id)->exists()) {
+                    \Log::error("Unidad con ID {$id} no existe");
+                    return back()->with('error', "La unidad con ID {$id} no existe");
+                }
             }
+        }
 
-            $reporteService = new \App\Services\FpdfReportService;
-            
-            // Determinar tipo de reporte basado en los filtros
-            $tipoReporte = $this->determinarTipoReporte($validated);
-            
-            return $this->generarReportePorTipo($reporteService, $bienes, $tipoReporte, $validated);
-            
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::warning('Validación falló en reporte:', $e->errors());
-            return back()->withErrors($e->errors())->withInput();
-        } catch (\Exception $e) {
-            \Log::error('Error al generar reporte: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'request_params' => $request->all()
-            ]);
-            return back()->with('error', 'Ocurrió un error al generar el reporte: ' . $e->getMessage());
+        $query = Bien::with([
+            'dependencia.responsable',
+            'dependencia.unidadAdministradora.organismo'
+        ]);
+
+        \Log::info('Aplicando filtros...');
+        $this->aplicarFiltrosReporteFinal($query, $validated);
+
+        \Log::info('Ejecutando consulta...');
+        $bienes = $query->get();
+        
+        \Log::info('Cantidad de bienes encontrados: ' . $bienes->count());
+        
+        if ($bienes->isEmpty()) {
+            \Log::warning('No se encontraron bienes con los filtros aplicados');
+            return back()->with('warning', 'No hay bienes que coincidan con los filtros seleccionados.');
+        }
+
+        $reporteService = new \App\Services\FpdfReportService;
+        
+        $tipoReporte = $this->determinarTipoReporteFinal($validated);
+        \Log::info('Tipo de reporte seleccionado: ' . $tipoReporte);
+        
+        $resultado = $this->generarReportePorTipo($reporteService, $bienes, $tipoReporte, $validated);
+        \Log::info('Reporte generado exitosamente');
+        
+        return $resultado;
+        
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        \Log::error('Error de validación: ', $e->errors());
+        return back()->withErrors($e->errors())->withInput();
+    } catch (\Exception $e) {
+        \Log::error('Error CRÍTICO en reporte: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]);
+        return back()->with('error', 'Error al generar reporte: ' . $e->getMessage());
+    }
+}
+public function generarPorUnidad(string $fileName, string $title, ?string $subtitle, string $generatedAt, iterable $bienes)
+{
+    \Log::info('=== INICIO generarPorUnidad ===');
+    \Log::info('Título: ' . $title);
+    \Log::info('Cantidad de bienes: ' . (is_countable($bienes) ? count($bienes) : 'iterable'));
+    
+    try {
+        $pdf = $this->make('L');
+        \Log::info('PDF creado correctamente');
+
+        // Agrupar bienes por dependencia
+        $agrupados = [];
+        $bienesArray = $bienes instanceof \Illuminate\Support\Collection ? $bienes->all() : iterator_to_array($bienes);
+
+        foreach ($bienesArray as $bien) {
+            $uniNombre = optional(optional($bien->dependencia)->unidadAdministradora)->nombre ?? 'Sin Unidad';
+            if (!isset($agrupados[$uniNombre])) {
+                $agrupados[$uniNombre] = [];
+            }
+            $agrupados[$uniNombre][] = $bien;
+        }
+        
+        \Log::info('Unidades agrupadas: ' . count($agrupados));
+
+        $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+        \Log::info('Header renderizado');
+
+        // ... resto del código ...
+        
+        $output = $pdf->Output('S');
+        \Log::info('PDF generado, tamaño: ' . strlen($output) . ' bytes');
+        
+        return response($output, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$fileName.'"',
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error en generarPorUnidad: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+        throw $e;
+    }
+}
+/**
+ * Aplica filtros a la consulta de reporte (VERSIÓN FINAL - SOPORTA ARRAYS)
+ */
+private function aplicarFiltrosReporteFinal($query, array $filtros): void
+{
+    // Búsqueda
+    if (!empty($filtros['search'])) {
+        $query->search($filtros['search']);
+    }
+    
+    // Estado (array)
+    if (!empty($filtros['estado']) && is_array($filtros['estado'])) {
+        $estadosValidos = array_filter($filtros['estado']);
+        if (!empty($estadosValidos)) {
+            $query->whereIn('estado', $estadosValidos);
+        }
+    } elseif (!empty($filtros['solo_desincorporados'])) {
+        $query->where('estado', 'DESINCORPORADO');
+    } elseif (empty($filtros['estado'])) {
+        $query->where('estado', '!=', 'DESINCORPORADO');
+    }
+    
+    // Tipo de bien (string simple)
+    if (!empty($filtros['tipo_bien'])) {
+        $query->where('tipo_bien', $filtros['tipo_bien']);
+    }
+    
+    // 🔥 CRÍTICO: Unidad Administradora (soporta string o array)
+    if (!empty($filtros['unidad_id'])) {
+        if (is_array($filtros['unidad_id'])) {
+            // Múltiples unidades
+            $unidadesIds = array_filter($filtros['unidad_id']);
+            if (!empty($unidadesIds)) {
+                $query->whereHas('dependencia', function ($q) use ($unidadesIds) {
+                    $q->whereIn('unidad_administradora_id', $unidadesIds);
+                });
+            }
+        } else {
+            // Una sola unidad
+            $query->whereHas('dependencia', function ($q) use ($filtros) {
+                $q->where('unidad_administradora_id', $filtros['unidad_id']);
+            });
+        }
+    } 
+    // Organismo (string simple)
+    elseif (!empty($filtros['organismo_id'])) {
+        $query->whereHas('dependencia.unidadAdministradora', function ($q) use ($filtros) {
+            $q->where('organismo_id', $filtros['organismo_id']);
+        });
+    }
+    // Dependencias (array)
+    elseif (!empty($filtros['dependencias']) && is_array($filtros['dependencias'])) {
+        $depsValidas = array_filter($filtros['dependencias']);
+        if (!empty($depsValidas)) {
+            $query->whereIn('dependencia_id', $depsValidas);
         }
     }
+    
+    // Fechas
+    if (!empty($filtros['fecha_desde'])) {
+        $query->whereDate('fecha_registro', '>=', $filtros['fecha_desde']);
+    }
+    if (!empty($filtros['fecha_hasta'])) {
+        $query->whereDate('fecha_registro', '<=', $filtros['fecha_hasta']);
+    }
+}
+/**
+ * Determinar tipo de reporte (VERSIÓN FINAL)
+ */
+/**
+ * Determinar tipo de reporte (VERSIÓN FINAL)
+ */
+private function determinarTipoReporteFinal(array $filtros): string
+{
+    // 🔥 Si hay filtro de unidad (incluso múltiples), agrupar por unidad
+    if (!empty($filtros['unidad_id'])) {
+        return 'unidad';
+    }
+    
+    // Si hay filtro de organismo
+    if (!empty($filtros['organismo_id'])) {
+        return 'organismo';
+    }
+    
+    // Múltiples dependencias
+    if (!empty($filtros['dependencias']) && count($filtros['dependencias']) > 1) {
+        return 'dependencia';
+    }
+    
+    // Múltiples estados
+    if (!empty($filtros['estado']) && count($filtros['estado']) > 1) {
+        return 'estado';
+    }
+    
+    // Rango de fechas
+    if (!empty($filtros['fecha_desde']) || !empty($filtros['fecha_hasta'])) {
+        return 'fecha';
+    }
+    
+    // Tipo de bien específico
+    if (!empty($filtros['tipo_bien'])) {
+        return 'tipo_bien';
+    }
+    
+    return 'default';
+}
+
+/**
+ * Nueva versión específica para aplicar filtros de unidad
+ */
+private function aplicarFiltrosReporteCorregido($query, array $filtros): void
+{
+    // Búsqueda
+    if (!empty($filtros['search'])) {
+        $query->search($filtros['search']);
+    }
+    
+    // Estado (array)
+    if (!empty($filtros['estado']) && is_array($filtros['estado'])) {
+        $estadosValidos = array_filter($filtros['estado']);
+        if (!empty($estadosValidos)) {
+            $query->whereIn('estado', $estadosValidos);
+        }
+    } elseif (!empty($filtros['solo_desincorporados'])) {
+        $query->where('estado', 'DESINCORPORADO');
+    } elseif (empty($filtros['estado'])) {
+        $query->where('estado', '!=', 'DESINCORPORADO');
+    }
+    
+    // Tipo de bien (string simple)
+    if (!empty($filtros['tipo_bien'])) {
+        $query->where('tipo_bien', $filtros['tipo_bien']);
+    }
+    
+    // 🔥 CORRECCIÓN: Unidad Administradora (como string o integer)
+    if (!empty($filtros['unidad_id'])) {
+        $query->whereHas('dependencia', function ($q) use ($filtros) {
+            $q->where('unidad_administradora_id', $filtros['unidad_id']);
+        });
+    } 
+    // Organismo (string simple)
+    elseif (!empty($filtros['organismo_id'])) {
+        $query->whereHas('dependencia.unidadAdministradora', function ($q) use ($filtros) {
+            $q->where('organismo_id', $filtros['organismo_id']);
+        });
+    }
+    // Dependencias (array)
+    elseif (!empty($filtros['dependencias']) && is_array($filtros['dependencias'])) {
+        $depsValidas = array_filter($filtros['dependencias']);
+        if (!empty($depsValidas)) {
+            $query->whereIn('dependencia_id', $depsValidas);
+        }
+    }
+    
+    // Fechas
+    if (!empty($filtros['fecha_desde'])) {
+        $query->whereDate('fecha_registro', '>=', $filtros['fecha_desde']);
+    }
+    if (!empty($filtros['fecha_hasta'])) {
+        $query->whereDate('fecha_registro', '<=', $filtros['fecha_hasta']);
+    }
+}
+
+/**
+ * Determinar tipo de reporte con unidad
+ */
+private function determinarTipoReporteUnidad(array $filtros): string
+{
+    // 🔥 Si hay filtro de unidad, generar reporte agrupado por unidad
+    if (!empty($filtros['unidad_id'])) {
+        return 'unidad';
+    }
+    
+    // Si hay filtro de organismo
+    if (!empty($filtros['organismo_id'])) {
+        return 'organismo';
+    }
+    
+    // Múltiples dependencias
+    if (!empty($filtros['dependencias']) && count($filtros['dependencias']) > 1) {
+        return 'dependencia';
+    }
+    
+    // Múltiples estados
+    if (!empty($filtros['estado']) && count($filtros['estado']) > 1) {
+        return 'estado';
+    }
+    
+    // Rango de fechas
+    if (!empty($filtros['fecha_desde']) || !empty($filtros['fecha_hasta'])) {
+        return 'fecha';
+    }
+    
+    // Tipo de bien específico
+    if (!empty($filtros['tipo_bien'])) {
+        return 'tipo_bien';
+    }
+    
+    return 'default';
+}
 
     /**
      * Determina el tipo de reporte basado en los filtros aplicados
@@ -673,53 +946,57 @@ class BienController extends Controller
     /**
  * Determina el tipo de reporte basado en los filtros aplicados
  */
+/**
+ * Determina el tipo de reporte basado en los filtros (CORREGIDO)
+ */
 private function determinarTipoReporte(array $filtros): string
 {
-    // Verificar si NO hay filtros aplicados
-    if ($this->sinFiltrosAplicados($filtros)) {
+    // Limpiar filtros vacíos
+    $filtrosLimpios = array_filter($filtros, function($value) {
+        if (is_array($value)) {
+            return !empty(array_filter($value));
+        }
+        return !empty($value);
+    });
+    
+    // Sin filtros = reporte default
+    if (empty($filtrosLimpios)) {
         return 'default';
     }
     
-    // 🔥 PRIORIDAD: Si hay filtro de UNIDAD, agrupar por unidad
-    if (!empty($filtros['unidad_id'])) {
+    // Prioridad para reportes agrupados
+    
+    // Múltiples unidades
+    if (!empty($filtros['unidad_id']) && count(array_filter($filtros['unidad_id'])) > 1) {
         return 'unidad';
     }
     
-    // Si hay filtro de ORGANISMO, agrupar por organismo
-    if (!empty($filtros['organismo_id'])) {
+    // Múltiples organismos
+    if (!empty($filtros['organismo_id']) && count(array_filter($filtros['organismo_id'])) > 1) {
         return 'organismo';
     }
     
-    // Si hay MÚLTIPLES dependencias seleccionadas, agrupar por dependencia
-    if (!empty($filtros['dependencias']) && count($filtros['dependencias']) > 1) {
+    // Múltiples dependencias
+    if (!empty($filtros['dependencias']) && count(array_filter($filtros['dependencias'])) > 1) {
         return 'dependencia';
     }
     
-    // Si hay UNA dependencia específica, reporte filtrado (no agrupado)
-    if (!empty($filtros['dependencias']) && count($filtros['dependencias']) === 1) {
-        return 'default';
-    }
-    
-    // Si hay MÚLTIPLES estados seleccionados, agrupar por estado
-    if (!empty($filtros['estado']) && count($filtros['estado']) > 1) {
+    // Múltiples estados
+    if (!empty($filtros['estado']) && count(array_filter($filtros['estado'])) > 1) {
         return 'estado';
     }
     
-    // Si hay un solo estado, reporte filtrado
-    if (!empty($filtros['estado']) && count($filtros['estado']) === 1) {
-        return 'default';
-    }
-    
-    // Si hay tipo de bien, reporte filtrado
-    if (!empty($filtros['tipo_bien'])) {
+    // Múltiples tipos de bien
+    if (!empty($filtros['tipo_bien']) && count(array_filter($filtros['tipo_bien'])) > 1) {
         return 'tipo_bien';
     }
     
-    // Si hay rango de fechas
+    // Rango de fechas (sin importar si hay otros filtros)
     if (!empty($filtros['fecha_desde']) || !empty($filtros['fecha_hasta'])) {
         return 'fecha';
     }
     
+    // Si solo hay una dependencia o un estado, reporte filtrado simple
     return 'default';
 }
 
@@ -748,54 +1025,75 @@ private function determinarTipoReporte(array $filtros): string
     /**
      * Aplica filtros a la consulta de reporte (mejorado para arrays)
      */
-    private function aplicarFiltrosReporte($query, array $filtros): void
-    {
-        // Búsqueda rápida
-        if (!empty($filtros['search'])) {
-            $query->search($filtros['search']);
+    /**
+ * Aplica filtros a la consulta de reporte (CORREGIDO)
+ */
+private function aplicarFiltrosReporte($query, array $filtros): void
+{
+    // Búsqueda rápida
+    if (!empty($filtros['search'])) {
+        $query->search($filtros['search']);
+    }
+    
+    // 🔥 CORRECCIÓN PRINCIPAL: Estado (manejo de arrays)
+    if (!empty($filtros['estado']) && is_array($filtros['estado'])) {
+        // Filtrar valores vacíos
+        $estadosValidos = array_filter($filtros['estado']);
+        if (!empty($estadosValidos)) {
+            $query->whereIn('estado', $estadosValidos);
         }
-        
-        // Estado (array)
-        if (!empty($filtros['estado']) && is_array($filtros['estado'])) {
-            $query->whereIn('estado', $filtros['estado']);
-        } elseif (!empty($filtros['solo_desincorporados'])) {
-            $query->where('estado', 'DESINCORPORADO');
-        } elseif (empty($filtros['estado']) && empty($filtros['solo_desincorporados'])) {
-            // Por defecto, excluir desincorporados si no hay filtro específico
-            $query->where('estado', '!=', 'DESINCORPORADO');
-        }
-        
-        // Tipo de bien
-        if (!empty($filtros['tipo_bien'])) {
-            $query->where('tipo_bien', $filtros['tipo_bien']);
-        }
-        
-        // Dependencias (array)
-        if (!empty($filtros['dependencias']) && is_array($filtros['dependencias'])) {
-            $query->whereIn('dependencia_id', $filtros['dependencias']);
-        } 
-        // Unidad Administradora
-        elseif (!empty($filtros['unidad_id'])) {
-            $query->whereHas('dependencia', function ($q) use ($filtros) {
-                $q->where('unidad_administradora_id', $filtros['unidad_id']);
-            });
-        } 
-        // Organismo
-        elseif (!empty($filtros['organismo_id'])) {
-            $query->whereHas('dependencia.unidadAdministradora', function ($q) use ($filtros) {
-                $q->where('organismo_id', $filtros['organismo_id']);
-            });
-        }
-        
-        // Fechas
-        if (!empty($filtros['fecha_desde'])) {
-            $query->whereDate('fecha_registro', '>=', $filtros['fecha_desde']);
-        }
-        
-        if (!empty($filtros['fecha_hasta'])) {
-            $query->whereDate('fecha_registro', '<=', $filtros['fecha_hasta']);
+    } 
+    elseif (!empty($filtros['solo_desincorporados'])) {
+        $query->where('estado', 'DESINCORPORADO');
+    } 
+    elseif (empty($filtros['estado']) && empty($filtros['solo_desincorporados'])) {
+        // Por defecto, excluir desincorporados
+        $query->where('estado', '!=', 'DESINCORPORADO');
+    }
+    
+    // 🔥 CORRECCIÓN: Tipo de bien (ahora soporta múltiples)
+    if (!empty($filtros['tipo_bien']) && is_array($filtros['tipo_bien'])) {
+        $tiposValidos = array_filter($filtros['tipo_bien']);
+        if (!empty($tiposValidos)) {
+            $query->whereIn('tipo_bien', $tiposValidos);
         }
     }
+    
+    // 🔥 CORRECCIÓN: Dependencias (múltiples)
+    if (!empty($filtros['dependencias']) && is_array($filtros['dependencias'])) {
+        $depsValidas = array_filter($filtros['dependencias']);
+        if (!empty($depsValidas)) {
+            $query->whereIn('dependencia_id', $depsValidas);
+        }
+    } 
+    // Unidad Administradora (múltiples)
+    elseif (!empty($filtros['unidad_id']) && is_array($filtros['unidad_id'])) {
+        $unidadesValidas = array_filter($filtros['unidad_id']);
+        if (!empty($unidadesValidas)) {
+            $query->whereHas('dependencia', function ($q) use ($unidadesValidas) {
+                $q->whereIn('unidad_administradora_id', $unidadesValidas);
+            });
+        }
+    } 
+    // Organismo (múltiples)
+    elseif (!empty($filtros['organismo_id']) && is_array($filtros['organismo_id'])) {
+        $organismosValidos = array_filter($filtros['organismo_id']);
+        if (!empty($organismosValidos)) {
+            $query->whereHas('dependencia.unidadAdministradora', function ($q) use ($organismosValidos) {
+                $q->whereIn('organismo_id', $organismosValidos);
+            });
+        }
+    }
+    
+    // Fechas
+    if (!empty($filtros['fecha_desde'])) {
+        $query->whereDate('fecha_registro', '>=', $filtros['fecha_desde']);
+    }
+    
+    if (!empty($filtros['fecha_hasta'])) {
+        $query->whereDate('fecha_registro', '<=', $filtros['fecha_hasta']);
+    }
+}
 
     /**
  * Obtiene los datos del subtipo del bien

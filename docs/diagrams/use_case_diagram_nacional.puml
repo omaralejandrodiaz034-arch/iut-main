@@ -1,0 +1,197 @@
+@startuml SistemaGestionBienesNacionales-CasosDeUso
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+title Sistema de Gestión de Inventario de Bienes Nacionales\nDiagrama de Casos de Uso
+
+left to right direction
+
+' ============================================
+' ACTORES
+' ============================================
+actor "Administrador" as Admin #FF6B6B
+actor "Gerente de Bienes" as Gerente #4ECDC4
+actor "Responsable\nDependencia" as Responsable #45B7D1
+actor "Auditor\nGubernamental" as Auditor #96CEB4
+actor "Sistema\n(Automático)" as Sistema #DDA0DD
+
+' ============================================
+' MÓDULO: AUTENTICACIÓN
+' ============================================
+package "Autenticación" {
+  usecase "Iniciar Sesión" as UC01
+  usecase "Cerrar Sesión" as UC02
+  usecase "Configurar Contraseña" as UC03
+  usecase "Editar Perfil" as UC04
+  usecase "Cambiar Foto Perfil" as UC05
+}
+
+' ============================================
+' MÓDULO: GESTIÓN DE ORGANIGRAMA
+' ============================================
+package "Gestión de Organigrama" {
+  usecase "Gestionar Organismos" as UC10
+  usecase "Gestionar Unidades\nAdministradoras" as UC11
+  usecase "Gestionar Dependencias" as UC12
+  usecase "Ver Jerarquía\nCompleta" as UC13
+}
+
+' ============================================
+' MÓDULO: GESTIÓN DE BIENES
+' ============================================
+package "Gestión de Inventario" {
+  usecase "Listar Bienes" as UC20
+  usecase "Buscar Bienes" as UC21
+  usecase "Ver Detalle\nBien" as UC22
+  usecase "Crear Bien" as UC23
+  usecase "Editar Bien" as UC24
+  usecase "Eliminar Bien" as UC25
+  usecase "Subir Fotografía" as UC26
+  usecase "Ver Galería\nImágenes" as UC27
+  usecase "Importar Bienes\n(Excel)" as UC28
+  usecase "Exportar Bienes\n(Excel)" as UC29
+  usecase "Recomendar Código" as UC23a
+}
+
+' ============================================
+' MÓDULO: MOVIMIENTOS
+' ============================================
+package "Trazabilidad y Movimientos" {
+  usecase "Registrar Traslado" as UC30
+  usecase "Transferir Bien" as UC30a
+  usecase "Desincorporar Bien" as UC31
+  usecase "Ver Historial\nMovimientos" as UC32
+  usecase "Ver Movimientos\nEliminados" as UC33
+  usecase "Restaurar\nMovimiento" as UC34
+  usecase "Reintegrar Bien" as UC35
+  usecase "Generar Acta\nTraslado" as UC36
+  usecase "Generar Acta\nDesincorporación" as UC37
+}
+
+' ============================================
+' MÓDULO: REPORTES
+' ============================================
+package "Reportes y Auditoría" {
+  usecase "Generar Reporte\nInventario PDF" as UC40
+  usecase "Ver Reportes\nGenerados" as UC41
+  usecase "Ver Gráficas\nEstadísticas" as UC42
+  usecase "Consultar\nAuditoría" as UC43
+  usecase "Exportar\nGráficas PDF" as UC44
+  usecase "Reporte por\nDependencia" as UC40a
+  usecase "Reporte por\nUnidad" as UC40b
+  usecase "Reporte por\nOrganismo" as UC40c
+}
+
+' ============================================
+' MÓDULO: GESTIÓN DE USUARIOS
+' ============================================
+package "Gestión de Usuarios" {
+  usecase "Gestionar Usuarios" as UC50
+  usecase "Importar Usuarios\npor Cédula" as UC51
+  usecase "Ver Roles\nPermisos" as UC52
+}
+
+' ============================================
+' RELACIONES DE INCLUYE
+' ============================================
+UC23 ..> UC26 : <<include>>
+UC23 ..> UC23a : <<include>>
+UC24 ..> UC26 : <<include>>
+UC30a ..> UC36 : <<include>>
+UC31 ..> UC37 : <<include>>
+UC40 ..> UC40a : <<include>>
+UC40 ..> UC40b : <<include>>
+UC40 ..> UC40c : <<include>>
+
+' ============================================
+' RELACIONES DE EXTENSIÓN
+' ============================================
+UC28 ..> UC23 : <<extend>>
+UC29 ..> UC20 : <<extend>>
+UC33 ..> UC32 : <<extend>>
+UC30 ..> UC30a : <<extend>>
+
+' ============================================
+' RELACIONES ACTOR-USOCASE
+' ============================================
+
+' Administrador - Acceso Total
+Admin --> UC01
+Admin --> UC02
+Admin --> UC03
+Admin --> UC04
+Admin --> UC05
+Admin --> UC10
+Admin --> UC11
+Admin --> UC12
+Admin --> UC13
+Admin --> UC20
+Admin --> UC21
+Admin --> UC22
+Admin --> UC23
+Admin --> UC24
+Admin --> UC25
+Admin --> UC30
+Admin --> UC30a
+Admin --> UC31
+Admin --> UC32
+Admin --> UC33
+Admin --> UC34
+Admin --> UC35
+Admin --> UC40
+Admin --> UC41
+Admin --> UC42
+Admin --> UC43
+Admin --> UC44
+Admin --> UC50
+Admin --> UC51
+Admin --> UC28
+Admin --> UC29
+Admin --> UC52
+
+' Gerente de Bienes
+Gerente --> UC01
+Gerente --> UC02
+Gerente --> UC04
+Gerente --> UC10
+Gerente --> UC11
+Gerente --> UC12
+Gerente --> UC20
+Gerente --> UC21
+Gerente --> UC22
+Gerente --> UC23
+Gerente --> UC24
+Gerente --> UC30
+Gerente --> UC30a
+Gerente --> UC31
+Gerente --> UC32
+Gerente --> UC40
+Gerente --> UC42
+
+' Responsable de Dependencia
+Responsable --> UC01
+Responsable --> UC02
+Responsable --> UC04
+Responsable --> UC20
+Responsable --> UC21
+Responsable --> UC22
+Responsable --> UC26
+Responsable --> UC32
+Responsable --> UC40
+
+' Auditor (Acceso limitado)
+Auditor --> UC01
+Auditor --> UC02
+Auditor --> UC40
+Auditor --> UC41
+Auditor --> UC42
+
+' Sistema (Automático) - Genera actas y auditoría
+Sistema --> UC36
+Sistema --> UC37
+Sistema --> UC43
+
+@enduml

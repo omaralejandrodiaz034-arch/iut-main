@@ -166,7 +166,7 @@ A diferencia de hojas de cálculo o sistemas genéricos:
 - ✅ Búsqueda avanzada de bienes
 - ✅ Listados con filtros y paginación
 - ✅ Estados de bienes (Activo, Inactivo, Mantenimiento, Dado de Baja, Extraviado)
-- ❌ Importación masiva desde Excel
+- ✅ Importación masiva desde Excel (BienExcelController)
 
 #### Gestión de Responsables
 - ✅ Registro de responsables
@@ -182,7 +182,7 @@ A diferencia de hojas de cálculo o sistemas genéricos:
 #### Reportes y Auditoría
 - ✅ Reporte de inventario por dependencia (PDF)
 - ✅ Reporte por responsable (PDF)
-- ❌ Exportación a Excel
+- ✅ Exportación a Excel (BienExcelController)
 - ✅ Auditoría automática de acciones
 - ✅ Consulta de logs de auditoría
 
@@ -190,7 +190,7 @@ A diferencia de hojas de cálculo o sistemas genéricos:
 - ❌ Generación de códigos QR
 - ❌ Escaneo de QR desde móvil
 - ❌ Notificaciones por correo
-- ✅ Dashboards por rol
+- ✅ Dashboards por rol (Admin implementado)
 
 ### Fuera de Alcance (Versión 1.0)
 

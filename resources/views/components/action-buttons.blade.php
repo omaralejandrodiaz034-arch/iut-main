@@ -79,15 +79,10 @@
 </a>
 
 @php
-    $showDesincorporar = true;
+    $showDesincorporar = auth()->check() && auth()->user()->isAdmin();
     try {
         // Ocultar siempre Desincorporar en la vista de usuarios
         if (isset($resource) && $resource === 'usuarios') {
-            $showDesincorporar = false;
-        }
-
-        // Además, si el modelo es Usuario y es admin, también ocultar
-        if ($model instanceof \App\Models\Usuario && method_exists($model, 'isAdmin') && $model->isAdmin()) {
             $showDesincorporar = false;
         }
     } catch (\Throwable $e) {
