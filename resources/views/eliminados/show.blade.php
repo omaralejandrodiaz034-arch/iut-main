@@ -35,7 +35,7 @@
 
         <div class="mt-4">
             <a href="{{ route('eliminados.index') }}" class="bg-gray-200 px-4 py-2 rounded">Volver</a>
-            @if(auth()->user()->isAdmin())
+            @if(auth()->user()?->isAdmin())
                 <form action="{{ route('eliminados.restore', $eliminado->id) }}" method="POST" style="display:inline">
                     @csrf
                     <button class="ml-2 bg-green-600 text-white px-4 py-2 rounded">Restaurar</button>

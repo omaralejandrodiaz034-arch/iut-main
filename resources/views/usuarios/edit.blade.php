@@ -28,11 +28,11 @@
                 <div>
                     <label for="cedula" class="block text-sm font-medium text-gray-700">Cédula</label>
                     <input type="text" name="cedula" id="cedula" value="{{ old('cedula', $usuario->cedula) }}"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 {{ !auth()->user()->isAdmin() ? 'bg-gray-100' : '' }}"
-                        maxlength="15" @if(!auth()->user()->isAdmin()) readonly @endif>
+                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 {{ !auth()->user()?->isAdmin() ? 'bg-gray-100' : '' }}"
+                        maxlength="15" @if(!auth()->user()?->isAdmin()) readonly @endif>
                     <p id="error-cedula" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten
                         números.</p>
-                    @if(!auth()->user()->isAdmin())
+                    @if(auth()->user()?->isAdmin())
                         <p class="text-xs text-gray-500 mt-1 italic">Solo los administradores pueden modificar la cédula.</p>
                     @endif
                 </div>
@@ -88,7 +88,7 @@
                 </div>
 
                 {{-- Roles (Solo Admin, no modificar si el usuario es admin) --}}
-                @if(auth()->user()->isAdmin() && !$usuario->isAdmin())
+                @if(auth()->user()?->isAdmin() && !$usuario->isAdmin())
                     <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <h3 class="text-sm font-semibold text-gray-800 mb-3">Rol del Usuario</h3>
                         <select name="rol_id" id="rol_id" class="block w-full rounded-md border border-gray-300 px-3 py-2">

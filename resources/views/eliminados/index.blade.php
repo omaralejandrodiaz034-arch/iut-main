@@ -36,7 +36,7 @@
                             <td class="px-6 py-3 text-sm text-gray-700">{{ $e->deleted_at?->format('Y-m-d H:i') }}</td>
                             <td class="px-6 py-3 text-right">
                                 <a href="{{ route('eliminados.show', $e->id) }}" class="text-blue-600 hover:underline mr-4">Ver</a>
-                                @if(auth()->user()->isAdmin())
+                                @if(auth()->user()?->isAdmin())
                                     <form action="{{ route('eliminados.restore', $e->id) }}" method="POST" style="display:inline">
                                         @csrf
                                         <button class="text-green-600 hover:underline">Restaurar</button>

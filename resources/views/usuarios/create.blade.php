@@ -10,7 +10,7 @@
         <div class="bg-white shadow rounded-lg p-6">
             <h1 class="text-2xl font-bold text-gray-800 mb-6">Crear Nuevo Usuario</h1>
 
-            @if(!auth()->user()->isAdmin())
+            @if(!auth()->user()?->isAdmin())
                 <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 rounded-lg">
                     <p class="text-sm font-semibold">ℹ Solo puedes crear usuarios con privilegios normales. Para perfiles
                         administrativos, contacta al administrador principal.</p>
@@ -113,7 +113,7 @@
                 </div>
 
                 {{-- Roles y Estado --}}
-                @if(auth()->user()->isAdmin())
+                @if(auth()->user()?->isAdmin())
                     <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <label for="rol_id_select" class="block text-sm font-semibold text-gray-700 mb-2">Rol del
                             Usuario</label>

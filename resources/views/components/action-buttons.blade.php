@@ -79,7 +79,7 @@
 </a>
 
 @php
-    $showDesincorporar = auth()->check() && auth()->user()->isAdmin();
+    $showDesincorporar = auth()->check() && auth()->user()?->isAdmin();
     try {
         // Ocultar siempre Desincorporar en la vista de usuarios
         if (isset($resource) && $resource === 'usuarios') {
@@ -102,7 +102,7 @@
 @endphp
 
 @if($canDelete && $buttonText !== 'Desincorporar')
-    <form action="{{ $destroyUrl }}" method="POST" class="inline delete-form" data-can-delete="{{ auth()->user() && auth()->user()->canDeleteData() ? '1' : '0' }}" data-confirm="{{ e($confirm) }}" data-label="{{ e($label ?? '') }}">
+    <form action="{{ $destroyUrl }}" method="POST" class="inline delete-form" data-can-delete="{{ auth()->user()?->canDeleteData() ? '1' : '0' }}" data-confirm="{{ e($confirm) }}" data-label="{{ e($label ?? '') }}">
         @csrf
         @method('DELETE')
         <button type="submit" class="inline-flex items-center px-2 py-1 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100">

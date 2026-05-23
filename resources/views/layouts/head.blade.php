@@ -29,7 +29,7 @@
             {{-- Enlaces de Navegación --}}
             <div class="hidden lg:flex items-center space-x-0.5 text-xs font-medium">
 
-                @if(auth()->user()->isAdmin())
+                @if(auth()->user()?->isAdmin())
                 {{-- Dashboard --}}
                 <a href="{{ route('dashboard') }}"
                    class="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-slate-800 hover:text-indigo-300"
@@ -106,7 +106,7 @@
                     <span>Responsables</span>
                 </a>
 
-                @if(auth()->user()->isAdmin())
+                @if(auth()->user()?->isAdmin())
                 <a href="{{ route('usuarios.index') }}"
                    class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-slate-800 hover:text-indigo-300"
                    @class(['bg-slate-800 text-indigo-400 shadow-inner' => request()->routeIs('usuarios.*')])>
@@ -165,7 +165,7 @@
                                 class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                                 👤 Mi Perfil
                             </a>
-                            @if(auth()->user()->isAdmin())
+@if(auth()->user()?->isAdmin())
                             <a href="{{ route('dashboard') }}"
                                 class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                                 📊 Dashboard
@@ -221,7 +221,7 @@
             </div>
             
             {{-- Enlaces de navegación móvil --}}
-            @if(auth()->user()->isAdmin())
+            @if(auth()->user()?->isAdmin())
             <a href="{{ route('dashboard') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition @if(request()->routeIs('dashboard')) bg-slate-700 text-white @endif">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
                 <span>Panel</span>
@@ -253,7 +253,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 8h-7m0 0l3-3m-3 3l3 3M7 16h7m0 0l-3 3m3-3l-3-3"/></svg>
                 <span>Movimientos</span>
             </a>
-                @if(auth()->user()->isAdmin())
+                @if(auth()->user()?->isAdmin())
             <a href="{{ route('usuarios.index') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition @if(request()->routeIs('usuarios.*')) bg-slate-700 text-white @endif">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2m14-10a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 <span>Usuarios</span>
@@ -274,7 +274,7 @@
             <a href="{{ route('perfil.show') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition">
                 <span>👤</span><span>Mi Perfil</span>
             </a>
-            @if(auth()->user()->isAdmin())
+            @if(auth()->user()?->isAdmin())
             <a href="{{ route('auditoria.index') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition">
                 <span>🔍</span><span>Auditoría</span>
             </a>
