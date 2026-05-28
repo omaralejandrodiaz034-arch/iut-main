@@ -1,4 +1,4 @@
-@extends('layouts.base')
+﻿@extends('layouts.base')
 
 @section('title', 'Bienes')
 
@@ -34,8 +34,9 @@
             $queryString = http_build_query($queryParams);
         @endphp
 
-        <a href="{{ route('bienes.reporte') . ($queryString ? '?' . $queryString : '') }}"
-           class="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg shadow-sm transition-all active:scale-95">
+        <a id="btnGenerarPdf" href="{{ route('bienes.reporte') . ($queryString ? '?' . $queryString : '') }}"
+           class="btn-pdf inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg shadow-sm transition-all active:scale-95"
+           title="Generar reporte PDF con filtros aplicados">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
@@ -481,8 +482,8 @@ function clearAllFilters() {
                                 @case('estado') Estados @break
                                 @case('dependencias') Dependencias @break
                                 @case('solo_desincorporados') Solo Desincorporados @break
-                                @case('precio_desde') Precio ≥ @break
-                                @case('precio_hasta') Precio ≤ @break
+                                @case('precio_desde') Precio â‰¥ @break
+                                @case('precio_hasta') Precio â‰¤ @break
                                 @default {{ ucfirst($key) }}
                             @endswitch:
                         </span>
@@ -498,8 +499,8 @@ function clearAllFilters() {
                                 @case('fecha_desde') Desde @break
                                 @case('fecha_hasta') Hasta @break
                                 @case('solo_desincorporados') Solo Desincorporados @break
-                                @case('precio_desde') Precio ≥ @break
-                                @case('precio_hasta') Precio ≤ @break
+                                @case('precio_desde') Precio â‰¥ @break
+                                @case('precio_hasta') Precio â‰¤ @break
                                 @default {{ ucfirst($key) }}
                             @endswitch:
                         </span>
@@ -526,7 +527,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const fechaDesde = document.getElementById('fecha_desde');
     const fechaHasta = document.getElementById('fecha_hasta');
     const errorFechas = document.getElementById('error-msg-fechas');
-    window.generarReportePDF = function() {
+        window.generarReportePDF = function() {
         // Validar fechas antes de generar PDF
         if (!validarFechas()) {
             Swal.fire({
@@ -537,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             return;
         }
-        
+
         // Mostrar indicador de carga
         Swal.fire({
             title: 'Generando reporte...',
@@ -547,94 +548,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 Swal.showLoading();
             }
         });
-        
+
         // Obtener todos los datos del formulario
         const formData = new FormData(form);
         const params = new URLSearchParams(formData);
-        
+
         // Construir URL para el reporte
-        let url = '{{ route("bienes.reporte") }}?' + params.toString();
-        
-        // Abrir el PDF en una nueva pestaña
-        fetch(url, {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { throw err; });
-            }
-            return response.blob();
-        })
-        .then(blob => {
-            // Verificar si es un PDF válido
-            if (blob.type === 'application/pdf') {
-                const url = window.URL.createObjectURL(blob);
-                window.open(url, '_blank');
-                Swal.close();
-            } else {
-                // Si no es PDF, probablemente es HTML con error
-                return blob.text();
-            }
-        })
-        .then(text => {
-            if (text && text.includes('error')) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    html: 'No se pudo generar el reporte.<br>' + text.substring(0, 200),
-                    confirmButtonColor: '#d33'
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error al generar PDF:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error al generar PDF',
-                text: error.message || 'Ocurrió un error inesperado. Intente nuevamente.',
-                confirmButtonColor: '#d33'
-            });
-        });
+        const url = '{{ route("bienes.reporte") }}?' + params.toString();
+
+        // Ir a la URL en la misma pestaña
+        window.location.href = url;
     };
     
-    // Función específica para reporte de una dependencia
-    window.generarReporteDependencia = function(dependenciaId, dependenciaNombre) {
-        Swal.fire({
-            title: 'Generando reporte...',
-            text: `Reporte de la dependencia: ${dependenciaNombre}`,
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-        
-        let url = '{{ route("bienes.reporte") }}?dependencias[]=' + dependenciaId;
-        
-        fetch(url, {
-            method: 'GET',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(response => response.blob())
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            window.open(url, '_blank');
-            Swal.close();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'No se pudo generar el reporte',
-                confirmButtonColor: '#d33'
-            });
-        });
-    };
-    
-    // ========== BOTÓN DE PDF ==========
+// ========== BOTÓN DE PDF ==========
     // Buscar botón de PDF por ID o clase
     const btnPdf = document.getElementById('btnGenerarPdf') || document.querySelector('.btn-pdf');
     
@@ -644,93 +570,9 @@ document.addEventListener('DOMContentLoaded', function () {
             generarReportePDF();
         });
     }
-
+     
     // Validación rango fechas
     function validarFechas() {
-        if (fechaDesde.value && fechaHasta.value) {
-            if (new Date(fechaDesde.value) > new Date(fechaHasta.value)) {
-                errorFechas.classList.remove('hidden');
-                fechaHasta.classList.add('border-red-500');
-                return false;
-            } else {
-                errorFechas.classList.add('hidden');
-                fechaHasta.classList.remove('border-red-500');
-                return true;
-            }
-        }
-        errorFechas.classList.add('hidden');
-        fechaHasta.classList.remove('border-red-500');
-        return true;
-    }
-
-    fechaDesde.addEventListener('change', validarFechas);
-    fechaHasta.addEventListener('change', validarFechas);
-
-    // AJAX para aplicar filtros
-    const aplicarFiltros = () => {
-        if (!validarFechas()) return;
-        
-        const formData = new FormData(form);
-        const params = new URLSearchParams(formData);
-        params.delete('page');
-
-        const url = `${window.location.pathname}?${params}`;
-        container.style.opacity = '0.4';
-
-        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(r => r.text())
-            .then(html => {
-                container.innerHTML = html;
-                container.style.opacity = '1';
-                window.history.pushState({}, '', url);
-            })
-            .catch(err => {
-                console.error(err);
-                container.style.opacity = '1';
-            });
-    };
-
-    // Cambio automático en todos los filtros
-    document.querySelectorAll('.filtro-auto').forEach(el => {
-        el.addEventListener('change', aplicarFiltros);
-    });
-
-    // Submit manual
-    form.addEventListener('submit', e => {
-        e.preventDefault();
-        if (validarFechas()) {
-            aplicarFiltros();
-        } else {
-            alert('La fecha "hasta" debe ser igual o posterior a "desde".');
-        }
-    });
-
-    // Paginación con event delegation
-    container.addEventListener('click', e => {
-        const link = e.target.closest('.pagination a');
-        if (!link) return;
-        e.preventDefault();
-
-        const url = new URL(link.href);
-        const page = url.searchParams.get('page');
-
-        const formData = new FormData(form);
-        const params = new URLSearchParams(formData);
-        if (page) params.set('page', page);
-
-        const finalUrl = `${window.location.pathname}?${params}`;
-        
-        fetch(finalUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(r => r.text())
-            .then(html => {
-                container.innerHTML = html;
-                window.history.pushState({}, '', finalUrl);
-            });
-    });
-});
-
-// Funciones globales para limpiar selects
-function clearSelect(selectId) {
     const select = document.getElementById(selectId);
     if (select) {
         for(let i = 0; i < select.options.length; i++) {
@@ -771,3 +613,4 @@ function clearAllFilters() {
 </script>
 @endpush
 @endsection
+

@@ -146,78 +146,69 @@ class FpdfReportService
     /**
      * Genera el listado de bienes en formato vertical.
      */
-    /**
- * Genera el listado de bienes en formato vertical.
- */
-/**
- * Genera el listado de bienes en formato vertical.
- */
-/**
- * Genera el listado de bienes en formato vertical.
- */
-public function downloadBienesListado(
-    string $fileName,
-    string $title,
-    ?string $subtitle,
-    string $generatedAt,
-    iterable $bienes,
-    array $datosInstitucionales = []  // Nuevo parámetro
-) {
-    // Convertir iterable a array
-    $bienesArray = $bienes instanceof \Illuminate\Support\Collection ? $bienes->all() : iterator_to_array($bienes);
-    
-    $pdf = $this->make('P');
-    
-    // Pasar los datos institucionales (si existen) al renderHeader
-    $this->renderHeader($pdf, $title, $subtitle, $generatedAt, $datosInstitucionales);
-    
-    // Configuración de la tabla
-    $widths = [25, 80, 25, 25, 16, 25];
-    $headers = ['Código', 'Descripción', 'Precio Bs.', 'Dependencia', 'Fotos', 'Fecha'];
-    
-    // Encabezados de tabla
-    $pdf->SetFillColor(255, 255, 255);
-    $pdf->SetFont('Arial', 'B', 8);
-    foreach ($headers as $i => $header) {
-        $pdf->Cell($widths[$i], 7, $this->t($header), 1, 0, 'C');
+    public function downloadBienesListado(
+        string $fileName,
+        string $title,
+        ?string $subtitle,
+        string $generatedAt,
+        iterable $bienes,
+        array $datosInstitucionales = []  // Nuevo parámetro
+    ) {
+        // Convertir iterable a array
+        $bienesArray = $bienes instanceof \Illuminate\Support\Collection ? $bienes->all() : iterator_to_array($bienes);
+
+        $pdf = $this->make('P');
+
+        // Pasar los datos institucionales (si existen) al renderHeader
+        $this->renderHeader($pdf, $title, $subtitle, $generatedAt, $datosInstitucionales);
+
+        // Configuración de la tabla
+        $widths = [25, 80, 25, 25, 16, 25];
+        $headers = ['Código', 'Descripción', 'Precio Bs.', 'Dependencia', 'Fotos', 'Fecha'];
+
+        // Encabezados de tabla
+        $pdf->SetFillColor(255, 255, 255);
+        $pdf->SetFont('Arial', 'B', 8);
+        foreach ($headers as $i => $header) {
+            $pdf->Cell($widths[$i], 7, $this->t($header), 1, 0, 'C');
+        }
+        $pdf->Ln();
+
+        // Datos
+        $pdf->SetFont('Arial', '', 7);
+        $totalBs = 0;
+        $hasData = false;
+
+        foreach ($bienesArray as $bien) {
+            $hasData = true;
+
+            $pdf->Cell($widths[0], 6, $this->t((string) ($bien->codigo ?? '')), 1, 0, 'C');
+            $pdf->Cell($widths[1], 6, $this->t($this->truncate((string) ($bien->descripcion ?? ''), 50)), 1);
+
+            $precio = (float) ($bien->precio ?? 0);
+            $pdf->Cell($widths[2], 6, number_format($precio, 2, ',', '.'), 1, 0, 'R');
+            $totalBs += $precio;
+
+            $pdf->Cell($widths[3], 6, $this->t($this->truncate($bien->dependencia?->nombre ?? '', 15)), 1, 0, 'C');
+            $pdf->Cell($widths[4], 6, ($bien->fotografia ? 'SI' : 'NO'), 1, 0, 'C');
+            $pdf->Cell($widths[5], 6, $bien->created_at ? $bien->created_at->format('d/m/Y') : '', 1, 1, 'C');
+        }
+
+        if (! $hasData) {
+            $pdf->Cell(array_sum($widths), 10, $this->t('No se encontraron registros.'), 1, 1, 'C');
+        }
+
+        // Total
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell($widths[0] + $widths[1], 8, $this->t('Total Bs.:'), 1, 0, 'R');
+        $pdf->Cell($widths[2], 8, number_format($totalBs, 2, ',', '.'), 1, 0, 'C');
+        $pdf->Cell($widths[3] + $widths[4] + $widths[5], 8, '', 1, 1);
+
+        return response($pdf->Output('S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+        ]);
     }
-    $pdf->Ln();
-    
-    // Datos
-    $pdf->SetFont('Arial', '', 7);
-    $totalBs = 0;
-    $hasData = false;
-    
-    foreach ($bienesArray as $bien) {
-        $hasData = true;
-        
-        $pdf->Cell($widths[0], 6, $this->t((string) ($bien->codigo ?? '')), 1, 0, 'C');
-        $pdf->Cell($widths[1], 6, $this->t($this->truncate((string) ($bien->descripcion ?? ''), 50)), 1);
-        
-        $precio = (float) ($bien->precio ?? 0);
-        $pdf->Cell($widths[2], 6, number_format($precio, 2, ',', '.'), 1, 0, 'R');
-        $totalBs += $precio;
-        
-        $pdf->Cell($widths[3], 6, $this->t($this->truncate($bien->dependencia?->nombre ?? '', 15)), 1, 0, 'C');
-        $pdf->Cell($widths[4], 6, ($bien->fotografia ? 'SI' : 'NO'), 1, 0, 'C');
-        $pdf->Cell($widths[5], 6, $bien->created_at ? $bien->created_at->format('d/m/Y') : '', 1, 1, 'C');
-    }
-    
-    if (! $hasData) {
-        $pdf->Cell(array_sum($widths), 10, $this->t('No se encontraron registros.'), 1, 1, 'C');
-    }
-    
-    // Total
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->Cell($widths[0] + $widths[1], 8, $this->t('Total Bs.:'), 1, 0, 'R');
-    $pdf->Cell($widths[2], 8, number_format($totalBs, 2, ',', '.'), 1, 0, 'C');
-    $pdf->Cell($widths[3] + $widths[4] + $widths[5], 8, '', 1, 1);
-    
-    return response($pdf->Output('S'), 200, [
-        'Content-Type' => 'application/pdf',
-        'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
-    ]);
-}
 
     protected function t(string $text): string
     {
@@ -628,6 +619,388 @@ public function downloadBienesListado(
             $pdf->Cell($widths[2], 6, number_format($totalBs, 2, ',', '.'), 1, 0, 'R');
             $pdf->Cell($widths[3] + $widths[4] + $widths[5], 6, '', 1, 0, 'C');
             $pdf->Ln(8);
+        }
+
+        return response($pdf->Output('S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$fileName.'"',
+        ]);
+    }
+
+    /**
+     * Genera reporte de listado general de dependencias
+     */
+    public function downloadDependenciasListado(
+        string $fileName,
+        string $title,
+        ?string $subtitle,
+        string $generatedAt,
+        iterable $dependencias
+    ) {
+        $dependenciasArray = $dependencias instanceof \Illuminate\Support\Collection
+            ? $dependencias->all()
+            : iterator_to_array($dependencias);
+
+        $pdf = $this->make('P');
+        $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        $widths = [20, 50, 40, 30, 25];
+        $headers = ['Código', 'Nombre', 'Unidad', 'Responsable', 'Bienes'];
+
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        foreach ($headers as $i => $header) {
+            $pdf->Cell($widths[$i], 7, $this->t($header), 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->SetTextColor(0, 0, 0);
+        $totalBienes = 0;
+        $hasData = false;
+
+        foreach ($dependenciasArray as $dep) {
+            $hasData = true;
+            $totalBienes += $dep->bienes_count ?? $dep->bienes->count() ?? 0;
+
+            $pdf->Cell($widths[0], 6, $this->t($dep->codigo ?? ''), 1, 0, 'C');
+            $pdf->Cell($widths[1], 6, $this->t($this->truncate($dep->nombre ?? '', 35)), 1);
+            $pdf->Cell($widths[2], 6, $this->t($this->truncate($dep->unidadAdministradora?->nombre ?? '-', 25)), 1);
+            $pdf->Cell($widths[3], 6, $this->t($this->truncate($dep->responsable?->nombre ?? '-', 20)), 1);
+            $pdf->Cell($widths[4], 6, ($dep->bienes_count ?? $dep->bienes->count() ?? 0), 1, 1, 'C');
+        }
+
+        if (! $hasData) {
+            $pdf->Cell(array_sum($widths), 10, $this->t('No se encontraron registros.'), 1, 1, 'C');
+        }
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell($widths[0] + $widths[1] + $widths[2], 8, $this->t('TOTAL GENERAL'), 1, 0, 'R', true);
+        $pdf->Cell($widths[3], 8, $this->t($dependenciasArray ? count($dependenciasArray) : 0).' dependencias', 1, 0, 'C', true);
+        $pdf->Cell($widths[4], 8, $totalBienes.' bienes', 1, 1, 'C', true);
+
+        return response($pdf->Output('S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+        ]);
+    }
+
+    /**
+     * Genera reporte de dependencias agrupado por unidad administradora
+     */
+    public function generarDependenciasPorUnidad(
+        string $fileName,
+        string $title,
+        ?string $subtitle,
+        string $generatedAt,
+        iterable $dependencias
+    ) {
+        $dependenciasArray = $dependencias instanceof \Illuminate\Support\Collection
+            ? $dependencias->all()
+            : iterator_to_array($dependencias);
+
+        $pdf = $this->make('L');
+
+        // Agrupar dependencias por unidad
+        $agrupados = [];
+        foreach ($dependenciasArray as $dep) {
+            $uniNombre = $dep->unidadAdministradora?->nombre ?? 'Sin Unidad';
+            if (! isset($agrupados[$uniNombre])) {
+                $agrupados[$uniNombre] = [];
+            }
+            $agrupados[$uniNombre][] = $dep;
+        }
+
+        $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        foreach ($agrupados as $uniNombre => $depsGrupo) {
+            if ($pdf->GetY() > 170) {
+                $pdf->AddPage();
+            }
+
+            $pdf->SetFillColor(0, 82, 147);
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->SetFont('Arial', 'B', 11);
+            $pdf->Cell(0, 8, 'UNIDAD ADMINISTRADORA: '.strtoupper($this->t($uniNombre)), 1, 1, 'L', true);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Ln(1);
+
+            $widths = [20, 55, 35, 30, 25];
+            $headers = ['Código', 'Nombre', 'Responsable', 'Teléfono', 'Bienes'];
+
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(220, 220, 220);
+            foreach ($headers as $i => $header) {
+                $pdf->Cell($widths[$i], 7, $this->t($header), 1, 0, 'C', true);
+            }
+            $pdf->Ln();
+
+            $pdf->SetFont('Arial', '', 8);
+            $subtotalBienes = 0;
+
+            foreach ($depsGrupo as $index => $dep) {
+                $bienesCount = $dep->bienes_count ?? $dep->bienes->count() ?? 0;
+                $subtotalBienes += $bienesCount;
+                $fill = ($index % 2 == 0);
+                if ($fill) {
+                    $pdf->SetFillColor(248, 248, 248);
+                }
+
+                $pdf->Cell($widths[0], 6, $this->t($dep->codigo ?? ''), 1, 0, 'C', $fill);
+                $pdf->Cell($widths[1], 6, $this->t($this->truncate($dep->nombre ?? '', 35)), 1, 0, 'L', $fill);
+                $pdf->Cell($widths[2], 6, $this->t($this->truncate($dep->responsable?->nombre ?? '-', 25)), 1, 0, 'L', $fill);
+                $pdf->Cell($widths[3], 6, $this->t($dep->responsable?->telefono ?? '-'), 1, 0, 'C', $fill);
+                $pdf->Cell($widths[4], 6, $bienesCount, 1, 1, 'C', $fill);
+            }
+
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(230, 230, 230);
+            $pdf->Cell($widths[0] + $widths[1], 7, $this->t('SUBTOTAL ('.count($depsGrupo).' dependencias)'), 1, 0, 'R', true);
+            $pdf->Cell($widths[2] + $widths[3], 7, '', 1, 0, 'C', true);
+            $pdf->Cell($widths[4], 7, $subtotalBienes.' bienes', 1, 1, 'C', true);
+            $pdf->Ln(5);
+        }
+
+        return response($pdf->Output('S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$fileName.'"',
+        ]);
+    }
+
+    /**
+     * Genera reporte de dependencias agrupado por responsable
+     */
+    public function generarDependenciasPorResponsable(
+        string $fileName,
+        string $title,
+        ?string $subtitle,
+        string $generatedAt,
+        iterable $dependencias
+    ) {
+        $dependenciasArray = $dependencias instanceof \Illuminate\Support\Collection
+            ? $dependencias->all()
+            : iterator_to_array($dependencias);
+
+        $pdf = $this->make('L');
+
+        // Agrupar dependencias por responsable
+        $agrupados = [];
+        foreach ($dependenciasArray as $dep) {
+            $resNombre = $dep->responsable?->nombre ?? 'Sin Responsable';
+            if (! isset($agrupados[$resNombre])) {
+                $agrupados[$resNombre] = [];
+            }
+            $agrupados[$resNombre][] = $dep;
+        }
+
+        $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        foreach ($agrupados as $resNombre => $depsGrupo) {
+            if ($pdf->GetY() > 170) {
+                $pdf->AddPage();
+            }
+
+            $pdf->SetFillColor(128, 0, 32);
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->SetFont('Arial', 'B', 11);
+            $pdf->Cell(0, 8, 'RESPONSABLE: '.strtoupper($this->t($resNombre)), 1, 1, 'L', true);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Ln(1);
+
+            $widths = [20, 50, 35, 30, 25, 30];
+            $headers = ['Código', 'Nombre', 'Unidad', 'Teléfono', 'Email', 'Bienes'];
+
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(220, 220, 220);
+            foreach ($headers as $i => $header) {
+                $pdf->Cell($widths[$i], 7, $this->t($header), 1, 0, 'C', true);
+            }
+            $pdf->Ln();
+
+            $pdf->SetFont('Arial', '', 8);
+            $subtotalBienes = 0;
+
+            foreach ($depsGrupo as $index => $dep) {
+                $bienesCount = $dep->bienes_count ?? $dep->bienes->count() ?? 0;
+                $subtotalBienes += $bienesCount;
+                $fill = ($index % 2 == 0);
+                if ($fill) {
+                    $pdf->SetFillColor(248, 248, 248);
+                }
+
+                $pdf->Cell($widths[0], 6, $this->t($dep->codigo ?? ''), 1, 0, 'C', $fill);
+                $pdf->Cell($widths[1], 6, $this->t($this->truncate($dep->nombre ?? '', 35)), 1, 0, 'L', $fill);
+                $pdf->Cell($widths[2], 6, $this->t($this->truncate($dep->unidadAdministradora?->nombre ?? '-', 22)), 1, 0, 'L', $fill);
+                $pdf->Cell($widths[3], 6, $this->t($dep->responsable?->telefono ?? '-'), 1, 0, 'C', $fill);
+                $pdf->Cell($widths[4], 6, $this->t($this->truncate($dep->responsable?->email ?? '-', 22)), 1, 0, 'L', $fill);
+                $pdf->Cell($widths[5], 6, $bienesCount, 1, 1, 'C', $fill);
+            }
+
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(230, 230, 230);
+            $pdf->Cell($widths[0] + $widths[1], 7, $this->t('SUBTOTAL ('.count($depsGrupo).' dependencias)'), 1, 0, 'R', true);
+            $pdf->Cell($widths[2] + $widths[3] + $widths[4], 7, '', 1, 0, 'C', true);
+            $pdf->Cell($widths[5], 7, $subtotalBienes.' bienes', 1, 1, 'C', true);
+            $pdf->Ln(5);
+        }
+
+        return response($pdf->Output('S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$fileName.'"',
+        ]);
+    }
+
+    /**
+     * Genera reporte de listado general de unidades administradoras
+     */
+    public function downloadUnidadesListado(
+        string $fileName,
+        string $title,
+        ?string $subtitle,
+        string $generatedAt,
+        iterable $unidades
+    ) {
+        $unidadesArray = $unidades instanceof \Illuminate\Support\Collection
+            ? $unidades->all()
+            : iterator_to_array($unidades);
+
+        $pdf = $this->make('P');
+        $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        $widths = [20, 60, 40, 25, 25];
+        $headers = ['Código', 'Nombre', 'Organismo', 'Dependencias', 'Bienes'];
+
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        foreach ($headers as $i => $header) {
+            $pdf->Cell($widths[$i], 7, $this->t($header), 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->SetTextColor(0, 0, 0);
+        $totalDependencias = 0;
+        $totalBienes = 0;
+        $hasData = false;
+
+        foreach ($unidadesArray as $uni) {
+            $hasData = true;
+            $totalDependencias += $uni->dependencias_count ?? $uni->dependencias->count() ?? 0;
+
+            $bienesCount = 0;
+            foreach ($uni->dependencias ?? [] as $dep) {
+                $bienesCount += $dep->bienes_count ?? $dep->bienes->count() ?? 0;
+            }
+            $totalBienes += $bienesCount;
+
+            $pdf->Cell($widths[0], 6, $this->t($uni->codigo ?? ''), 1, 0, 'C');
+            $pdf->Cell($widths[1], 6, $this->t($this->truncate($uni->nombre ?? '', 40)), 1);
+            $pdf->Cell($widths[2], 6, $this->t($this->truncate($uni->organismo?->nombre ?? '-', 25)), 1);
+            $pdf->Cell($widths[3], 6, ($uni->dependencias_count ?? $uni->dependencias->count() ?? 0), 1, 0, 'C');
+            $pdf->Cell($widths[4], 6, $bienesCount, 1, 1, 'C');
+        }
+
+        if (! $hasData) {
+            $pdf->Cell(array_sum($widths), 10, $this->t('No se encontraron registros.'), 1, 1, 'C');
+        }
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell(array_sum($widths), 8, $this->t('TOTAL GENERAL: '.count($unidadesArray).' unidades, '.$totalDependencias.' dependencias, '.$totalBienes.' bienes'), 1, 1, 'C', true);
+
+        return response($pdf->Output('S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+        ]);
+    }
+
+    /**
+     * Genera reporte de unidades agrupado por organismo
+     */
+    public function generarUnidadesPorOrganismo(
+        string $fileName,
+        string $title,
+        ?string $subtitle,
+        string $generatedAt,
+        iterable $unidades
+    ) {
+        $unidadesArray = $unidades instanceof \Illuminate\Support\Collection
+            ? $unidades->all()
+            : iterator_to_array($unidades);
+
+        $pdf = $this->make('L');
+
+        $agrupados = [];
+        foreach ($unidadesArray as $uni) {
+            $orgNombre = $uni->organismo?->nombre ?? 'Sin Organismo';
+            if (! isset($agrupados[$orgNombre])) {
+                $agrupados[$orgNombre] = [];
+            }
+            $agrupados[$orgNombre][] = $uni;
+        }
+
+        $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        foreach ($agrupados as $orgNombre => $unisGrupo) {
+            if ($pdf->GetY() > 170) {
+                $pdf->AddPage();
+            }
+
+            $pdf->SetFillColor(34, 85, 51);
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->SetFont('Arial', 'B', 11);
+            $pdf->Cell(0, 8, 'ORGANISMO: '.strtoupper($this->t($orgNombre)), 1, 1, 'L', true);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Ln(1);
+
+            $widths = [20, 55, 30, 25, 25];
+            $headers = ['Código', 'Nombre', 'Dependencias', 'Responsable', 'Bienes'];
+
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(220, 220, 220);
+            foreach ($headers as $i => $header) {
+                $pdf->Cell($widths[$i], 7, $this->t($header), 1, 0, 'C', true);
+            }
+            $pdf->Ln();
+
+            $pdf->SetFont('Arial', '', 8);
+            $subtotalDeps = 0;
+            $subtotalBienes = 0;
+
+            foreach ($unisGrupo as $index => $uni) {
+                $depsCount = $uni->dependencias_count ?? $uni->dependencias->count() ?? 0;
+                $subtotalDeps += $depsCount;
+
+                $bienesCount = 0;
+                foreach ($uni->dependencias ?? [] as $dep) {
+                    $bienesCount += $dep->bienes_count ?? $dep->bienes->count() ?? 0;
+                }
+                $subtotalBienes += $bienesCount;
+
+                $fill = ($index % 2 == 0);
+                if ($fill) {
+                    $pdf->SetFillColor(248, 248, 248);
+                }
+
+                $pdf->Cell($widths[0], 6, $this->t($uni->codigo ?? ''), 1, 0, 'C', $fill);
+                $pdf->Cell($widths[1], 6, $this->t($this->truncate($uni->nombre ?? '', 35)), 1, 0, 'L', $fill);
+                $pdf->Cell($widths[2], 6, $depsCount, 1, 0, 'C', $fill);
+                $pdf->Cell($widths[3], 6, '-', 1, 0, 'C', $fill);
+                $pdf->Cell($widths[4], 6, $bienesCount, 1, 1, 'C', $fill);
+            }
+
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(230, 230, 230);
+            $pdf->Cell($widths[0] + $widths[1], 7, $this->t('SUBTOTAL ('.count($unisGrupo).' unidades)'), 1, 0, 'R', true);
+            $pdf->Cell($widths[2], 7, $subtotalDeps.' dependencias', 1, 0, 'C', true);
+            $pdf->Cell($widths[3], 7, '-', 1, 0, 'C', true);
+            $pdf->Cell($widths[4], 7, $subtotalBienes.' bienes', 1, 1, 'C', true);
+            $pdf->Ln(5);
         }
 
         return response($pdf->Output('S'), 200, [

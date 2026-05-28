@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador Extractor de Índices Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen">
+
+    <div class="max-w-5xl mx-auto px-4 py-10">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-indigo-600 mb-2">🚀 Extractor de Índices Preciso</h1>
+            <p class="text-gray-600 text-lg">Analiza la estructura XML interna de tu .docx para mapear títulos, tablas y figuras con sus páginas.</p>
+        </header>
+
+        <div class="bg-white p-8 rounded-xl shadow-md border border-gray-200 mb-8 text-center">
+            <label class="block text-sm font-medium text-gray-700 mb-4 text-left">Sube tu documento (.docx):</label>
+            <input type="file" id="fileInput" accept=".docx" 
+                   class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer" />
+            <p id="status" class="mt-4 text-sm font-semibold text-indigo-500 hidden">Escanenado estructura nativa de Word...</p>
+        </div>
+
+        <div id="resultsContainer" class="hidden space-y-8">
+            
+            <div class="flex border-b border-gray-200 bg-white rounded-t-lg shadow-sm">
+                <button onclick="switchTab('general')" id="btn-general" class="w-1/3 py-4 px-1 text-center font-medium border-b-2 border-indigo-500 text-indigo-600 focus:outline-none">📋 Índice General</button>
+                <button onclick="switchTab('tablas')" id="btn-tablas" class="w-1/3 py-4 px-1 text-center font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none">📊 Índice de Tablas</button>
+                <button onclick="switchTab('figuras')" id="btn-figuras" class="w-1/3 py-4 px-1 text-center font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none">🖼️ Índice de Figuras</button>
+            </div>
+
+            <div class="bg-white p-6 rounded-b-xl shadow-md border-x border-b border-gray-200 min-h-[300px]">
+                
+                <div id="tab-general" class="tab-content space-y-2">
+                    <h2 class="text-xl font-bold text-gray-700 mb-4">Índice General (Estructura de Títulos)</h2>
+                    <div id="lista-general" class="font-mono divide-y divide-gray-100"></div>
+                </div>
+
+                <div id="tab-tablas" class="tab-content hidden space-y-2">
+                    <h2 class="text-xl font-bold text-gray-700 mb-4">Índice de Tablas</h2>
+                    <div id="lista-tablas" class="font-mono divide-y divide-gray-100"></div>
+                </div>
+
+                <div id="tab-figuras" class="tab-content hidden space-y-2">
+                    <h2 class="text-xl font-bold text-gray-700 mb-4">Índice de Figuras / Ilustraciones</h2>
+                    <div id="lista-figuras" class="font-mono divide-y divide-gray-100"></div>
+                </div>
+
+            </div>
+
+            <div class="text-right">
+                <button onclick="copiarAlPortapapeles()" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition duration-200">
+                    📋 Copiar Índices Consolidados
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let textoReporteGlobal = "";
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('status').classList.remove('hidden');
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const arrayBuffer = event.target.result;
+                
+                // Descomprimimos el archivo .docx usando JSZip
+                JSZip.loadAsync(arrayBuffer).then(function(zip) {
+                    // El archivo 'word/document.xml' contiene todo el texto y estructura del documento
+                    return zip.file("word/document.xml").async("string");
+                }).then(function(xmlString) {
+                    analizarXMLWord(xmlString);
+                }).catch(function(err) {
+                    alert("Error analizando el archivo interno de Word: " + err.message);
+                    document.getElementById('status').classList.add('hidden');
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function analizarXMLWord(xmlString) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+            
+            // Buscamos todos los párrafos (<w:p>)
+            const parrafos = xmlDoc.getElementsByTagName("w:p");
+            
+            const listaGeneral = document.getElementById('lista-general');
+            const listaTablas = document.getElementById('lista-tablas');
+            const listaFiguras = document.getElementById('lista-figuras');
+
+            listaGeneral.innerHTML = "";
+            listaTablas.innerHTML = "";
+            listaFiguras.innerHTML = "";
+
+            let txtGeneral = "ÍNDICE GENERAL\n";
+            let txtTablas = "\nÍNDICE DE TABLAS\n";
+            let txtFiguras = "\nÍNDICE DE FIGURAS\n";
+
+            let paginaActual = 1;
+
+            for (let i = 0; i < parrafos.length; i++) {
+                const p = parrafos[i];
+
+                // 1. CONTROL DE PÁGINAS PRECI_SO: Detectar saltos de página nativos de Word
+                // Word mete marcas específicas cuando el renderizador cambia de página
+                if (p.getElementsByTagName("w:br").length > 0) {
+                    const brs = p.getElementsByTagName("w:br");
+                    for(let b=0; b<brs.length; b++) {
+                        if(brs[b].getAttribute("w:type") === "page") paginaActual++;
+                    }
+                }
+                if (p.getElementsByTagName("w:lastRenderedPageBreak").length > 0) {
+                    paginaActual += p.getElementsByTagName("w:lastRenderedPageBreak").length;
+                }
+
+                // Extraer el texto plano del párrafo juntando todos los nodos de texto (<w:t>)
+                const nodosTexto = p.getElementsByTagName("w:t");
+                let textoParrafo = "";
+                for (let j = 0; j < nodosTexto.length; j++) {
+                    textoParrafo += nodosTexto[j].textContent;
+                }
+                textoParrafo = textoParrafo.trim();
+
+                if (!textoParrafo) continue;
+
+                // 2. DETECCIÓN DE TÍTULOS POR ESTILOS NATIVOS (<w:pStyle>)
+                const estiloNodo = p.getElementsByTagName("w:pStyle")[0];
+                let esTitulo = false;
+                let nivelTitulo = 1;
+
+                if (estiloNodo) {
+                    const valorEstilo = estiloNodo.getAttribute("w:val");
+                    // Detecta "Heading1", "Heading2", "Ttulodeindice1", "Heading3", etc.
+                    if (/heading|t[ií]tulo/i.test(valorEstilo)) {
+                        esTitulo = true;
+                        const matchNivel = valorEstilo.match(/\d+/);
+                        nivelTitulo = matchNivel ? parseInt(matchNivel[0]) : 1;
+                    }
+                }
+
+                // Renderizar según el tipo detectado
+                if (esTitulo) {
+                    const sangriaHtml = "&nbsp;".repeat((nivelTitulo - 1) * 6);
+                    const sangriaTxt = " ".repeat((nivelTitulo - 1) * 4);
+                    
+                    listaGeneral.innerHTML += `<div class="py-2 text-sm flex justify-between"><span>${sangriaHtml}<strong>${textoParrafo}</strong></span> <span class="text-gray-400 flex-grow mx-2 border-b border-dotted border-gray-300 mb-1"></span> <span>Pág. ${paginaActual}</span></div>`;
+                    txtGeneral += `${sangriaTxt}${textoParrafo} ...... Pág. ${paginaActual}\n`;
+                } 
+                // 3. DETECCIÓN DE TABLAS Y FIGURAS POR EXPRESIÓN REGULAR AVANZADA
+                else if (/^(tabla|cuadro|mapa\sde\stablas)\b[:.\s]/i.test(textoParrafo)) {
+                    listaTablas.innerHTML += `<div class="py-2 text-sm flex justify-between"><span><strong>${textoParrafo}</strong></span> <span class="text-gray-400 flex-grow mx-2 border-b border-dotted border-gray-300 mb-1"></span> <span>Pág. ${paginaActual}</span></div>`;
+                    txtTablas += `${textoParrafo} ...... Pág. ${paginaActual}\n`;
+                } 
+                else if (/^(figura|imagen|ilustraci[oó]n|gr[aá]fico)\b[:.\s]/i.test(textoParrafo)) {
+                    listaFiguras.innerHTML += `<div class="py-2 text-sm flex justify-between"><span><strong>${textoParrafo}</strong></span> <span class="text-gray-400 flex-grow mx-2 border-b border-dotted border-gray-300 mb-1"></span> <span>Pág. ${paginaActual}</span></div>`;
+                    txtFiguras += `${textoParrafo} ...... Pág. ${paginaActual}\n`;
+                }
+            }
+
+            // Validar si están vacíos
+            if (!listaGeneral.innerHTML) listaGeneral.innerHTML = "<p class='text-gray-400 italic'>No se encontraron títulos con estilos oficiales de Word (Heading/Título).</p>";
+            if (!listaTablas.innerHTML) listaTablas.innerHTML = "<p class='text-gray-400 italic'>No se encontraron leyendas del tipo: 'Tabla 1: ...' o 'Cuadro 2. ...'</p>";
+            if (!listaFiguras.innerHTML) listaFiguras.innerHTML = "<p class='text-gray-400 italic'>No se encontraron leyendas del tipo: 'Figura 1: ...' o 'Imagen 3. ...'</p>";
+
+            textoReporteGlobal = txtGeneral + txtTablas + txtFiguras;
+
+            document.getElementById('status').classList.add('hidden');
+            document.getElementById('resultsContainer').classList.remove('hidden');
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+
+            ['general', 'tablas', 'figuras'].forEach(b => {
+                const btn = document.getElementById('btn-' + b);
+                if (b === tabName) {
+                    btn.classList.add('border-indigo-500', 'text-indigo-600');
+                    btn.classList.remove('border-transparent', 'text-gray-500');
+                } else {
+                    btn.classList.remove('border-indigo-500', 'text-indigo-600');
+                    btn.classList.add('border-transparent', 'text-gray-500');
+                }
+            });
+        }
+
+        function copiarAlPortapapeles() {
+            navigator.clipboard.writeText(textoReporteGlobal).then(() => {
+                alert("¡Índices optimizados y copiados al portapapeles!");
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procesador Inteligente de Casos de Uso</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/evidenceprime/html-docx-js@master/dist/html-docx.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f0f4f8;
+            color: #2c3e50;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #1a3a5f;
+            border-bottom: 2px solid #1a3a5f;
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: monospace;
+            font-size: 13px;
+            resize: vertical;
+            background-color: #fafbfc;
+        }
+        .btn-group {
+            margin: 15px 0 30px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-primary { background-color: #1a3a5f; color: white; }
+        .btn-primary:hover { background-color: #11253e; }
+        .btn-pdf { background-color: #e74c3c; color: white; }
+        .btn-pdf:hover { background-color: #c0392b; }
+        .btn-word { background-color: #2980b9; color: white; }
+        .btn-word:hover { background-color: #21618c; }
+        
+        /* Estilos del Documento Estructurado */
+        #preview-area {
+            background: white;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            min-height: 200px;
+        }
+        .intro-text {
+            font-style: italic;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .cuadro-header {
+            font-weight: bold;
+            color: #1a3a5f;
+            margin-top: 25px;
+            margin-bottom: 6px;
+            font-size: 15px;
+        }
+        .tabla-cu {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+        .tabla-cu th, .tabla-cu td {
+            border: 1px solid #1a3a5f;
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .tabla-cu th {
+            background-color: #1a3a5f;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+        .label-cell {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            width: 20%;
+            color: #333;
+        }
+        .value-cell {
+            width: 80%;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Procesador Estructurado de Casos de Uso</h1>
+    <p>Pega aquí tu texto plano/sin formato (incluso con saltos de línea desordenados). El sistema extraerá los componentes y creará las matrices institucionales automáticamente.</p>
+    
+    <textarea id="raw-input" placeholder="Pega aquí el texto. Ejemplo:&#10;Cuadro 1&#10;Caso de Uso: CU-01 Iniciar Sesión&#10;Actores: Usuario..."></textarea>
+    
+    <div class="btn-group">
+        <button class="btn btn-primary" onclick="procesarTexto()">Procesar y Estructurar</button>
+        <button class="btn btn-pdf" onclick="descargarPDF()">Descargar PDF</button>
+        <button class="btn btn-word" onclick="descargarWord()">Descargar Word</button>
+    </div>
+
+    <h2>Vista Previa del Documento</h2>
+    <div id="preview-area">
+        <p style="color: #7f8c8d; text-align: center;">Ningún texto procesado aún.</p>
+    </div>
+</div>
+
+<script>
+    // Valores por defecto basados en tu plantilla si el usuario no pone encabezados
+    const tituloGlobal = "1. Especificación de Casos de Uso";
+    const introduccionGlobal = "A continuación, se presentan las especificaciones detalladas de los casos de uso que componen el sistema, estructurados sistemáticamente de acuerdo con su función lógica y privilegios de actor.";
+
+    function procesarTexto() {
+        const rawText = document.getElementById('raw-input').value;
+        if (!rawText.trim()) {
+            alert("Por favor, pega algún texto primero.");
+            return;
+        }
+
+        // Dividir el texto por la palabra "Cuadro" para identificar bloques individuales
+        const bloques = rawText.split(/Cuadro\s+/i);
+        let htmlResultado = `<h1>${tituloGlobal}</h1><p class="intro-text">${introduccionGlobal}</p>`;
+        let cuadrosDetectados = 0;
+
+        bloques.forEach(bloque => {
+            if (!bloque.trim() || bloque.toLowerCase().includes("especificación de casos de uso")) return;
+            
+            cuadrosDetectados++;
+            
+            // Intentar extraer el número de cuadro y título de la descripción
+            const lineas = bloque.split('\n');
+            let numeroCuadro = cuadrosDetectados;
+            let tituloCU = "Caso de Uso Detectado";
+
+            // Buscar etiquetas clave usando expresiones regulares flexibles
+            const obtenerCampo = (regex) => {
+                const match = bloque.match(regex);
+                return match ? match[1].trim() : "N/A";
+            };
+
+            const casoDeUso = obtenerCampo(/Caso de Uso:\s*(.*)/i);
+            const actores = obtenerCampo(/Actores?:\s*(.*)/i);
+            const precondiciones = obtenerCampo(/Precondiciones?:\s*(.*)/i);
+            const descripcion = obtenerCampo(/Descripción:\s*(.*)/i);
+            
+            // Capturar flujos (buscando bloques más extensos entre palabras clave)
+            const flujoPrincipal = obtenerCampo(/Flujo Principal:\s*([\s\S]*?)(?=Flujos? Alterna|Postcondi|$)/i);
+            const flujosAlternos = obtenerCampo(/Flujos? Alternativos?:\s*([\s\S]*?)(?=Postcondi|$)/i);
+            const postcondiciones = obtenerCampo(/Postcondiciones?:\s*([\s\S]*?)$/i);
+
+            // Armar el diseño tipo Cuadro Institucional
+            htmlResultado += `
+                <div class="cuadro-header">Cuadro ${numeroCuadro}<br>Descripción del Caso de Uso: ${casoDeUso !== 'N/A' ? casoDeUso : 'Sin Nombre'}</div>
+                <table class="tabla-cu">
+                    <thead>
+                        <tr>
+                            <th class="label-cell">Componente</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td class="label-cell">Caso de Uso</td><td class="value-cell"><strong>${casoDeUso}</strong></td></tr>
+                        <tr><td class="label-cell">Actores</td><td class="value-cell">${actores}</td></tr>
+                        <tr><td class="label-cell">Precondiciones</td><td class="value-cell">${precondiciones}</td></tr>
+                        <tr><td class="label-cell">Descripción</td><td class="value-cell">${descripcion}</td></tr>
+                        <tr><td class="label-cell">Flujo Principal</td><td class="value-cell">${flujoPrincipal}</td></tr>
+                        <tr><td class="label-cell">Flujos Alternos</td><td class="value-cell">${flujosAlternos}</td></tr>
+                        <tr><td class="label-cell">Postcondiciones</td><td class="value-cell">${postcondiciones}</td></tr>
+                    </tbody>
+                </table>
+            `;
+        });
+
+        document.getElementById('preview-area').innerHTML = htmlResultado;
+    }
+
+    function descargarPDF() {
+        const { jsPDF } = window.jspdf;
+        const elemento = document.getElementById('preview-area');
+        
+        html2canvas(elemento, { scale: 2 }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgWidth = 180; 
+            const pageHeight = 285;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 15;
+
+            pdf.addImage(imgData, 'PNG', 15, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight + 15;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 15, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+            pdf.save('Especificacion_Casos_De_Uso.pdf');
+        });
+    }
+
+    function descargarWord() {
+        const contenidoHtml = document.getElementById('preview-area').innerHTML;
+        
+        // Estilos específicos integrados para que Microsoft Word dibuje las tablas correctamente
+        const estilosWord = `
+            <style>
+                body { font-family: Arial, sans-serif; }
+                h1 { color: #1a3a5f; font-size: 20pt; border-bottom: 2px solid #1a3a5f; }
+                .intro-text { font-style: italic; color: #555; }
+                .cuadro-header { font-weight: bold; color: #1a3a5f; margin-top: 20px; font-size: 12pt; }
+                .tabla-cu { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                .tabla-cu th, .tabla-cu td { border: 1px solid #1a3a5f; padding: 6px; font-size: 10pt; }
+                .label-cell { background-color: #f2f2f2; font-weight: bold; width: 150px; }
+            </style>
+        `;
+
+        const documentoCompleto = `
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="utf-8"></head>
+            <body>${estilosWord}${contenidoHtml}</body>
+            </html>
+        `;
+
+        const converted = htmlDocx.asBlob(documentoCompleto);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(converted);
+        a.download = 'Especificacion_Casos_De_Uso.docx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+</script>
+
+</body>
+</html>

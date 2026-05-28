@@ -626,14 +626,19 @@ public function generarReporte(Request $request)
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'dependencias' => ['nullable', 'array'],
-            'dependencias.*' => ['exists:dependencias,id'],
+            'dependencias.*' => ['integer', 'exists:dependencias,id'],
             'estado' => ['nullable', 'array'],
-            'estado.*' => ['string'],
-            'tipo_bien' => ['nullable', 'string'],
-            'organismo_id' => ['nullable', 'exists:organismos,id'],
-            'unidad_id' => ['nullable'],
+            'estado.*' => ['string', Rule::in(array_map(fn($e) => $e->value, EstadoBien::cases()))],
+            'tipo_bien' => ['nullable', 'array'],
+            'tipo_bien.*' => ['string', Rule::in(array_map(fn($t) => $t->value, TipoBien::cases()))],
+            'organismo_id' => ['nullable', 'array'],
+            'organismo_id.*' => ['integer', 'exists:organismos,id'],
+            'unidad_id' => ['nullable', 'array'],
+            'unidad_id.*' => ['integer', 'exists:unidades_administradoras,id'],
             'fecha_desde' => ['nullable', 'date'],
             'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde'],
+            'precio_desde' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
+            'precio_hasta' => ['nullable', 'numeric', 'min:0', 'max:999999999.99', 'gte:precio_desde'],
             'solo_desincorporados' => ['nullable', 'boolean'],
         ]);
 
@@ -758,40 +763,34 @@ private function aplicarFiltrosReporteFinal($query, array $filtros): void
         $query->where('estado', '!=', 'DESINCORPORADO');
     }
     
-    // Tipo de bien (string simple)
+    // Tipo de bien (soporta array o valor simple)
     if (!empty($filtros['tipo_bien'])) {
-        $query->where('tipo_bien', $filtros['tipo_bien']);
-    }
-    
-    // 🔥 CRÍTICO: Unidad Administradora (soporta string o array)
-    if (!empty($filtros['unidad_id'])) {
-        if (is_array($filtros['unidad_id'])) {
-            // Múltiples unidades
-            $unidadesIds = array_filter($filtros['unidad_id']);
-            if (!empty($unidadesIds)) {
-                $query->whereHas('dependencia', function ($q) use ($unidadesIds) {
-                    $q->whereIn('unidad_administradora_id', $unidadesIds);
-                });
+        if (is_array($filtros['tipo_bien'])) {
+            $tiposValidos = array_filter($filtros['tipo_bien']);
+            if (!empty($tiposValidos)) {
+                $query->whereIn('tipo_bien', $tiposValidos);
             }
         } else {
-            // Una sola unidad
-            $query->whereHas('dependencia', function ($q) use ($filtros) {
-                $q->where('unidad_administradora_id', $filtros['unidad_id']);
-            });
+            $query->where('tipo_bien', $filtros['tipo_bien']);
         }
-    } 
-    // Organismo (string simple)
-    elseif (!empty($filtros['organismo_id'])) {
-        $query->whereHas('dependencia.unidadAdministradora', function ($q) use ($filtros) {
-            $q->where('organismo_id', $filtros['organismo_id']);
-        });
     }
-    // Dependencias (array)
-    elseif (!empty($filtros['dependencias']) && is_array($filtros['dependencias'])) {
-        $depsValidas = array_filter($filtros['dependencias']);
-        if (!empty($depsValidas)) {
-            $query->whereIn('dependencia_id', $depsValidas);
-        }
+
+    // Jerarquía (mismo orden de prioridad que en index):
+    // dependencias > unidad > organismo
+    $dependenciasIds = array_values(array_filter((array) ($filtros['dependencias'] ?? [])));
+    $unidadesIds = array_values(array_filter((array) ($filtros['unidad_id'] ?? [])));
+    $organismosIds = array_values(array_filter((array) ($filtros['organismo_id'] ?? [])));
+
+    if (!empty($dependenciasIds)) {
+        $query->whereIn('dependencia_id', $dependenciasIds);
+    } elseif (!empty($unidadesIds)) {
+        $query->whereHas('dependencia', function ($q) use ($unidadesIds) {
+            $q->whereIn('unidad_administradora_id', $unidadesIds);
+        });
+    } elseif (!empty($organismosIds)) {
+        $query->whereHas('dependencia.unidadAdministradora', function ($q) use ($organismosIds) {
+            $q->whereIn('organismo_id', $organismosIds);
+        });
     }
     
     // Fechas
@@ -800,6 +799,14 @@ private function aplicarFiltrosReporteFinal($query, array $filtros): void
     }
     if (!empty($filtros['fecha_hasta'])) {
         $query->whereDate('fecha_registro', '<=', $filtros['fecha_hasta']);
+    }
+
+    // Precio
+    if (isset($filtros['precio_desde']) && $filtros['precio_desde'] !== '') {
+        $query->where('precio', '>=', (float) $filtros['precio_desde']);
+    }
+    if (isset($filtros['precio_hasta']) && $filtros['precio_hasta'] !== '') {
+        $query->where('precio', '<=', (float) $filtros['precio_hasta']);
     }
 }
 /**
@@ -1621,10 +1628,13 @@ private function generarReportePorTipo($reporteService, $bienes, string $tipoRep
 private function obtenerDatosInstitucionales(array $filtros, $bienes): array
 {
     $datos = [];
+    $dependenciasIds = array_values(array_filter((array) ($filtros['dependencias'] ?? [])));
+    $unidadesIds = array_values(array_filter((array) ($filtros['unidad_id'] ?? [])));
+    $organismosIds = array_values(array_filter((array) ($filtros['organismo_id'] ?? [])));
     
     // Si hay una dependencia específica (solo una)
-    if (!empty($filtros['dependencias']) && count($filtros['dependencias']) === 1) {
-        $dependenciaId = $filtros['dependencias'][0];
+    if (count($dependenciasIds) === 1) {
+        $dependenciaId = $dependenciasIds[0];
         $dependencia = Dependencia::with(['responsable', 'unidadAdministradora.organismo'])->find($dependenciaId);
         
         if ($dependencia) {
@@ -1638,14 +1648,14 @@ private function obtenerDatosInstitucionales(array $filtros, $bienes): array
         }
     }
     // Si hay una unidad específica (NO mostrar datos institucionales porque se agrupará)
-    elseif (!empty($filtros['unidad_id'])) {
+    elseif (!empty($unidadesIds)) {
         // Para reportes agrupados por unidad, no mostramos datos en el encabezado
         // ya que se mostrarán dentro de cada grupo
         return [];
     }
     // Si hay un organismo específico
-    elseif (!empty($filtros['organismo_id']) && empty($filtros['unidad_id'])) {
-        $organismo = Organismo::find($filtros['organismo_id']);
+    elseif (count($organismosIds) === 1 && empty($unidadesIds)) {
+        $organismo = Organismo::find($organismosIds[0]);
         
         if ($organismo) {
             $datos = [
@@ -1669,49 +1679,67 @@ private function obtenerDatosInstitucionales(array $filtros, $bienes): array
 private function construirSubtituloReporte(array $filtros): string
 {
     $descripciones = [];
+    $organismosIds = array_values(array_filter((array) ($filtros['organismo_id'] ?? [])));
+    $unidadesIds = array_values(array_filter((array) ($filtros['unidad_id'] ?? [])));
+    $dependenciasIds = array_values(array_filter((array) ($filtros['dependencias'] ?? [])));
+    $estados = array_values(array_filter((array) ($filtros['estado'] ?? [])));
+    $tipos = array_values(array_filter((array) ($filtros['tipo_bien'] ?? [])));
     
     // Organismo
-    if (!empty($filtros['organismo_id']) && empty($filtros['unidad_id'])) {
-        $organismo = Organismo::find($filtros['organismo_id']);
-        if ($organismo) {
-            $descripciones[] = 'Organismo: ' . $organismo->nombre;
+    if (!empty($organismosIds) && empty($unidadesIds)) {
+        if (count($organismosIds) === 1) {
+            $organismo = Organismo::find($organismosIds[0]);
+            if ($organismo) {
+                $descripciones[] = 'Organismo: ' . $organismo->nombre;
+            }
+        } else {
+            $descripciones[] = 'Organismos: ' . count($organismosIds) . ' seleccionados';
         }
     }
     
     // Unidad Administradora
-    if (!empty($filtros['unidad_id'])) {
-        $unidad = UnidadAdministradora::with('dependencias')->find($filtros['unidad_id']);
-        if ($unidad) {
-            $cantDependencias = $unidad->dependencias->count();
-            $descripciones[] = 'Unidad: ' . $unidad->nombre . ' (' . $cantDependencias . ' dependencias)';
+    if (!empty($unidadesIds)) {
+        if (count($unidadesIds) === 1) {
+            $unidad = UnidadAdministradora::with('dependencias')->find($unidadesIds[0]);
+            if ($unidad) {
+                $cantDependencias = $unidad->dependencias->count();
+                $descripciones[] = 'Unidad: ' . $unidad->nombre . ' (' . $cantDependencias . ' dependencias)';
+            }
+        } else {
+            $descripciones[] = 'Unidades: ' . count($unidadesIds) . ' seleccionadas';
         }
     }
     
     // Dependencias
-    if (!empty($filtros['dependencias'])) {
-        if (count($filtros['dependencias']) === 1) {
-            $dependencia = Dependencia::find($filtros['dependencias'][0]);
+    if (!empty($dependenciasIds)) {
+        if (count($dependenciasIds) === 1) {
+            $dependencia = Dependencia::find($dependenciasIds[0]);
             if ($dependencia) {
                 $descripciones[] = 'Dependencia: ' . $dependencia->nombre;
             }
         } else {
-            $descripciones[] = 'Dependencias: ' . count($filtros['dependencias']) . ' seleccionadas';
+            $descripciones[] = 'Dependencias: ' . count($dependenciasIds) . ' seleccionadas';
         }
     }
     
     // Estados
-    if (!empty($filtros['estado'])) {
-        if (count($filtros['estado']) === 1) {
-            $descripciones[] = 'Estado: ' . $filtros['estado'][0];
+    if (!empty($estados)) {
+        if (count($estados) === 1) {
+            $descripciones[] = 'Estado: ' . $estados[0];
         } else {
-            $descripciones[] = 'Estados: ' . count($filtros['estado']) . ' seleccionados';
+            $descripciones[] = 'Estados: ' . count($estados) . ' seleccionados';
         }
     }
     
-    // Tipo de bien
-    if (!empty($filtros['tipo_bien']) && !is_array($filtros['tipo_bien'])) {
+    // Tipo de bien (array)
+    if (!empty($tipos)) {
         $tiposBien = collect(TipoBien::cases())->mapWithKeys(fn($t) => [$t->value => $t->label()]);
-        $descripciones[] = 'Tipo: ' . ($tiposBien[$filtros['tipo_bien']] ?? $filtros['tipo_bien']);
+        if (count($tipos) === 1) {
+            $tipo = $tipos[0];
+            $descripciones[] = 'Tipo: ' . ($tiposBien[$tipo] ?? $tipo);
+        } else {
+            $descripciones[] = 'Tipos: ' . count($tipos) . ' seleccionados';
+        }
     }
     
     // Rango de fechas

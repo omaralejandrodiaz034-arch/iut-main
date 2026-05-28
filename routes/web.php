@@ -112,35 +112,38 @@ Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () 
     Route::resource('bienes', BienController::class)->parameters(['bienes' => 'bien']);
 
     // ────────────────────────────────────────────────
-    // Otras entidades con sus rutas PDF
+    // Otras entidades con sus rutas PDF y reportes filtrados
     // ────────────────────────────────────────────────
+    Route::get('dependencias/reporte', [DependenciaController::class, 'generarReporte'])
+        ->name('dependencias.reporte');
     Route::resource('dependencias', DependenciaController::class)
         ->parameters(['dependencias' => 'dependencia']);
     Route::get('dependencias/{dependencia}/pdf', [DependenciaController::class, 'exportPdf'])
         ->name('dependencias.pdf');
 
+    Route::get('organismos/reporte', [OrganismoController::class, 'generarReporte'])
+        ->name('organismos.reporte');
     Route::resource('organismos', OrganismoController::class);
     Route::get('organismos/{organismo}/pdf', [OrganismoController::class, 'exportPdf'])
         ->name('organismos.pdf');
 
+    Route::get('unidades/reporte', [UnidadAdministradoraController::class, 'generarReporte'])
+        ->name('unidades.reporte');
     Route::resource('unidades', UnidadAdministradoraController::class)
         ->parameters(['unidades' => 'unidadAdministradora']);
     Route::get('unidades/{unidadAdministradora}/pdf', [UnidadAdministradoraController::class, 'exportPdf'])
         ->name('unidades.pdf');
 
-    Route::resource('responsables', ResponsableController::class);
-    Route::post('responsables/buscar', [ApiResponsableController::class, 'buscar'])
-        ->name('responsables.buscar');
-
+    Route::get('usuarios/reporte', [UsuarioController::class, 'generarReporte'])
+        ->name('usuarios.reporte');
     Route::resource('usuarios', UsuarioController::class)->parameters(['usuarios' => 'usuario']);
     Route::get('usuarios/{usuario}/pdf', [UsuarioController::class, 'exportPdf'])
         ->name('usuarios.pdf');
     Route::post('usuarios/importar', [ApiUsuarioImportController::class, 'importarPorCedula'])
         ->name('usuarios.importar');
 
-    // ────────────────────────────────────────────────
-    // Movimientos e historial
-    // ────────────────────────────────────────────────
+    Route::get('movimientos/reporte', [MovimientoController::class, 'generarReporte'])
+        ->name('movimientos.reporte');
     Route::resource('movimientos', MovimientoController::class);
     Route::get('movimientos/{movimiento}/pdf', [MovimientoController::class, 'pdf'])
         ->name('movimientos.pdf');
@@ -158,8 +161,8 @@ Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () 
     // ────────────────────────────────────────────────
     // Reportes y gráficas
     // ────────────────────────────────────────────────
-    Route::resource('reportes', ReporteController::class);
     Route::get('reportes/pdf/{tipo}', [ReporteController::class, 'generarPdf'])->name('reportes.pdf');
+    Route::resource('reportes', ReporteController::class);
     Route::get('graficas', [ReporteController::class, 'graficas'])->name('graficas');
     Route::get('graficas/pdf', [ReporteController::class, 'graficasPdf'])->name('graficas.pdf');
 });
