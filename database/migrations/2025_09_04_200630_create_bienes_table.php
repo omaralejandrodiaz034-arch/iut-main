@@ -12,7 +12,7 @@ return new class extends Migration
             Schema::create('bienes', function (Blueprint $table) {
                 $table->id();
                 $table->unsignedBigInteger('dependencia_id');
-                $table->string('codigo', 8)->unique();
+                $table->string('codigo', 50)->unique();
                 $table->string('descripcion', 255);
                 $table->decimal('precio', 15, 2)->default(0);
                 $table->string('fotografia', 255)->nullable();

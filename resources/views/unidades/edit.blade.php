@@ -84,8 +84,8 @@
                 @error('nombre')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
-                <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten letras y espacios.</p>
-                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 40 caracteres (solo letras y espacios).</p>
+                <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten letras, números y espacios.</p>
+                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 40 caracteres (letras, números y espacios).</p>
             </div>
 
             {{-- Botones de Acción --}}
@@ -175,10 +175,10 @@
             }
         });
 
-        // 2. LÓGICA DE NOMBRE
+        // 2. LÓGICA DE NOMBRE (permitir números)
         nombreInput.addEventListener('input', function(e) {
             let originalValue = e.target.value;
-            let filteredValue = originalValue.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+            let filteredValue = originalValue.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]/g, '');
 
             if (originalValue !== filteredValue) {
                 errorNombre.classList.remove('hidden');

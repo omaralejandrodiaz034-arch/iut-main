@@ -64,7 +64,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-    
+
     // ────────────────────────────────────────────────
     // PERFIL
     // ────────────────────────────────────────────────
@@ -102,6 +102,10 @@ Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () 
         // Desincorporación (GET → formulario, POST → procesar y descargar acta)
         Route::get('{bien}/desincorporar',    [BienController::class, 'showDesincorporarForm'])->name('desincorporar.form');
         Route::post('{bien}/desincorporar',   [BienController::class, 'desincorporar'])       ->name('desincorporar');
+
+        // Reincorporación (GET → formulario, POST → procesar)
+        Route::get('{bien}/reincorporar',     [BienController::class, 'showReincorporarForm'])->name('reincorporar.form');
+        Route::post('{bien}/reincorporar',    [BienController::class, 'reincorporar'])      ->name('reincorporar');
 
         // Transferencia entre dependencias
         Route::get('{bien}/transferir',  [BienController::class, 'showTransferirForm'])->name('transferir.form');

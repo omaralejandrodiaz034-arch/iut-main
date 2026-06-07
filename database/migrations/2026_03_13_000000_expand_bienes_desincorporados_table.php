@@ -16,7 +16,7 @@ return new class extends Migration
             // Datos del bien (copiados de la tabla bienes)
             $table->unsignedBigInteger('dependencia_id')->nullable()->after('bien_id');
             $table->unsignedBigInteger('responsable_id')->nullable()->after('dependencia_id');
-            $table->string('codigo', 8)->after('responsable_id');
+            $table->string('codigo', 50)->after('responsable_id');
             $table->string('descripcion', 255)->after('codigo');
             $table->decimal('precio', 15, 2)->default(0)->after('descripcion');
             $table->string('fotografia', 255)->nullable()->after('precio');

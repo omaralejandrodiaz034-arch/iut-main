@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Organismo;
 use App\Models\UnidadAdministradora;
-use App\Services\CodigoUnicoService;
+use App\Services\CodigoJerarquicoService;
 use App\Services\FpdfReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class UnidadAdministradoraController extends Controller
@@ -38,8 +37,12 @@ class UnidadAdministradoraController extends Controller
             $query->where('organismo_id', $organismo_id);
         }
 
-        $unidades = $query->paginate(10)
-            ->appends($request->only(['search', 'organismo_id']));
+        $unidades = $query->paginate(10)->appends($request->only(['search', 'organismo_id']));
+
+    // ✅ AGREGAR: Formatear códigos para mostrar
+    foreach ($unidades as $unidad) {
+        $unidad->codigo_legible = CodigoJerarquicoService::formatearCodigoLegible($unidad->codigo);
+    }
 
         $organismos = Organismo::orderBy('nombre')->get();
 
@@ -51,163 +54,302 @@ class UnidadAdministradoraController extends Controller
     }
 
     public function create(Request $request)
-    {
-        $organismos = Organismo::all();
+{
+    $organismos = Organismo::orderBy('nombre')->get();
 
-        $sugerenciasPorOrganismo = [];
-        foreach ($organismos as $org) {
-            $ultimoCodigo = UnidadAdministradora::where('organismo_id', $org->id)
-                ->whereRaw("codigo REGEXP '^[0-9]+$'")
-                ->max(DB::raw('CAST(codigo AS UNSIGNED)'));
+    // Preparar sugerencias por organismo
+    $sugerenciasPorOrganismo = [];
+    $estadisticasPorOrganismo = [];
 
-            if ($ultimoCodigo) {
-                $siguiente = $ultimoCodigo + 1;
-            } else {
-                $codigoOrgNum = (int) $org->codigo;
-                $siguiente = $codigoOrgNum * 10000 + 1;
-            }
+    foreach ($organismos as $org) {
+        try {
+            // ✅ CAMBIAR: usar generarCodigoUnidad en lugar de obtenerSiguienteCodigoParaUnidad
+            $codigoSugerido = CodigoJerarquicoService::generarCodigoUnidad($org->id);
+            $sugerenciasPorOrganismo[$org->id] = [
+                'codigo' => $codigoSugerido,
+                'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($codigoSugerido)
+            ];
 
-            $codigoFormateado = str_pad((string) $siguiente, 8, '0', STR_PAD_LEFT);
-            while (CodigoUnicoService::codigoExiste($codigoFormateado)) {
-                $siguiente++;
-                $codigoFormateado = str_pad((string) $siguiente, 8, '0', STR_PAD_LEFT);
-                if ($org->code_max > 0 && $siguiente > $org->code_max) {
-                    break;
-                }
-            }
-
-            $sugerenciasPorOrganismo[$org->id] = $codigoFormateado;
+            // ✅ AGREGAR: estadísticas de uso
+            $estadisticasPorOrganismo[$org->id] = CodigoJerarquicoService::obtenerEstadisticas(
+                $org->codigo,
+                'unidades'
+            );
+        } catch (\Throwable $e) {
+            $sugerenciasPorOrganismo[$org->id] = null;
+            $estadisticasPorOrganismo[$org->id] = [
+                'error' => $e->getMessage(),
+                'usados' => 0,
+                'disponibles' => 0,
+                'porcentaje_uso' => 0
+            ];
+            \Log::warning("No se pudo sugerir código para organismo {$org->id}: " . $e->getMessage());
         }
-
-        $siguienteCodigo = null;
-        $organismoSeleccionado = $request->input('organismo_id') ?? ($organismos->first()?->id);
-
-        if ($organismoSeleccionado && isset($sugerenciasPorOrganismo[$organismoSeleccionado])) {
-            $siguienteCodigo = $sugerenciasPorOrganismo[$organismoSeleccionado];
-        }
-
-        if (! $siguienteCodigo) {
-            $siguienteCodigo = CodigoUnicoService::obtenerSiguienteCodigo();
-        }
-
-        return view('unidades.create', compact('organismos', 'siguienteCodigo', 'sugerenciasPorOrganismo'));
     }
+
+    $siguienteCodigo = null;
+    $siguienteCodigoLegible = null;
+    $organismoSeleccionado = $request->input('organismo_id') ?? ($organismos->first()?->id);
+
+    if ($organismoSeleccionado && isset($sugerenciasPorOrganismo[$organismoSeleccionado])) {
+        $siguienteCodigo = $sugerenciasPorOrganismo[$organismoSeleccionado]['codigo'];
+        $siguienteCodigoLegible = $sugerenciasPorOrganismo[$organismoSeleccionado]['codigo_legible'];
+    }
+
+    $estadisticas = $estadisticasPorOrganismo[$organismoSeleccionado] ?? null;
+
+    return view('unidades.create', compact(
+        'organismos',
+        'siguienteCodigo',
+        'siguienteCodigoLegible',
+        'sugerenciasPorOrganismo',
+        'estadisticasPorOrganismo',
+        'organismoSeleccionado',
+        'estadisticas'
+    ));
+}
 
     public function edit(UnidadAdministradora $unidadAdministradora)
-    {
-        $organismos = Organismo::all();
+{
+    $organismos = Organismo::all();
 
-        return view('unidades.edit', compact('unidadAdministradora', 'organismos'));
-    }
+    // ✅ AGREGAR: código legible y estadísticas
+    $codigoLegible = CodigoJerarquicoService::formatearCodigoLegible($unidadAdministradora->codigo);
+
+    $stats = CodigoJerarquicoService::obtenerEstadisticas(
+        $unidadAdministradora->codigo,
+        'dependencias'
+    );
+
+    return view('unidades.edit', compact(
+        'unidadAdministradora',
+        'organismos',
+        'codigoLegible',
+        'stats'
+    ));
+}
 
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'organismo_id' => ['required', 'exists:organismos,id'],
-            'codigo' => [
-                'required',
-                'string',
-                'size:8',
-                'regex:/^[0-9]+$/',
-                function ($attribute, $value, $fail) {
-                    if (CodigoUnicoService::codigoExiste($value)) {
-                        $ubicacion = CodigoUnicoService::obtenerUbicacionCodigo($value);
-                        $fail('Este código ya está en uso por: '.$ubicacion['tabla'].' ('.$ubicacion['nombre'].')');
-                    }
-                },
-            ],
-            'nombre' => ['required', 'string', 'max:255'],
-        ], [
-            'organismo_id.required' => 'Debe seleccionar un organismo.',
-            'codigo.required' => 'El código de la unidad es obligatorio.',
-            'codigo.size' => 'El código debe tener exactamente 8 dígitos.',
-            'nombre.required' => 'El nombre de la unidad es obligatorio.',
-        ]);
+{
+    $validated = $request->validate([
+        'organismo_id' => ['required', 'exists:organismos,id'],
+        'codigo' => [
+            'required',
+            'string',
+            function ($attribute, $value, $fail) use ($request) {
+                // ✅ CAMBIAR: validar longitud de 8 dígitos
+                if (strlen($value) !== CodigoJerarquicoService::TOTAL_UNIDAD) {
+                    $fail("El código debe tener exactamente " . CodigoJerarquicoService::TOTAL_UNIDAD . " dígitos.");
+                    return;
+                }
 
-        $organismo = Organismo::find($validated['organismo_id']);
-        if ($organismo && $organismo->code_min == 1 && $organismo->code_max == 50) {
-            try {
-                CodigoUnicoService::reservarCodigosParaOrganismo($organismo->id, 50);
-                $organismo->refresh();
-            } catch (\Exception $e) {
-                \Log::warning("No se pudo asignar rango al organismo {$organismo->id}: ".$e->getMessage());
-            }
-        }
+                if (!preg_match('/^[0-9]+$/', $value)) {
+                    $fail("El código solo puede contener números.");
+                    return;
+                }
 
-        $unidad = UnidadAdministradora::create($validated);
+                $organismo = Organismo::find($request->organismo_id);
+                if (!$organismo) {
+                    $fail("Organismo no encontrado.");
+                    return;
+                }
 
-        try {
-            CodigoUnicoService::reservarCodigosParaUnidad($unidad->id, 50);
-        } catch (\Exception $e) {
-            \Log::warning("No se pudieron reservar códigos para unidad {$unidad->id}: ".$e->getMessage());
-        }
+                // ✅ CAMBIAR: validar que comience con el código del organismo (primer dígito)
+                $prefijoOrganismo = substr($organismo->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO);
+                if (!str_starts_with($value, $prefijoOrganismo)) {
+                    $fail("El código debe comenzar con el código del organismo ({$prefijoOrganismo}).");
+                    return;
+                }
 
-        return redirect()->route('unidades.index')->with('success', 'Unidad creada correctamente');
-    }
+                // ✅ AGREGAR: validar que la parte de unidad no sea 0000
+                $parteUnidad = substr($value, CodigoJerarquicoService::LONG_ORGANISMO, CodigoJerarquicoService::LONG_UNIDAD);
+                if ((int)$parteUnidad === 0) {
+                    $fail("El código de unidad no puede ser 0000.");
+                    return;
+                }
+
+                // ✅ CAMBIAR: usar codigoExiste del nuevo servicio
+                if (CodigoJerarquicoService::codigoExiste($value)) {
+                    $fail('Este código ya está en uso por otra unidad.');
+                }
+            },
+        ],
+        'nombre' => ['required', 'string', 'max:255'],
+    ], [
+        'organismo_id.required' => 'Debe seleccionar un organismo.',
+        'codigo.required' => 'El código de la unidad es obligatorio.',
+        'nombre.required' => 'El nombre de la unidad es obligatorio.',
+    ]);
+
+    // ✅ ELIMINAR: toda la validación de rangos (ya no es necesaria)
+    // ✅ ELIMINAR: reservarCodigosParaOrganismo y reservarCodigosParaUnidad
+
+    $unidad = UnidadAdministradora::create($validated);
+
+    return redirect()->route('unidades.index')
+        ->with('success', 'Unidad creada correctamente. Código: ' .
+            CodigoJerarquicoService::formatearCodigoLegible($unidad->codigo));
+}
 
     public function show(UnidadAdministradora $unidadAdministradora)
-    {
-        $unidadAdministradora->load(['organismo', 'dependencias']);
+{
+    $unidadAdministradora->load(['organismo', 'dependencias']);
 
-        return view('unidades.show', compact('unidadAdministradora'));
+    // ✅ AGREGAR: formatear código legible
+    $codigoLegible = CodigoJerarquicoService::formatearCodigoLegible($unidadAdministradora->codigo);
+
+    // ✅ AGREGAR: estadísticas jerárquicas
+    $stats = CodigoJerarquicoService::obtenerEstadisticas(
+        $unidadAdministradora->codigo,
+        'dependencias'
+    );
+
+    // ✅ AGREGAR: calcular total de bienes
+    $totalBienes = 0;
+    foreach ($unidadAdministradora->dependencias as $dependencia) {
+        $totalBienes += $dependencia->bienes()->count();
     }
+
+    // ✅ AGREGAR: jerarquía completa
+    $jerarquia = [
+        'organismo' => [
+            'codigo' => $unidadAdministradora->organismo->codigo,
+            'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($unidadAdministradora->organismo->codigo),
+            'nombre' => $unidadAdministradora->organismo->nombre
+        ],
+        'unidad' => [
+            'codigo' => $unidadAdministradora->codigo,
+            'codigo_legible' => $codigoLegible,
+            'nombre' => $unidadAdministradora->nombre
+        ]
+    ];
+
+    return view('unidades.show', compact(
+        'unidadAdministradora',
+        'codigoLegible',
+        'stats',
+        'totalBienes',
+        'jerarquia'
+    ));
+}
+/**
+ * API: Obtener el siguiente código para una unidad (AJAX)
+ */
+public function obtenerSiguienteCodigo(Request $request)
+{
+    $request->validate([
+        'organismo_id' => ['required', 'exists:organismos,id']
+    ]);
+
+    try {
+        $organismo = Organismo::findOrFail($request->organismo_id);
+        $codigo = CodigoJerarquicoService::generarCodigoUnidad($organismo->id);
+        $stats = CodigoJerarquicoService::obtenerEstadisticas($organismo->codigo, 'unidades');
+
+        return response()->json([
+            'success' => true,
+            'codigo' => $codigo,
+            'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($codigo),
+            'stats' => $stats
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
 
     public function exportPdf(UnidadAdministradora $unidadAdministradora)
-    {
-        $unidadAdministradora->load(['organismo', 'dependencias']);
+{
+    $unidadAdministradora->load(['organismo', 'dependencias.bienes']);
 
-        $pdf = Pdf::loadView('unidades.pdf', [
-            'unidadAdministradora' => $unidadAdministradora,
-        ])->setPaper('letter');
+    // ✅ AGREGAR: código legible y estadísticas
+    $codigoLegible = CodigoJerarquicoService::formatearCodigoLegible($unidadAdministradora->codigo);
 
-        $fileName = sprintf(
-            'unidad_%s_%s.pdf',
-            Str::slug($unidadAdministradora->codigo, '_'),
-            Str::slug($unidadAdministradora->nombre, '_')
-        );
+    $stats = [
+        'total_dependencias' => $unidadAdministradora->dependencias()->count(),
+        'total_bienes' => 0,
+        'capacidad_maxima' => pow(10, CodigoJerarquicoService::LONG_DEPENDENCIA),
+        'codigo_legible' => $codigoLegible
+    ];
 
-        return $pdf->download($fileName);
+    foreach ($unidadAdministradora->dependencias as $dependencia) {
+        $stats['total_bienes'] += $dependencia->bienes()->count();
     }
+
+    $pdf = Pdf::loadView('unidades.pdf', [
+        'unidadAdministradora' => $unidadAdministradora,
+        'codigoLegible' => $codigoLegible,
+        'stats' => $stats
+    ])->setPaper('letter');
+
+    $fileName = sprintf(
+        'unidad_%s_%s.pdf',
+        Str::slug($unidadAdministradora->codigo, '_'),
+        Str::slug($unidadAdministradora->nombre, '_')
+    );
+
+    return $pdf->download($fileName);
+}
 
     public function update(Request $request, UnidadAdministradora $unidadAdministradora)
-    {
-        if ($request->has('codigo') && $request->codigo !== $unidadAdministradora->codigo) {
-            if ($unidadAdministradora->dependencias()->count() > 0) {
-                return back()->withErrors(['codigo' => 'No se puede cambiar el código porque la unidad ya tiene dependencias asociadas.'])->withInput();
-            }
+{
+    if ($request->has('codigo') && $request->codigo !== $unidadAdministradora->codigo) {
+        if ($unidadAdministradora->dependencias()->count() > 0) {
+            return back()->withErrors(['codigo' => 'No se puede cambiar el código porque la unidad ya tiene dependencias asociadas.'])->withInput();
         }
-
-        $validated = $request->validate([
-            'organismo_id' => ['sometimes', 'exists:organismos,id'],
-            'codigo' => [
-                'sometimes',
-                'string',
-                'size:8',
-                'regex:/^[0-9]+$/',
-                function ($attribute, $value, $fail) use ($unidadAdministradora) {
-                    if (CodigoUnicoService::codigoExiste($value, 'unidades', $unidadAdministradora->id)) {
-                        $ubicacion = CodigoUnicoService::obtenerUbicacionCodigo($value);
-                        $fail('No puedes usar este código. Ya pertenece a: '.$ubicacion['tabla']);
-                    }
-
-                    $organismo = \App\Models\Organismo::find($unidadAdministradora->organismo_id);
-                    if ($organismo && $organismo->code_max > 0) {
-                        $codigoNum = (int) $value;
-                        if ($codigoNum < $organismo->code_min || $codigoNum > $organismo->code_max) {
-                            $fail('El código debe estar dentro del rango del organismo: '.
-                                  str_pad((string) $organismo->code_min, 8, '0', STR_PAD_LEFT).' - '.
-                                  str_pad((string) $organismo->code_max, 8, '0', STR_PAD_LEFT));
-                        }
-                    }
-                },
-            ],
-            'nombre' => ['sometimes', 'string', 'max:255'],
-        ]);
-
-        $unidadAdministradora->update($validated);
-
-        return redirect()->route('unidades.index')->with('success', 'Unidad actualizada correctamente');
     }
+
+    $validated = $request->validate([
+        'organismo_id' => ['sometimes', 'exists:organismos,id'],
+        'codigo' => [
+            'sometimes',
+            'string',
+            function ($attribute, $value, $fail) use ($request, $unidadAdministradora) {
+                // ✅ CAMBIAR: validar longitud de 8 dígitos
+                if (strlen($value) !== CodigoJerarquicoService::TOTAL_UNIDAD) {
+                    $fail("El código debe tener exactamente " . CodigoJerarquicoService::TOTAL_UNIDAD . " dígitos.");
+                    return;
+                }
+
+                if (!preg_match('/^[0-9]+$/', $value)) {
+                    $fail("El código solo puede contener números.");
+                    return;
+                }
+
+                $organismoId = $request->organismo_id ?? $unidadAdministradora->organismo_id;
+                $organismo = Organismo::find($organismoId);
+
+                if (!$organismo) {
+                    $fail("Organismo no encontrado.");
+                    return;
+                }
+
+                $prefijoOrganismo = substr($organismo->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO);
+                if (!str_starts_with($value, $prefijoOrganismo)) {
+                    $fail("El código debe comenzar con el código del organismo ({$prefijoOrganismo}).");
+                    return;
+                }
+
+                if (substr($value, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD) !== str_repeat('0', CodigoJerarquicoService::LONG_DEPENDENCIA + CodigoJerarquicoService::LONG_BIEN)) {
+                    $fail('El código de unidad debe terminar con 000.');
+                    return;
+                }
+
+                // ✅ CAMBIAR: usar codigoExiste ignorando actual
+                if ($value !== $unidadAdministradora->codigo && CodigoJerarquicoService::codigoExiste($value)) {
+                    $fail('Este código ya está en uso por otra unidad.');
+                }
+            },
+        ],
+        'nombre' => ['sometimes', 'string', 'max:255'],
+    ]);
+
+    $unidadAdministradora->update($validated);
+
+    return redirect()->route('unidades.index')->with('success', 'Unidad actualizada correctamente');
+}
 
     public function destroy(UnidadAdministradora $unidadAdministradora)
     {

@@ -86,8 +86,8 @@
                 @error('nombre')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
-                <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten letras y espacios.</p>
-                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 40 caracteres (solo letras y espacios).</p>
+                <p id="error-nombre" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten letras, números y espacios.</p>
+                <p class="text-gray-400 text-[11px] mt-2 italic font-medium">Máximo 40 caracteres (letras, números y espacios).</p>
             </div>
 
             {{-- Responsable --}}
@@ -159,8 +159,9 @@
         // Actualizar código sugerido al cambiar unidad
         unidadSelect.addEventListener('change', function() {
             const unidadId = this.value;
-            const nuevoCodigo = unidadesData[unidadId] || sugerenciaInicial;
-            codigoInput.value = nuevoCodigo;
+            const sugerencia = unidadesData[unidadId] ?? null;
+            const nuevoCodigo = sugerencia ? sugerencia.codigo : sugerenciaInicial;
+            codigoInput.value = nuevoCodigo ?? '';
             recuperarContenedor.classList.add('hidden');
         });
 
@@ -206,7 +207,7 @@
         // 2. Restricción de Nombre
         nombreInput.addEventListener('input', function(e) {
             let val = e.target.value;
-            let filtered = val.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+            let filtered = val.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]/g, '');
 
             if (val !== filtered) {
                 errorNombre.classList.remove('hidden');

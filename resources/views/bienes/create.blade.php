@@ -7,11 +7,13 @@
 <x-breadcrumbs :items="[['label' => 'Bienes', 'url' => route('bienes.index')], ['label' => 'Nuevo Bien']]" />
 @endpush
     <div class="max-w-4xl mx-auto">
-        <div class="bg-white dark:bg-slate-900 shadow-xl dark:shadow-slate-800 rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700">
+        <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200">
             {{-- Encabezado --}}
             <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-5">
                 <h1 class="text-xl font-bold text-white flex items-center gap-2">
-                    <x-heroicon-o-cube class="w-5 h-5 text-blue-100" />
+                    <svg class="w-5 h-5 text-blue-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
                     Registrar Nuevo Bien
                 </h1>
                 <p class="text-blue-100 text-xs mt-1 opacity-90">
@@ -26,7 +28,9 @@
                 @if($errors->any())
                     <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-600 text-red-700 rounded-lg">
                         <div class="flex items-center gap-2 mb-2">
-                            <x-heroicon-o-exclamation-triangle class="w-5 h-5" />
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
                             <span class="font-bold">Por favor corrige los siguientes errores:</span>
                         </div>
                         <ul class="text-sm list-disc list-inside space-y-1">
@@ -39,15 +43,18 @@
 
                 {{-- Sección 1: Ubicación Administrativa --}}
                 <div class="space-y-4">
-                    <h2 class="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-slate-700 pb-2 flex items-center gap-2">
-                        <x-heroicon-o-home-modern class="w-5 h-5 text-blue-600 dark:text-blue-400" /> Asignación Administrativa
+                    <h2 class="text-lg font-bold text-gray-800 border-b border-gray-200 pb-2 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        Asignación Administrativa
                     </h2>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label for="dependencia_id" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Dependencia <span class="text-red-500">*</span></label>
+                            <label for="dependencia_id" class="block text-sm font-bold text-gray-700 mb-2">Dependencia <span class="text-red-500">*</span></label>
                             <select name="dependencia_id" id="dependencia_id" required
-                                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-gray-900">
                                 <option value="" disabled {{ old('dependencia_id') ? '' : 'selected' }}>Seleccione dependencia...</option>
                                 @foreach($dependencias as $dep)
                                     <option value="{{ $dep->id }}" {{ old('dependencia_id') == $dep->id ? 'selected' : '' }}>
@@ -62,9 +69,9 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Responsable de la Dependencia</label>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Responsable de la Dependencia</label>
                             <div id="responsable_display"
-                                class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 italic text-sm flex items-center h-[50px]">
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 italic text-sm flex items-center h-[50px]">
                                 Seleccione una dependencia...
                             </div>
                         </div>
@@ -73,17 +80,20 @@
 
                 {{-- Sección 2: Identificación del Bien --}}
                 <div class="space-y-4">
-                    <h2 class="text-lg font-bold text-gray-800 dark:text-gray-200 border-b dark:border-slate-700 pb-2 flex items-center gap-2">
-                        <x-heroicon-o-identification class="w-5 h-5 text-blue-600 dark:text-blue-400" /> Identificación Técnica
+                    <h2 class="text-lg font-bold text-gray-800 border-b border-gray-200 pb-2 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
+                        </svg>
+                        Identificación Técnica
                     </h2>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {{-- Código del Bien con Sugerencia --}}
                         <div>
-                            <label for="codigo" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Código del Bien</label>
+                            <label for="codigo" class="block text-sm font-bold text-gray-700 mb-2">Código del Bien</label>
                             <input type="text" name="codigo" id="codigo" value="{{ old('codigo') }}"
                                 maxlength="8" inputmode="numeric" placeholder="Ej: 00000001"
-                                class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 dark:border-gray-600 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase bg-white text-gray-900"
                                 required pattern="\d{8}" title="El código debe contener exactamente 8 dígitos numéricos">
 
                             @error('codigo')
@@ -93,7 +103,7 @@
                             {{-- Contenedor para la sugerencia --}}
                             <div id="sugerencia-container" class="mt-1 hidden">
                                 <button type="button" id="btn-sugerencia"
-                                    class="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-bold italic">
+                                    class="text-[10px] text-blue-600 hover:underline font-bold italic">
                                     💡 ¿Usar código sugerido: <span id="span-sugerencia"></span>?
                                 </button>
                             </div>
@@ -101,9 +111,9 @@
 
                         {{-- Tipo de Bien --}}
                         <div>
-                            <label for="tipo_bien" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Tipo de Bien</label>
+                            <label for="tipo_bien" class="block text-sm font-bold text-gray-700 mb-2">Tipo de Bien</label>
                             <select name="tipo_bien" id="tipo_bien" required
-                                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-gray-900">
                                 <option value="">Seleccione tipo...</option>
                                 @foreach($tiposBien as $value => $label)
                                     <option value="{{ $value }}" {{ old('tipo_bien') == $value ? 'selected' : '' }}>{{ $label }}
@@ -114,9 +124,9 @@
 
                         {{-- Estado --}}
                         <div>
-                            <label for="estado" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Estado Físico</label>
+                            <label for="estado" class="block text-sm font-bold text-gray-700 mb-2">Estado Físico</label>
                             <select name="estado" id="estado" required
-                                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-gray-900">
                                 <option value="">Seleccione estado...</option>
                                 @foreach(\App\Enums\EstadoBien::cases() as $estado)
                                     <option value="{{ $estado->value }}" {{ old('estado') == $estado->value ? 'selected' : '' }}>
@@ -130,45 +140,43 @@
                     {{-- Descripción con Límite de 255 --}}
                     <div>
                         <div class="flex justify-between items-center mb-2">
-                            <label for="descripcion" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Descripción
-                                General</label>
-                            <span id="char-count" class="text-[10px] font-bold text-gray-400 dark:text-gray-500">0 / 255</span>
+                            <label for="descripcion" class="block text-sm font-bold text-gray-700">Descripción General</label>
+                            <span id="char-count" class="text-[10px] font-bold text-gray-400">0 / 255</span>
                         </div>
                         <textarea name="descripcion" id="descripcion" rows="2" required maxlength="255"
                             placeholder="Indique nombre, marca, modelo..."
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition">{{ old('descripcion') }}</textarea>
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-gray-900">{{ old('descripcion') }}</textarea>
                     </div>
                 </div>
 
                 {{-- Sección 3: Valores y Archivos --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Precio (Bs.)</label>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Precio (Bs.)</label>
                         <input type="number" name="precio" step="0.01" min="0" value="{{ old('precio', '0.00') }}"
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-900">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Fecha de Adquisición</label>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Adquisición</label>
                         <input type="date" name="fecha_registro" id="fecha_registro"
                             min="2000-01-01" max="{{ now()->format('Y-m-d') }}"
                             value="{{ old('fecha_registro', now()->format('Y-m-d')) }}"
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-900">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Fotografía</label>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Fotografía</label>
                         <input type="file" name="fotografia" accept="image/*"
-                            class="w-full px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-blue-300">
+                            class="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     </div>
                 </div>
 
                 <div id="campos-tipo-bien" class="transition-all duration-300"></div>
 
-                <div class="flex justify-end gap-4 pt-8 border-t border-gray-100 dark:border-gray-800">
+                <div class="flex justify-end gap-4 pt-8 border-t border-gray-200">
                     <a href="{{ route('bienes.index') }}"
-                        class="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition">Cancelar</a>
+                        class="px-6 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</a>
                     <button type="submit"
-                        class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition">Guardar
-                        Activo</button>
+                        class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition">Guardar Activo</button>
                 </div>
             </form>
         </div>
@@ -189,11 +197,8 @@
             const respDisplay = document.getElementById('responsable_display');
 
             if (depSelect && respDisplay) {
-                // Disparar evento inicial si hay valor preseleccionado
                 if (depSelect.value) {
                     respDisplay.textContent = dependenciasData[depSelect.value] || 'Seleccione una dependencia...';
-                    respDisplay.classList.toggle('text-gray-900', !!depSelect.value);
-                    respDisplay.classList.toggle('font-bold', !!depSelect.value);
                 }
 
                 depSelect.addEventListener('change', function () {
@@ -260,7 +265,6 @@
                     });
             }
 
-            // Cambio de dependencia: limpiar código y cargar nueva sugerencia
             depSelect.addEventListener('change', function () {
                 const depId = this.value;
                 codigoInput.value = '';
@@ -268,13 +272,11 @@
                 if (depId) obtenerSugerencia(depId);
             });
 
-            // Input: sanitización y control de sugerencia
             if (codigoInput) {
                 codigoInput.addEventListener('input', function (e) {
                     let original = e.target.value;
                     let cleaned = original.replace(/\D/g, '');
 
-                    // Limitar a 8 dígitos
                     if (cleaned.length > 8) {
                         cleaned = cleaned.slice(0, 8);
                     }
@@ -291,7 +293,6 @@
                     }
                 });
 
-                // Formatear a 8 dígitos al perder el foco
                 codigoInput.addEventListener('blur', function () {
                     if (this.value && this.value.length > 0) {
                         this.value = this.value.padStart(8, '0');
@@ -299,7 +300,6 @@
                 });
             }
 
-            // Botón: aplicar sugerencia
             if (btnSugerencia && sugerenciaContainer) {
                 btnSugerencia.addEventListener('click', function () {
                     if (codigoSugeridoDependencia) {
@@ -325,9 +325,9 @@
                         charCount.classList.add('text-gray-400');
                     }
                 }
-                
+
                 descTextarea.addEventListener('input', updateCharCount);
-                updateCharCount(); // Inicializar
+                updateCharCount();
             }
 
             /* 4. Campos Dinámicos */
@@ -379,12 +379,12 @@
                 function loadDynamicFields() {
                     const tipo = tipoBienSelect.value;
                     container.innerHTML = '';
-                    
+
                     if (!tipo || !camposPorTipo[tipo]) return;
 
                     const config = camposPorTipo[tipo];
-                    let html = `<div class="bg-blue-50/50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-6 rounded-xl space-y-4">
-                                    <h3 class="text-blue-800 dark:text-blue-300 font-bold text-sm uppercase flex items-center gap-2">
+                    let html = `<div class="bg-blue-50 border border-blue-200 p-6 rounded-xl space-y-4">
+                                    <h3 class="text-blue-800 font-bold text-sm uppercase flex items-center gap-2">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
@@ -395,26 +395,26 @@
                     config.fields.forEach(campo => {
                         if (campo.type === 'select') {
                             html += `<div>
-                                        <label class="block text-xs font-bold text-blue-700 dark:text-blue-400 mb-1">${campo.label} ${campo.required ? '<span class="text-red-500">*</span>' : ''}</label>
-                                        <select name="${campo.name}" id="subtipo_selector" ${campo.required ? 'required' : ''} class="w-full px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg outline-none bg-white dark:bg-gray-800">
+                                        <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label} ${campo.required ? '<span class="text-red-500">*</span>' : ''}</label>
+                                        <select name="${campo.name}" id="subtipo_selector" ${campo.required ? 'required' : ''} class="w-full px-4 py-2 border border-blue-200 rounded-lg outline-none bg-white">
                                             <option value="">Seleccione...</option>
                                             ${campo.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
                                         </select>
                                     </div>`;
                         } else if (campo.type === 'textarea') {
                             html += `<div class="md:col-span-2">
-                                        <label class="block text-xs font-bold text-blue-700 dark:text-blue-400 mb-1">${campo.label}</label>
-                                        <textarea name="${campo.name}" data-field="${campo.name}" class="dynamic-field w-full px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800" rows="2"></textarea>
+                                        <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label}</label>
+                                        <textarea name="${campo.name}" data-field="${campo.name}" class="dynamic-field w-full px-4 py-2 border border-blue-200 rounded-lg bg-white" rows="2"></textarea>
                                     </div>`;
                         } else {
                             const isReadonly = config.isParent ? 'readonly' : '';
-                            const bgClass = config.isParent ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800';
+                            const bgClass = config.isParent ? 'bg-gray-100' : 'bg-white';
                             const defaultValue = config.isParent ? 'S/N' : '';
 
                             html += `<div>
-                                        <label class="block text-xs font-bold text-blue-700 dark:text-blue-400 mb-1">${campo.label}</label>
+                                        <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label}</label>
                                         <input type="text" name="${campo.name}" data-field="${campo.name}"
-                                            class="dynamic-field w-full px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg ${bgClass}"
+                                            class="dynamic-field w-full px-4 py-2 border border-blue-200 rounded-lg ${bgClass}"
                                             ${isReadonly} value="${defaultValue}">
                                     </div>`;
                         }
@@ -433,13 +433,13 @@
                                 document.querySelectorAll('.dynamic-field').forEach(input => {
                                     const fieldName = input.getAttribute('data-field');
                                     if (camposVisibles.includes(fieldName)) {
-                                        input.classList.remove('bg-gray-100', 'dark:bg-gray-700');
-                                        input.classList.add('bg-white', 'dark:bg-gray-800');
+                                        input.classList.remove('bg-gray-100');
+                                        input.classList.add('bg-white');
                                         input.removeAttribute('readonly');
                                         if(input.value === 'S/N') input.value = '';
                                     } else {
-                                        input.classList.add('bg-gray-100', 'dark:bg-gray-700');
-                                        input.classList.remove('bg-white', 'dark:bg-gray-800');
+                                        input.classList.add('bg-gray-100');
+                                        input.classList.remove('bg-white');
                                         input.setAttribute('readonly', true);
                                         input.value = 'S/N';
                                     }
@@ -450,8 +450,7 @@
                 }
 
                 tipoBienSelect.addEventListener('change', loadDynamicFields);
-                
-                // Cargar campos si ya hay un valor seleccionado (ej: después de error de validación)
+
                 if (tipoBienSelect.value) {
                     loadDynamicFields();
                 }
@@ -470,7 +469,6 @@
                     const estadoValue = estado ? estado.value : '';
                     const dependenciaSel = depSelect ? depSelect.value : '';
 
-                    // Validación de código
                     if (!codigoValue || codigoValue.length !== 8 || !/^\d{8}$/.test(codigoValue)) {
                         e.preventDefault();
                         alert('El código debe contener exactamente 8 dígitos numéricos.');
@@ -478,7 +476,6 @@
                         return;
                     }
 
-                    // Validación de descripción
                     if (!descripcionValue) {
                         e.preventDefault();
                         alert('La descripción es obligatoria.');
@@ -486,7 +483,6 @@
                         return;
                     }
 
-                    // Validación de dependencia
                     if (!dependenciaSel) {
                         e.preventDefault();
                         alert('Debe asignar una dependencia antes de guardar el bien.');
@@ -494,7 +490,6 @@
                         return;
                     }
 
-                    // Validación de tipo
                     if (!tipo) {
                         e.preventDefault();
                         alert('Debe seleccionar el tipo de bien.');
@@ -502,7 +497,6 @@
                         return;
                     }
 
-                    // Validación de estado
                     if (!estadoValue) {
                         e.preventDefault();
                         alert('Debe seleccionar el estado del bien.');
@@ -510,7 +504,6 @@
                         return;
                     }
 
-                    // Validación de Fecha
                     const fechaInput = document.getElementById('fecha_registro');
                     if (fechaInput && fechaInput.value) {
                         const fechaSeleccionada = new Date(fechaInput.value);
@@ -523,7 +516,7 @@
                             fechaInput.focus();
                             return;
                         }
-                        
+
                         if (fechaSeleccionada > fechaMaxima) {
                             e.preventDefault();
                             alert('La fecha de adquisición no puede ser futura.');

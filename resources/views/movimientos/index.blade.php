@@ -382,7 +382,7 @@ function restringirEntrada(inputElement, errorElementId) {
 
     inputElement.addEventListener('input', function(e) {
         const original = e.target.value;
-        const cleaned = original.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+        const cleaned = original.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]/g, '');
 
         if (original !== cleaned) {
             e.target.value = cleaned;

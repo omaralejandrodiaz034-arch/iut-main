@@ -9,7 +9,7 @@ use App\Models\Dependencia;
 use App\Models\Organismo;
 use App\Models\UnidadAdministradora;
 use App\Services\BienTypeService;
-use App\Services\CodigoUnicoService;
+use App\Services\CodigoJerarquicoService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,34 +35,34 @@ class BienController extends Controller
         // 1. Validación de entrada
         $validated = $request->validate([
         'search' => ['nullable', 'string', 'max:255'],
-        
+
         'organismo_id' => ['nullable', 'array'],
         'organismo_id.*' => ['integer', 'exists:organismos,id'],
-        
+
         'unidad_id' => ['nullable', 'array'],
         'unidad_id.*' => ['integer', 'exists:unidades_administradoras,id'],
-        
+
         'dependencias' => ['nullable', 'array'],
         'dependencias.*' => ['integer', 'exists:dependencias,id'],
-        
+
         'estado' => ['nullable', 'array'],
         'estado.*' => ['string', Rule::in(array_map(fn($e) => $e->value, EstadoBien::cases()))],
-        
+
         'tipo_bien' => ['nullable', 'array'],
         'tipo_bien.*' => ['string', Rule::in(array_map(fn($t) => $t->value, TipoBien::cases()))],
-        
+
         'fecha_desde' => ['nullable', 'date', 'before_or_equal:today'],
         'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde', 'before_or_equal:today'],
-        
+
         'precio_desde' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
         'precio_hasta' => ['nullable', 'numeric', 'min:0', 'max:999999999.99', 'gte:precio_desde'],
-        
+
         'sort' => ['nullable', 'string', Rule::in(['codigo', 'descripcion', 'precio', 'fecha_registro', 'estado'])],
         'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
-        
+
         'solo_desincorporados' => ['nullable', 'boolean'],
         'descripcion' => ['nullable', 'string', 'max:255'],
-        
+
     ], [
         // Mensajes personalizados
         'organismo_id.*.exists' => 'Uno o más organismos seleccionados no son válidos.',
@@ -121,13 +121,13 @@ class BienController extends Controller
     if (!empty($validated['dependencias']) && is_array($validated['dependencias'])) {
         // Filtro directo por dependencias
         $query->whereIn('dependencia_id', $validated['dependencias']);
-    } 
+    }
     elseif (!empty($validated['unidad_id']) && is_array($validated['unidad_id'])) {
         // Múltiples unidades administradoras
         $query->whereHas('dependencia', function($q) use ($validated) {
             $q->whereIn('unidad_administradora_id', $validated['unidad_id']);
         });
-    } 
+    }
     elseif (!empty($validated['organismo_id']) && is_array($validated['organismo_id'])) {
         // Múltiples organismos
         $query->whereHas('dependencia.unidadAdministradora', function($q) use ($validated) {
@@ -179,7 +179,7 @@ class BienController extends Controller
     if (!empty($validated['unidad_id']) && is_array($validated['unidad_id'])) {
         // Filtrar por unidades seleccionadas
         $dependenciasQuery->whereIn('unidad_administradora_id', $validated['unidad_id']);
-    } 
+    }
     elseif (!empty($validated['organismo_id']) && is_array($validated['organismo_id'])) {
         // Filtrar por organismos seleccionados (a través de unidades)
         $dependenciasQuery->whereHas('unidadAdministradora', function($q) use ($validated) {
@@ -211,9 +211,15 @@ class BienController extends Controller
     /**
      * Mostrar formulario de creación.
      */
-    public function create()
+        public function create()
     {
-        $dependencias = Dependencia::with('responsable')->get();
+        $dependencias = Dependencia::with(['responsable', 'unidadAdministradora.organismo'])->get();
+
+        // Formatear códigos legibles para mostrar en el select
+        foreach ($dependencias as $dependencia) {
+            $dependencia->codigo_legible = CodigoJerarquicoService::formatearCodigoLegible($dependencia->codigo);
+            $dependencia->jerarquia = $this->obtenerJerarquiaTexto($dependencia);
+        }
 
         $tiposBien = collect(TipoBien::cases())->mapWithKeys(
             fn (TipoBien $tipo) => [$tipo->value => $tipo->label()]
@@ -225,59 +231,15 @@ class BienController extends Controller
     /**
      * Obtener el siguiente código recomendado para una dependencia específica.
      */
-    public function recomendarCodigo(Dependencia $dependencia)
-    {
-        try {
-            $resultado = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
-
-            return response()->json([
-                'success' => true,
-                'codigo' => $resultado['codigo'],
-                'siguiente_numero' => $resultado['siguiente_numero'],
-                'rango_min' => $resultado['rango_min'],
-                'rango_max' => $resultado['rango_max'],
-                'disponibles_restantes' => $resultado['disponibles_restantes'] ?? ($resultado['rango_max'] - $resultado['siguiente_numero'] + 1),
-                'mensaje' => sprintf(
-                    '✅ Código recomendado: %s | Rango: %d-%d | Disponibles: %d',
-                    $resultado['codigo'],
-                    $resultado['rango_min'],
-                    $resultado['rango_max'],
-                    $resultado['disponibles_restantes'] ?? ($resultado['rango_max'] - $resultado['siguiente_numero'] + 1)
-                ),
-            ]);
-        } catch (\RuntimeException $e) {
-            Log::warning('Error al recomendar código', [
-                'dependencia_id' => $dependencia->id,
-                'error' => $e->getMessage()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'error' => 'rango_exhausto',
-                'mensaje' => $e->getMessage(),
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('Error inesperado al recomendar código', [
-                'dependencia_id' => $dependencia->id,
-                'error' => $e->getMessage()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'error' => 'error_general',
-                'mensaje' => 'Error al generar el código. Por favor, intente nuevamente.',
-            ], 500);
-        }
-    }
 
     /**
      * Guardar un nuevo bien.
      */
     public function store(Request $request)
     {
-        // Validación base
+        // Reglas base ACTUALIZADAS para código jerárquico (8 dígitos numéricos)
         $rules = $this->getBaseValidationRules();
-        
+
         // Agregar reglas específicas por tipo
         $tipo = $request->input('tipo_bien');
         $rules = array_merge($rules, $this->getSpecificValidationRules($tipo));
@@ -288,7 +250,7 @@ class BienController extends Controller
         $this->validarCodigoEnRango($validated['codigo'], $validated['dependencia_id']);
 
         DB::beginTransaction();
-        
+
         try {
             // Procesar fotografía
             if ($request->hasFile('fotografia')) {
@@ -322,21 +284,23 @@ class BienController extends Controller
                 'usuario_id' => auth()->id()
             ]);
 
+            $codigoLegible = CodigoJerarquicoService::formatearCodigoLegible($bien->codigo);
+
             $mensaje = sprintf(
                 '✅ Bien "%s" (Código: %s) ha sido registrado exitosamente.',
                 $bien->descripcion,
-                $bien->codigo
+                $codigoLegible
             );
 
             return redirect()->route('bienes.index')->with('success', $mensaje);
-            
+
         } catch (\Illuminate\Database\QueryException $e) {
             DB::rollBack();
             Log::error('Error de BD al guardar bien', [
                 'error' => $e->getMessage(),
                 'data' => $validated
             ]);
-            
+
             return back()->withErrors([
                 'error' => 'Error al guardar el bien. Por favor, verifique los datos e intente nuevamente.'
             ])->withInput();
@@ -346,12 +310,13 @@ class BienController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return back()->withErrors([
                 'error' => 'Ocurrió un error inesperado: ' . $e->getMessage()
             ])->withInput();
         }
     }
+
 
     /**
      * Mostrar un bien específico.
@@ -363,11 +328,17 @@ class BienController extends Controller
             'dependencia.unidadAdministradora.organismo',
             'movimientos' => fn($q) => $q->orderByDesc('fecha')->orderByDesc('created_at')
         ]);
-        
+
+        // Formatear código legible
+        $codigoLegible = CodigoJerarquicoService::formatearCodigoLegible($bien->codigo);
+
+        // Obtener jerarquía completa
+        $jerarquia = $this->obtenerJerarquiaCompleta($bien->dependencia);
+
         // Cargar datos específicos del tipo
         $this->cargarDatosEspecificos($bien);
 
-        return view('bienes.show', compact('bien'));
+        return view('bienes.show', compact('bien', 'codigoLegible', 'jerarquia'));
     }
 
     /**
@@ -380,13 +351,15 @@ class BienController extends Controller
             'dependencia.unidadAdministradora.organismo',
             'movimientos.usuario'
         ]);
-        
+
         $this->cargarDatosEspecificos($bien);
-        
+
+        $codigoLegible = CodigoJerarquicoService::formatearCodigoLegible($bien->codigo);
         $movimientos = $bien->movimientos()->orderByDesc('fecha')->orderByDesc('created_at')->get();
 
         $pdf = Pdf::loadView('bienes.pdf', [
             'bien' => $bien,
+            'codigoLegible' => $codigoLegible,
             'dependencia' => $bien->dependencia,
             'responsablePrimario' => $bien->responsable_primario,
             'movimientos' => $movimientos,
@@ -410,11 +383,11 @@ class BienController extends Controller
             'dependencia.responsable',
             'dependencia.unidadAdministradora.organismo'
         ]);
-        
+
         $this->cargarDatosEspecificos($bien);
 
         $dependencias = Dependencia::with('responsable')->get();
-        
+
         $tiposBien = collect(TipoBien::cases())->mapWithKeys(
             fn(TipoBien $tipo) => [$tipo->value => $tipo->label()]
         );
@@ -434,20 +407,22 @@ class BienController extends Controller
     public function update(Request $request, Bien $bien)
     {
         $rules = $this->getUpdateValidationRules($bien);
-        
+
         $tipo = $request->input('tipo_bien', $bien->tipo_bien?->value);
         $rules = array_merge($rules, $this->getSpecificValidationRules($tipo));
 
         $validated = $request->validate($rules);
 
-        // Validar código en rango si cambió
-        if (isset($validated['codigo']) && $validated['codigo'] !== $bien->codigo) {
-            $dependenciaId = $validated['dependencia_id'] ?? $bien->dependencia_id;
-            $this->validarCodigoEnRango($validated['codigo'], $dependenciaId);
+        // Determinar la dependencia usada para la validación del código
+        $dependenciaId = $validated['dependencia_id'] ?? $bien->dependencia_id;
+        $codigoAVerificar = $validated['codigo'] ?? $bien->codigo;
+
+        if (($validated['codigo'] ?? null) !== null || ($validated['dependencia_id'] ?? null) !== null) {
+            $this->validarCodigoEnRango($codigoAVerificar, $dependenciaId);
         }
 
         DB::beginTransaction();
-        
+
         try {
             // Procesar fotografía
             if ($request->hasFile('fotografia')) {
@@ -477,14 +452,14 @@ class BienController extends Controller
             ]);
 
             return redirect()->route('bienes.index')->with('success', '✅ Bien actualizado exitosamente.');
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error al actualizar bien', [
                 'bien_id' => $bien->id,
                 'error' => $e->getMessage()
             ]);
-            
+
             return back()->withErrors(['error' => 'Error al actualizar: ' . $e->getMessage()])->withInput();
         }
     }
@@ -497,8 +472,23 @@ class BienController extends Controller
         abort_unless(auth()->user()?->isAdmin(), 403, 'Solo los administradores pueden desincorporar bienes.');
 
         $this->cargarDatosEspecificos($bien);
-        
+
         return view('bienes.desincorporar', compact('bien'));
+    }
+
+    /**
+     * Mostrar formulario de reincorporación.
+     */
+    public function showReincorporarForm(Bien $bien)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403, 'Solo los administradores pueden reincorporar bienes.');
+
+        // Solo permitir reincorporar si el bien está desincorporado
+        abort_unless($bien->estado === EstadoBien::DESINCORPORADO, 400, 'El bien no está en estado desincorporado.');
+
+        $this->cargarDatosEspecificos($bien);
+
+        return view('bienes.reincorporar', compact('bien'));
     }
 
     /**
@@ -512,7 +502,7 @@ class BienController extends Controller
         ]);
 
         DB::beginTransaction();
-        
+
         try {
             // Generar acta de desincorporación
             $service = new \App\Services\ActaDesincorporacionService;
@@ -550,11 +540,9 @@ class BienController extends Controller
                 'acta_path' => $actaPath,
             ]);
 
-            // Eliminar subtipos
-            $this->eliminarTodosSubtipos($bien);
-
-            // Eliminar bien
-            $bien->delete();
+            // Marcar el bien como desincorporado sin eliminarlo
+            $bien->estado = EstadoBien::DESINCORPORADO;
+            $bien->save();
 
             DB::commit();
 
@@ -568,15 +556,71 @@ class BienController extends Controller
                 'success',
                 '✅ Bien desincorporado exitosamente. El acta ha sido generada y guardada.'
             );
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error al desincorporar bien', [
                 'bien_id' => $bien->id,
                 'error' => $e->getMessage()
             ]);
-            
+
             return back()->withErrors(['error' => 'Error al desincorporar: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Procesar reincorporación.
+     */
+    public function reincorporar(Request $request, Bien $bien)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403, 'Solo los administradores pueden reincorporar bienes.');
+
+        $validated = $request->validate([
+            'motivo' => 'required|string|min:10|max:2000',
+            'acta_reincorporacion' => ['nullable', 'file', 'mimes:pdf', 'max:4096'],
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Guardar acta si se sube
+            $actaPath = null;
+            if ($request->hasFile('acta_reincorporacion')) {
+                $actaPath = $request->file('acta_reincorporacion')->store('actas_reincorporacion', 'public');
+            }
+
+            // Cambiar estado del bien a ACTIVO (reincorporado)
+            $bien->estado = EstadoBien::ACTIVO;
+            $bien->save();
+
+            // Registrar movimiento
+            \App\Models\Movimiento::create([
+                'bien_id' => $bien->id,
+                'usuario_id' => auth()->id(),
+                'tipo' => 'REINCORPORACION',
+                'observaciones' => $request->motivo,
+                'fecha' => now(),
+                'acta_path' => $actaPath,
+            ]);
+
+            DB::commit();
+
+            Log::info('Bien reincorporado', [
+                'bien_id' => $bien->id,
+                'codigo' => $bien->codigo,
+                'usuario_id' => auth()->id()
+            ]);
+
+            return redirect()->route('bienes.show', $bien)->with('success', '✅ Bien reincorporado exitosamente.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error al reincorporar bien', [
+                'bien_id' => $bien->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->withErrors(['error' => 'Error al reincorporar: ' . $e->getMessage()]);
         }
     }
 
@@ -621,7 +665,7 @@ public function generarReporte(Request $request)
         \Log::info('Todos los parámetros recibidos:', $request->all());
         \Log::info('unidad_id raw: ' . print_r($request->input('unidad_id'), true));
         \Log::info('unidad_id type: ' . gettype($request->input('unidad_id')));
-        
+
         // Validación flexible
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
@@ -648,7 +692,7 @@ public function generarReporte(Request $request)
         if (isset($validated['unidad_id']) && !empty($validated['unidad_id'])) {
             $unidadIds = is_array($validated['unidad_id']) ? $validated['unidad_id'] : [$validated['unidad_id']];
             \Log::info('Unidades a procesar: ', $unidadIds);
-            
+
             foreach ($unidadIds as $id) {
                 if (!UnidadAdministradora::where('id', $id)->exists()) {
                     \Log::error("Unidad con ID {$id} no existe");
@@ -667,24 +711,24 @@ public function generarReporte(Request $request)
 
         \Log::info('Ejecutando consulta...');
         $bienes = $query->get();
-        
+
         \Log::info('Cantidad de bienes encontrados: ' . $bienes->count());
-        
+
         if ($bienes->isEmpty()) {
             \Log::warning('No se encontraron bienes con los filtros aplicados');
             return back()->with('warning', 'No hay bienes que coincidan con los filtros seleccionados.');
         }
 
         $reporteService = new \App\Services\FpdfReportService;
-        
+
         $tipoReporte = $this->determinarTipoReporteFinal($validated);
         \Log::info('Tipo de reporte seleccionado: ' . $tipoReporte);
-        
+
         $resultado = $this->generarReportePorTipo($reporteService, $bienes, $tipoReporte, $validated);
         \Log::info('Reporte generado exitosamente');
-        
+
         return $resultado;
-        
+
     } catch (\Illuminate\Validation\ValidationException $e) {
         \Log::error('Error de validación: ', $e->errors());
         return back()->withErrors($e->errors())->withInput();
@@ -702,7 +746,7 @@ public function generarPorUnidad(string $fileName, string $title, ?string $subti
     \Log::info('=== INICIO generarPorUnidad ===');
     \Log::info('Título: ' . $title);
     \Log::info('Cantidad de bienes: ' . (is_countable($bienes) ? count($bienes) : 'iterable'));
-    
+
     try {
         $pdf = $this->make('L');
         \Log::info('PDF creado correctamente');
@@ -718,22 +762,22 @@ public function generarPorUnidad(string $fileName, string $title, ?string $subti
             }
             $agrupados[$uniNombre][] = $bien;
         }
-        
+
         \Log::info('Unidades agrupadas: ' . count($agrupados));
 
         $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
         \Log::info('Header renderizado');
 
         // ... resto del código ...
-        
+
         $output = $pdf->Output('S');
         \Log::info('PDF generado, tamaño: ' . strlen($output) . ' bytes');
-        
+
         return response($output, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="'.$fileName.'"',
         ]);
-        
+
     } catch (\Exception $e) {
         \Log::error('Error en generarPorUnidad: ' . $e->getMessage(), [
             'trace' => $e->getTraceAsString()
@@ -750,7 +794,7 @@ private function aplicarFiltrosReporteFinal($query, array $filtros): void
     if (!empty($filtros['search'])) {
         $query->search($filtros['search']);
     }
-    
+
     // Estado (array)
     if (!empty($filtros['estado']) && is_array($filtros['estado'])) {
         $estadosValidos = array_filter($filtros['estado']);
@@ -762,7 +806,7 @@ private function aplicarFiltrosReporteFinal($query, array $filtros): void
     } elseif (empty($filtros['estado'])) {
         $query->where('estado', '!=', 'DESINCORPORADO');
     }
-    
+
     // Tipo de bien (soporta array o valor simple)
     if (!empty($filtros['tipo_bien'])) {
         if (is_array($filtros['tipo_bien'])) {
@@ -792,7 +836,7 @@ private function aplicarFiltrosReporteFinal($query, array $filtros): void
             $q->whereIn('organismo_id', $organismosIds);
         });
     }
-    
+
     // Fechas
     if (!empty($filtros['fecha_desde'])) {
         $query->whereDate('fecha_registro', '>=', $filtros['fecha_desde']);
@@ -821,32 +865,32 @@ private function determinarTipoReporteFinal(array $filtros): string
     if (!empty($filtros['unidad_id'])) {
         return 'unidad';
     }
-    
+
     // Si hay filtro de organismo
     if (!empty($filtros['organismo_id'])) {
         return 'organismo';
     }
-    
+
     // Múltiples dependencias
     if (!empty($filtros['dependencias']) && count($filtros['dependencias']) > 1) {
         return 'dependencia';
     }
-    
+
     // Múltiples estados
     if (!empty($filtros['estado']) && count($filtros['estado']) > 1) {
         return 'estado';
     }
-    
+
     // Rango de fechas
     if (!empty($filtros['fecha_desde']) || !empty($filtros['fecha_hasta'])) {
         return 'fecha';
     }
-    
+
     // Tipo de bien específico
     if (!empty($filtros['tipo_bien'])) {
         return 'tipo_bien';
     }
-    
+
     return 'default';
 }
 
@@ -859,7 +903,7 @@ private function aplicarFiltrosReporteCorregido($query, array $filtros): void
     if (!empty($filtros['search'])) {
         $query->search($filtros['search']);
     }
-    
+
     // Estado (array)
     if (!empty($filtros['estado']) && is_array($filtros['estado'])) {
         $estadosValidos = array_filter($filtros['estado']);
@@ -871,18 +915,18 @@ private function aplicarFiltrosReporteCorregido($query, array $filtros): void
     } elseif (empty($filtros['estado'])) {
         $query->where('estado', '!=', 'DESINCORPORADO');
     }
-    
+
     // Tipo de bien (string simple)
     if (!empty($filtros['tipo_bien'])) {
         $query->where('tipo_bien', $filtros['tipo_bien']);
     }
-    
+
     // 🔥 CORRECCIÓN: Unidad Administradora (como string o integer)
     if (!empty($filtros['unidad_id'])) {
         $query->whereHas('dependencia', function ($q) use ($filtros) {
             $q->where('unidad_administradora_id', $filtros['unidad_id']);
         });
-    } 
+    }
     // Organismo (string simple)
     elseif (!empty($filtros['organismo_id'])) {
         $query->whereHas('dependencia.unidadAdministradora', function ($q) use ($filtros) {
@@ -896,7 +940,7 @@ private function aplicarFiltrosReporteCorregido($query, array $filtros): void
             $query->whereIn('dependencia_id', $depsValidas);
         }
     }
-    
+
     // Fechas
     if (!empty($filtros['fecha_desde'])) {
         $query->whereDate('fecha_registro', '>=', $filtros['fecha_desde']);
@@ -905,6 +949,24 @@ private function aplicarFiltrosReporteCorregido($query, array $filtros): void
         $query->whereDate('fecha_registro', '<=', $filtros['fecha_hasta']);
     }
 }
+
+private function obtenerJerarquiaTexto(Dependencia $dependencia): string
+    {
+        $organismo = $dependencia->unidadAdministradora->organismo;
+        $unidad = $dependencia->unidadAdministradora;
+
+        $orgCode = CodigoJerarquicoService::formatearCodigoLegible($organismo->codigo);
+        $uniCode = CodigoJerarquicoService::formatearCodigoLegible($unidad->codigo);
+        $depCode = CodigoJerarquicoService::formatearCodigoLegible($dependencia->codigo);
+
+        return sprintf(
+            '%s - %s > %s - %s > %s - %s',
+            $orgCode, $organismo->nombre,
+            $uniCode, $unidad->nombre,
+            $depCode, $dependencia->nombre
+        );
+    }
+
 
 /**
  * Determinar tipo de reporte con unidad
@@ -915,32 +977,32 @@ private function determinarTipoReporteUnidad(array $filtros): string
     if (!empty($filtros['unidad_id'])) {
         return 'unidad';
     }
-    
+
     // Si hay filtro de organismo
     if (!empty($filtros['organismo_id'])) {
         return 'organismo';
     }
-    
+
     // Múltiples dependencias
     if (!empty($filtros['dependencias']) && count($filtros['dependencias']) > 1) {
         return 'dependencia';
     }
-    
+
     // Múltiples estados
     if (!empty($filtros['estado']) && count($filtros['estado']) > 1) {
         return 'estado';
     }
-    
+
     // Rango de fechas
     if (!empty($filtros['fecha_desde']) || !empty($filtros['fecha_hasta'])) {
         return 'fecha';
     }
-    
+
     // Tipo de bien específico
     if (!empty($filtros['tipo_bien'])) {
         return 'tipo_bien';
     }
-    
+
     return 'default';
 }
 
@@ -965,44 +1027,44 @@ private function determinarTipoReporte(array $filtros): string
         }
         return !empty($value);
     });
-    
+
     // Sin filtros = reporte default
     if (empty($filtrosLimpios)) {
         return 'default';
     }
-    
+
     // Prioridad para reportes agrupados
-    
+
     // Múltiples unidades
     if (!empty($filtros['unidad_id']) && count(array_filter($filtros['unidad_id'])) > 1) {
         return 'unidad';
     }
-    
+
     // Múltiples organismos
     if (!empty($filtros['organismo_id']) && count(array_filter($filtros['organismo_id'])) > 1) {
         return 'organismo';
     }
-    
+
     // Múltiples dependencias
     if (!empty($filtros['dependencias']) && count(array_filter($filtros['dependencias'])) > 1) {
         return 'dependencia';
     }
-    
+
     // Múltiples estados
     if (!empty($filtros['estado']) && count(array_filter($filtros['estado'])) > 1) {
         return 'estado';
     }
-    
+
     // Múltiples tipos de bien
     if (!empty($filtros['tipo_bien']) && count(array_filter($filtros['tipo_bien'])) > 1) {
         return 'tipo_bien';
     }
-    
+
     // Rango de fechas (sin importar si hay otros filtros)
     if (!empty($filtros['fecha_desde']) || !empty($filtros['fecha_hasta'])) {
         return 'fecha';
     }
-    
+
     // Si solo hay una dependencia o un estado, reporte filtrado simple
     return 'default';
 }
@@ -1017,17 +1079,42 @@ private function determinarTipoReporte(array $filtros): string
             if (is_null($valor) || $valor === '' || $valor === []) {
                 return false;
             }
-            
+
             // Para arrays, verificar que no estén vacíos
             if (is_array($valor)) {
                 return !empty($valor);
             }
-            
+
             return true;
         }, ARRAY_FILTER_USE_BOTH);
-        
+
         return empty($filtrosRelevantes);
     }
+    private function obtenerJerarquiaCompleta(Dependencia $dependencia): array
+    {
+        $organismo = $dependencia->unidadAdministradora->organismo;
+        $unidad = $dependencia->unidadAdministradora;
+
+        return [
+            'organismo' => [
+                'codigo' => $organismo->codigo,
+                'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($organismo->codigo),
+                'nombre' => $organismo->nombre
+            ],
+            'unidad' => [
+                'codigo' => $unidad->codigo,
+                'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($unidad->codigo),
+                'nombre' => $unidad->nombre
+            ],
+            'dependencia' => [
+                'codigo' => $dependencia->codigo,
+                'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($dependencia->codigo),
+                'nombre' => $dependencia->nombre
+            ]
+        ];
+    }
+
+
 
     /**
      * Aplica filtros a la consulta de reporte (mejorado para arrays)
@@ -1041,7 +1128,7 @@ private function aplicarFiltrosReporte($query, array $filtros): void
     if (!empty($filtros['search'])) {
         $query->search($filtros['search']);
     }
-    
+
     // 🔥 CORRECCIÓN PRINCIPAL: Estado (manejo de arrays)
     if (!empty($filtros['estado']) && is_array($filtros['estado'])) {
         // Filtrar valores vacíos
@@ -1049,15 +1136,15 @@ private function aplicarFiltrosReporte($query, array $filtros): void
         if (!empty($estadosValidos)) {
             $query->whereIn('estado', $estadosValidos);
         }
-    } 
+    }
     elseif (!empty($filtros['solo_desincorporados'])) {
         $query->where('estado', 'DESINCORPORADO');
-    } 
+    }
     elseif (empty($filtros['estado']) && empty($filtros['solo_desincorporados'])) {
         // Por defecto, excluir desincorporados
         $query->where('estado', '!=', 'DESINCORPORADO');
     }
-    
+
     // 🔥 CORRECCIÓN: Tipo de bien (ahora soporta múltiples)
     if (!empty($filtros['tipo_bien']) && is_array($filtros['tipo_bien'])) {
         $tiposValidos = array_filter($filtros['tipo_bien']);
@@ -1065,14 +1152,14 @@ private function aplicarFiltrosReporte($query, array $filtros): void
             $query->whereIn('tipo_bien', $tiposValidos);
         }
     }
-    
+
     // 🔥 CORRECCIÓN: Dependencias (múltiples)
     if (!empty($filtros['dependencias']) && is_array($filtros['dependencias'])) {
         $depsValidas = array_filter($filtros['dependencias']);
         if (!empty($depsValidas)) {
             $query->whereIn('dependencia_id', $depsValidas);
         }
-    } 
+    }
     // Unidad Administradora (múltiples)
     elseif (!empty($filtros['unidad_id']) && is_array($filtros['unidad_id'])) {
         $unidadesValidas = array_filter($filtros['unidad_id']);
@@ -1081,7 +1168,7 @@ private function aplicarFiltrosReporte($query, array $filtros): void
                 $q->whereIn('unidad_administradora_id', $unidadesValidas);
             });
         }
-    } 
+    }
     // Organismo (múltiples)
     elseif (!empty($filtros['organismo_id']) && is_array($filtros['organismo_id'])) {
         $organismosValidos = array_filter($filtros['organismo_id']);
@@ -1091,12 +1178,12 @@ private function aplicarFiltrosReporte($query, array $filtros): void
             });
         }
     }
-    
+
     // Fechas
     if (!empty($filtros['fecha_desde'])) {
         $query->whereDate('fecha_registro', '>=', $filtros['fecha_desde']);
     }
-    
+
     if (!empty($filtros['fecha_hasta'])) {
         $query->whereDate('fecha_registro', '<=', $filtros['fecha_hasta']);
     }
@@ -1136,7 +1223,7 @@ private function aplicarFiltrosReporte($query, array $filtros): void
     {
         $subtipoData = [];
         $tipo = $bien->tipo_bien?->value;
-        
+
         if ($tipo) {
             switch (strtoupper($tipo)) {
                 case 'ELECTRONICO':
@@ -1161,7 +1248,7 @@ private function aplicarFiltrosReporte($query, array $filtros): void
                     break;
             }
         }
-        
+
         return $subtipoData;
     }
 
@@ -1174,7 +1261,7 @@ private function getEstadosBienes(): array
     if (method_exists(EstadoBien::class, 'cases')) {
         return array_map(fn($e) => $e->value, EstadoBien::cases());
     }
-    
+
     // Si usas enum tradicional o constantes
     return [
         EstadoBien::ACTIVO,
@@ -1189,7 +1276,7 @@ private function getTiposBienes(): array
     if (method_exists(TipoBien::class, 'cases')) {
         return array_map(fn($t) => $t->value, TipoBien::cases());
     }
-    
+
     return [
         TipoBien::MUEBLE,
         TipoBien::INMUEBLE,
@@ -1213,7 +1300,7 @@ private function esTipoReporteValido($tipoReporte): bool
     {
         $bien->load('dependencia.unidadAdministradora.organismo');
         $this->cargarDatosEspecificos($bien);
-        
+
         $dependencias = Dependencia::with('unidadAdministradora.organismo')
             ->where('id', '!=', $bien->dependencia_id)
             ->orderBy('nombre')
@@ -1244,7 +1331,7 @@ private function esTipoReporteValido($tipoReporte): bool
         $dependenciaNueva = Dependencia::find($request->dependencia_id);
 
         DB::beginTransaction();
-        
+
         try {
             $bien->update(['dependencia_id' => $request->dependencia_id]);
 
@@ -1284,14 +1371,14 @@ private function esTipoReporteValido($tipoReporte): bool
 
             return redirect()->route('movimientos.show', $movimiento)
                 ->with('success', '✅ Traslado registrado exitosamente. El acta ha sido generada.');
-                
+
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error al transferir bien', [
                 'bien_id' => $bien->id,
                 'error' => $e->getMessage()
             ]);
-            
+
             return back()->withErrors(['error' => 'Error al transferir: ' . $e->getMessage()]);
         }
     }
@@ -1308,14 +1395,14 @@ private function esTipoReporteValido($tipoReporte): bool
             'codigo' => [
                 'required',
                 'string',
-                'size:8',
-                'regex:/^\d{8}$/',
+                'size:' . CodigoJerarquicoService::TOTAL_BIEN, // 8 dígitos
+                'regex:/^[0-9]+$/', // Solo números, sin guiones en BD
                 function ($attribute, $value, $fail) {
-                    if (CodigoUnicoService::codigoExiste($value)) {
-                        $info = CodigoUnicoService::obtenerUbicacionCodigo($value);
-                        $fail("El código '{$value}' ya está asignado a: {$info['tabla']} ({$info['nombre']}).");
+                    if (CodigoJerarquicoService::codigoExiste($value)) {
+                        $fail("El código '{$value}' ya está asignado a otro bien.");
                     }
                 },
+                // Nota: el sistema ahora usa códigos planos de longitud fija (ver CodigoJerarquicoService::TOTAL_BIEN)
             ],
             'descripcion' => ['required', 'string', 'max:255'],
             'precio' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
@@ -1334,16 +1421,15 @@ private function esTipoReporteValido($tipoReporte): bool
     private function getUpdateValidationRules(Bien $bien): array
     {
         return [
-            'dependencia_id' => ['nullable', 'exists:dependencias,id'],
+            'dependencia_id' => ['required', 'exists:dependencias,id'],
             'codigo' => [
                 'sometimes',
                 'string',
-                'size:8',
-                'regex:/^\d{8}$/',
+                'size:' . CodigoJerarquicoService::TOTAL_BIEN,
+                'regex:/^[0-9]+$/',
                 function ($attribute, $value, $fail) use ($bien) {
-                    if (CodigoUnicoService::codigoExiste($value, 'bienes', $bien->id)) {
-                        $info = CodigoUnicoService::obtenerUbicacionCodigo($value);
-                        $fail("El código '{$value}' ya está asignado a: {$info['tabla']} ({$info['nombre']}).");
+                    if ($value !== $bien->codigo && CodigoJerarquicoService::codigoExiste($value)) {
+                        $fail("El código '{$value}' ya está asignado a otro bien.");
                     }
                 },
             ],
@@ -1408,7 +1494,7 @@ private function esTipoReporteValido($tipoReporte): bool
     {
         $camposExcluir = [
             'acta_desincorporacion', 'motivo_desincorporacion',
-            'subtipo', 'serial', 'modelo', 'procesador', 'memoria', 
+            'subtipo', 'serial', 'modelo', 'procesador', 'memoria',
             'almacenamiento', 'pantalla', 'garantia',
             'placa', 'marca', 'anio', 'motor', 'chasis', 'combustible', 'kilometraje',
             'material', 'dimensiones', 'color', 'capacidad', 'cantidad_piezas', 'acabado',
@@ -1424,25 +1510,83 @@ private function esTipoReporteValido($tipoReporte): bool
     private function validarCodigoEnRango(string $codigo, int $dependenciaId): void
     {
         $dependencia = Dependencia::find($dependenciaId);
-        
+
         if (!$dependencia) {
             throw new \RuntimeException('Dependencia no encontrada');
         }
 
-        $codigoNumerico = (int) $codigo;
-        $min = (int) $dependencia->code_min;
-        $max = (int) $dependencia->code_max;
+        // Verificar que el código comience con el prefijo de la dependencia (organismo+unidad+dependencia)
+        $prefijoDependencia = substr($dependencia->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD + CodigoJerarquicoService::LONG_DEPENDENCIA);
+        if (!str_starts_with($codigo, $prefijoDependencia)) {
+            throw new \RuntimeException(
+                "El código debe comenzar con el prefijo de la dependencia ({$prefijoDependencia}). " .
+                "Código ingresado: {$codigo}"
+            );
+        }
 
-        // Solo validar si la dependencia tiene rango asignado
-        if ($min > 0 && $max > 0) {
-            if ($codigoNumerico < $min || $codigoNumerico > $max) {
-                throw new \RuntimeException(
-                    "El código {$codigo} está fuera del rango permitido para esta dependencia. " .
-                    "Rango válido: {$min} - {$max}"
-                );
-            }
+        // Extraer el secuencial (últimos 2 dígitos)
+        $secuencial = (int) substr($codigo, -CodigoJerarquicoService::LONG_BIEN);
+
+        // Validar que el secuencial esté dentro del rango permitido (1 - 99)
+        $maximoBienes = pow(10, CodigoJerarquicoService::LONG_BIEN) - 1;
+        if ($secuencial < 1 || $secuencial > $maximoBienes) {
+            throw new \RuntimeException(
+                "El número secuencial ({$secuencial}) está fuera del rango permitido (1 - {$maximoBienes})."
+            );
+        }
+
+        // Opcional: Validar contra el code_max si existe en la dependencia
+        if ($dependencia->code_max && $secuencial > $dependencia->code_max) {
+            throw new \RuntimeException(
+                "El número secuencial ({$secuencial}) excede el límite de la dependencia ({$dependencia->code_max})."
+            );
         }
     }
+    public function recomendarCodigo(Dependencia $dependencia)
+    {
+        try {
+            $resultado = CodigoJerarquicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
+
+            return response()->json([
+                'success' => true,
+                'codigo' => $resultado['codigo'],
+                'siguiente_numero' => $resultado['siguiente_numero'],
+                'rango_min' => $resultado['rango_min'],
+                'rango_max' => $resultado['rango_max'],
+                'disponibles_restantes' => $resultado['disponibles_restantes'] ?? ($resultado['rango_max'] - $resultado['siguiente_numero'] + 1),
+                'mensaje' => sprintf(
+                    '✅ Código recomendado: %s | Rango: %d-%d | Disponibles: %d',
+                    $resultado['codigo'],
+                    $resultado['rango_min'],
+                    $resultado['rango_max'],
+                    $resultado['disponibles_restantes'] ?? ($resultado['rango_max'] - $resultado['siguiente_numero'] + 1)
+                ),
+            ]);
+        } catch (\RuntimeException $e) {
+            Log::warning('Error al recomendar código', [
+                'dependencia_id' => $dependencia->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'rango_exhausto',
+                'mensaje' => $e->getMessage(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error inesperado al recomendar código', [
+                'dependencia_id' => $dependencia->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'error_general',
+                'mensaje' => 'Error al generar el código. Por favor, intente nuevamente.',
+            ], 500);
+        }
+    }
+
     /**
      * Procesa la fotografía del bien.
      */
@@ -1451,12 +1595,12 @@ private function esTipoReporteValido($tipoReporte): bool
         if (!$request->hasFile('fotografia')) {
             return null;
         }
-        
+
         $file = $request->file('fotografia');
-        
+
         // Verificar hash duplicado
         $uploadedHash = md5_file($file->getRealPath());
-        
+
         $existing = Bien::whereNotNull('fotografia')->get(['id', 'fotografia']);
         foreach ($existing as $ex) {
             try {
@@ -1470,12 +1614,12 @@ private function esTipoReporteValido($tipoReporte): bool
                 continue;
             }
         }
-        
+
         // Eliminar foto anterior si existe
         if ($bien && $bien->fotografia && !str_starts_with($bien->fotografia, 'http')) {
             Storage::disk('public')->delete($bien->fotografia);
         }
-        
+
         $filename = uniqid('bien_') . '.' . $file->getClientOriginalExtension();
         return $file->storeAs('bienes', $filename, 'public');
     }
@@ -1486,11 +1630,11 @@ private function esTipoReporteValido($tipoReporte): bool
     private function cargarDatosEspecificos(Bien $bien): void
     {
         $tipo = $bien->tipo_bien?->value;
-        
+
         if (!$tipo) {
             return;
         }
-        
+
         match (strtoupper($tipo)) {
             'ELECTRONICO' => $bien->load('electronico'),
             'VEHICULO' => $bien->load('vehiculo'),
@@ -1522,7 +1666,7 @@ private function esTipoReporteValido($tipoReporte): bool
     /**
      * Aplica filtros a la consulta de reporte.
      */
-    
+
 
     /**
      * Genera el reporte según el tipo.
@@ -1538,13 +1682,13 @@ private function generarReportePorTipo($reporteService, $bienes, string $tipoRep
     $titulo = 'REPORTE DE BIENES E INVENTARIO';
     $fecha = now()->format('d/m/Y H:i');
     $nombreArchivo = 'reporte_bienes_' . now()->format('dmY_His') . '.pdf';
-    
+
     // Construir subtítulo descriptivo
     $subtitulo = $this->construirSubtituloReporte($filtros);
-    
+
     // Datos institucionales para reportes filtrados
     $datosInstitucionales = $this->obtenerDatosInstitucionales($filtros, $bienes);
-    
+
     switch ($tipoReporte) {
         case 'unidad':
             // Reporte agrupado por unidad administradora
@@ -1555,7 +1699,7 @@ private function generarReportePorTipo($reporteService, $bienes, string $tipoRep
                 $fecha,
                 $bienes
             );
-            
+
         case 'organismo':
             // Reporte agrupado por organismo
             return $reporteService->generarPorOrganismo(
@@ -1565,7 +1709,7 @@ private function generarReportePorTipo($reporteService, $bienes, string $tipoRep
                 $fecha,
                 $bienes
             );
-            
+
         case 'dependencia':
             // Reporte agrupado por dependencia
             return $reporteService->generarPorDependencia(
@@ -1575,7 +1719,7 @@ private function generarReportePorTipo($reporteService, $bienes, string $tipoRep
                 $fecha,
                 $bienes
             );
-            
+
         case 'tipo_bien':
             // Reporte agrupado por tipo de bien
             return $reporteService->generarPorTipo(
@@ -1585,7 +1729,7 @@ private function generarReportePorTipo($reporteService, $bienes, string $tipoRep
                 $fecha,
                 $bienes
             );
-            
+
         case 'estado':
             // Reporte agrupado por estado
             return $reporteService->generarPorEstado(
@@ -1595,7 +1739,7 @@ private function generarReportePorTipo($reporteService, $bienes, string $tipoRep
                 $fecha,
                 $bienes
             );
-            
+
         case 'fecha':
             // Reporte por rango de fecha
             return $reporteService->generarPorFecha(
@@ -1605,7 +1749,7 @@ private function generarReportePorTipo($reporteService, $bienes, string $tipoRep
                 $fecha,
                 $bienes
             );
-            
+
         case 'default':
         default:
             // Reporte listado simple (filtrado o general)
@@ -1631,12 +1775,12 @@ private function obtenerDatosInstitucionales(array $filtros, $bienes): array
     $dependenciasIds = array_values(array_filter((array) ($filtros['dependencias'] ?? [])));
     $unidadesIds = array_values(array_filter((array) ($filtros['unidad_id'] ?? [])));
     $organismosIds = array_values(array_filter((array) ($filtros['organismo_id'] ?? [])));
-    
+
     // Si hay una dependencia específica (solo una)
     if (count($dependenciasIds) === 1) {
         $dependenciaId = $dependenciasIds[0];
         $dependencia = Dependencia::with(['responsable', 'unidadAdministradora.organismo'])->find($dependenciaId);
-        
+
         if ($dependencia) {
             $datos = [
                 'org_nombre' => $dependencia->unidadAdministradora?->organismo?->nombre ?? '',
@@ -1656,7 +1800,7 @@ private function obtenerDatosInstitucionales(array $filtros, $bienes): array
     // Si hay un organismo específico
     elseif (count($organismosIds) === 1 && empty($unidadesIds)) {
         $organismo = Organismo::find($organismosIds[0]);
-        
+
         if ($organismo) {
             $datos = [
                 'org_nombre' => $organismo->nombre ?? '',
@@ -1667,7 +1811,7 @@ private function obtenerDatosInstitucionales(array $filtros, $bienes): array
             ];
         }
     }
-    
+
     return $datos;
 }
     /**
@@ -1684,7 +1828,7 @@ private function construirSubtituloReporte(array $filtros): string
     $dependenciasIds = array_values(array_filter((array) ($filtros['dependencias'] ?? [])));
     $estados = array_values(array_filter((array) ($filtros['estado'] ?? [])));
     $tipos = array_values(array_filter((array) ($filtros['tipo_bien'] ?? [])));
-    
+
     // Organismo
     if (!empty($organismosIds) && empty($unidadesIds)) {
         if (count($organismosIds) === 1) {
@@ -1696,7 +1840,7 @@ private function construirSubtituloReporte(array $filtros): string
             $descripciones[] = 'Organismos: ' . count($organismosIds) . ' seleccionados';
         }
     }
-    
+
     // Unidad Administradora
     if (!empty($unidadesIds)) {
         if (count($unidadesIds) === 1) {
@@ -1709,7 +1853,7 @@ private function construirSubtituloReporte(array $filtros): string
             $descripciones[] = 'Unidades: ' . count($unidadesIds) . ' seleccionadas';
         }
     }
-    
+
     // Dependencias
     if (!empty($dependenciasIds)) {
         if (count($dependenciasIds) === 1) {
@@ -1721,7 +1865,7 @@ private function construirSubtituloReporte(array $filtros): string
             $descripciones[] = 'Dependencias: ' . count($dependenciasIds) . ' seleccionadas';
         }
     }
-    
+
     // Estados
     if (!empty($estados)) {
         if (count($estados) === 1) {
@@ -1730,7 +1874,7 @@ private function construirSubtituloReporte(array $filtros): string
             $descripciones[] = 'Estados: ' . count($estados) . ' seleccionados';
         }
     }
-    
+
     // Tipo de bien (array)
     if (!empty($tipos)) {
         $tiposBien = collect(TipoBien::cases())->mapWithKeys(fn($t) => [$t->value => $t->label()]);
@@ -1741,28 +1885,28 @@ private function construirSubtituloReporte(array $filtros): string
             $descripciones[] = 'Tipos: ' . count($tipos) . ' seleccionados';
         }
     }
-    
+
     // Rango de fechas
     if (!empty($filtros['fecha_desde']) || !empty($filtros['fecha_hasta'])) {
         $desde = $filtros['fecha_desde'] ?? 'inicio';
         $hasta = $filtros['fecha_hasta'] ?? 'actualidad';
         $descripciones[] = "Período: {$desde} al {$hasta}";
     }
-    
+
     // Búsqueda
     if (!empty($filtros['search'])) {
         $descripciones[] = "Búsqueda: {$filtros['search']}";
     }
-    
+
     // Solo desincorporados
     if (!empty($filtros['solo_desincorporados'])) {
         $descripciones[] = "Solo bienes desincorporados";
     }
-    
+
     if (empty($descripciones)) {
         return 'Listado general de todos los bienes del sistema';
     }
-    
+
     return 'Filtros aplicados: ' . implode(' | ', $descripciones);
 }
 }

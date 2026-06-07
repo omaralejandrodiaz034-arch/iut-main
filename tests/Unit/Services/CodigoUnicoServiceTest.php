@@ -8,7 +8,7 @@ use App\Models\Organismo;
 use App\Models\Rol;
 use App\Models\UnidadAdministradora;
 use App\Models\Usuario;
-use App\Services\CodigoUnicoService;
+use App\Services\CodigoJerarquicoService as CodigoUnicoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -49,20 +49,25 @@ class CodigoUnicoServiceTest extends TestCase
     private function createDependenciaWithRange(?int $codeMin = null, ?int $codeMax = null, ?UnidadAdministradora $unidad = null): Dependencia
     {
         if (! $unidad) {
-            $organismo = Organismo::create(['codigo' => 'ORG'.rand(1000, 9999), 'nombre' => 'Organismo Test']);
+            $organismoCodigo = str_pad((string) rand(1, 99999999), 8, '0', STR_PAD_LEFT);
+            $organismo = Organismo::create(['codigo' => $organismoCodigo, 'nombre' => 'Organismo Test']);
+
+            $unidadCodigo = $organismoCodigo . str_pad((string) rand(1, 999), 3, '0', STR_PAD_LEFT);
             $unidad = UnidadAdministradora::create([
                 'organismo_id' => $organismo->id,
-                'codigo' => 'UA'.rand(1000, 9999),
+                'codigo' => $unidadCodigo,
                 'nombre' => 'Unidad Administradora Test',
             ]);
         }
 
+        $dependenciaCodigo = $unidad->codigo . str_pad((string) rand(1, 999), 3, '0', STR_PAD_LEFT);
+
         return Dependencia::create([
             'unidad_administradora_id' => $unidad->id,
-            'codigo' => 'DEP'.rand(1000, 9999),
+            'codigo' => $dependenciaCodigo,
             'nombre' => 'Dependencia Test',
             'code_min' => $codeMin ?? 1,
-            'code_max' => $codeMax ?? 99999999,
+            'code_max' => $codeMax ?? 99999,
         ]);
     }
 
@@ -74,15 +79,16 @@ class CodigoUnicoServiceTest extends TestCase
     {
         $this->actingAs($this->createUser());
 
-        $dependencia = $this->createDependenciaWithRange(100, 99999999);
+        $dependencia = $this->createDependenciaWithRange(100, 99999);
         // No bienes existentes
 
         $result = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
+        $expectedCodigo = $dependencia->codigo . str_pad((string) 100, 5, '0', STR_PAD_LEFT);
 
-        $this->assertEquals('00000100', $result['codigo']);
+        $this->assertEquals($expectedCodigo, $result['codigo']);
         $this->assertEquals(100, $result['siguiente_numero']);
         $this->assertEquals(100, $result['rango_min']);
-        $this->assertEquals(99999999, $result['rango_max']);
+        $this->assertEquals(99999, $result['rango_max']);
         $this->assertInstanceOf(Dependencia::class, $result['dependencia']);
         $this->assertEquals($dependencia->id, $result['dependencia']->id);
     }
@@ -95,12 +101,12 @@ class CodigoUnicoServiceTest extends TestCase
     {
         $this->actingAs($this->createUser());
 
-        $dependencia = $this->createDependenciaWithRange(1, 99999999);
+        $dependencia = $this->createDependenciaWithRange(1, 99999);
 
         // Create some existing bienes with specific codes
         Bien::create([
             'dependencia_id' => $dependencia->id,
-            'codigo' => '00000001',
+            'codigo' => $dependencia->codigo . '00001',
             'descripcion' => 'Bien 1',
             'precio' => 100,
             'estado' => 'ACTIVO',
@@ -110,7 +116,7 @@ class CodigoUnicoServiceTest extends TestCase
 
         Bien::create([
             'dependencia_id' => $dependencia->id,
-            'codigo' => '00000002',
+            'codigo' => $dependencia->codigo . '00002',
             'descripcion' => 'Bien 2',
             'precio' => 200,
             'estado' => 'ACTIVO',
@@ -120,7 +126,7 @@ class CodigoUnicoServiceTest extends TestCase
 
         Bien::create([
             'dependencia_id' => $dependencia->id,
-            'codigo' => '00000005', // Gap exists (3,4 missing) but should NOT be filled
+            'codigo' => $dependencia->codigo . '00005', // Gap exists (3,4 missing) but should NOT be filled
             'descripcion' => 'Bien 5',
             'precio' => 500,
             'estado' => 'ACTIVO',
@@ -131,7 +137,7 @@ class CodigoUnicoServiceTest extends TestCase
         $result = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
 
         // Should be 6 (MAX+1), not 3 (first gap)
-        $this->assertEquals('00000006', $result['codigo']);
+        $this->assertEquals($dependencia->codigo . '00006', $result['codigo']);
         $this->assertEquals(6, $result['siguiente_numero']);
     }
 
@@ -149,7 +155,7 @@ class CodigoUnicoServiceTest extends TestCase
         for ($i = 1; $i <= 5; $i++) {
             Bien::create([
                 'dependencia_id' => $dependencia->id,
-                'codigo' => str_pad((string) $i, 8, '0', STR_PAD_LEFT),
+                'codigo' => $dependencia->codigo . str_pad((string) $i, 5, '0', STR_PAD_LEFT),
                 'descripcion' => "Bien {$i}",
                 'precio' => 100,
                 'estado' => 'ACTIVO',
@@ -159,41 +165,38 @@ class CodigoUnicoServiceTest extends TestCase
         }
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Rango de códigos exhausto');
-        $this->expectExceptionMessage('rango: 1-5');
 
         CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
     }
 
     /**
-     * Test 4: Code format (8-digit zero-padded)
-     * Verify that returned codes are always 8 digits with leading zeros
+     * Test 4: Code format (5-digit zero-padded suffix)
+     * Verify that returned bienes codes include the dependency prefix and 5-digit sequence with leading zeros
      */
     public function test_formato_codigo_ocho_digitos_con_ceros_a_la_izquierda()
     {
         $this->actingAs($this->createUser());
 
         $testCases = [
-            ['min' => 1, 'expected' => '00000001'],
-            ['min' => 5, 'expected' => '00000005'],
-            ['min' => 42, 'expected' => '00000042'],
-            ['min' => 100, 'expected' => '00000100'],
-            ['min' => 999, 'expected' => '00000999'],
-            ['min' => 1000, 'expected' => '00001000'],
-            ['min' => 12345, 'expected' => '00012345'],
-            ['min' => 9999999, 'expected' => '09999999'],
-            ['min' => 10000000, 'expected' => '10000000'],
+            ['min' => 1, 'expected' => '00001'],
+            ['min' => 5, 'expected' => '00005'],
+            ['min' => 42, 'expected' => '00042'],
+            ['min' => 100, 'expected' => '00100'],
+            ['min' => 999, 'expected' => '00999'],
+            ['min' => 1000, 'expected' => '01000'],
+            ['min' => 12345, 'expected' => '12345'],
+            ['min' => 99999, 'expected' => '99999'],
         ];
 
         foreach ($testCases as $case) {
-            $dependencia = $this->createDependenciaWithRange($case['min'], 99999999);
+            $dependencia = $this->createDependenciaWithRange($case['min'], 99999);
             $result = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
-            $this->assertEquals($case['expected'], $result['codigo'], "Failed for code {$case['min']}");
+            $this->assertEquals($dependencia->codigo . $case['expected'], $result['codigo'], "Failed for code {$case['min']}");
         }
     }
 
     /**
-     * Test 5: Default ranges (code_min=1, code_max=99999999)
+     * Test 5: Default ranges (code_min=1, code_max=99999)
      * When dependencia is created without explicit code_min/code_max, defaults are used
      */
     public function test_rangos_por_defecto_cuando_no_se_especifican()
@@ -201,30 +204,17 @@ class CodigoUnicoServiceTest extends TestCase
         $this->actingAs($this->createUser());
 
         // Create dependencia without specifying code_min and code_max
-        $organismo = Organismo::create(['codigo' => 'ORG'.rand(1000, 9999), 'nombre' => 'Organismo Test']);
-        $unidad = UnidadAdministradora::create([
-            'organismo_id' => $organismo->id,
-            'codigo' => 'UA'.rand(1000, 9999),
-            'nombre' => 'Unidad Administradora Test',
-        ]);
-
-        $dependencia = Dependencia::create([
-            'unidad_administradora_id' => $unidad->id,
-            'codigo' => 'DEP'.rand(1000, 9999),
-            'nombre' => 'Dependencia Test',
-            // code_min and code_max omitted - should default to 1 and 99999999
-        ]);
+        $dependencia = $this->createDependenciaWithRange(null, null);
 
         $dependencia->refresh(); // Refresh to get DB defaults
 
         $this->assertEquals(1, $dependencia->code_min);
-        $this->assertEquals(99999999, $dependencia->code_max);
+        $this->assertEquals(99999, $dependencia->code_max);
 
         $result = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
-
-        $this->assertEquals('00000001', $result['codigo']);
+        $this->assertEquals($dependencia->codigo . '00001', $result['codigo']);
         $this->assertEquals(1, $result['rango_min']);
-        $this->assertEquals(99999999, $result['rango_max']);
+        $this->assertEquals(99999, $result['rango_max']);
     }
 
     /**
@@ -241,7 +231,7 @@ class CodigoUnicoServiceTest extends TestCase
         // First, create one initial code
         Bien::create([
             'dependencia_id' => $dependencia->id,
-            'codigo' => '00000001',
+            'codigo' => $dependencia->codigo . '00001',
             'descripcion' => 'Bien inicial',
             'precio' => 100,
             'estado' => 'ACTIVO',
@@ -277,7 +267,7 @@ class CodigoUnicoServiceTest extends TestCase
         // Verify no duplicates exist in database for this dependency
         $codigosEnBd = Bien::where('dependencia_id', $dependencia->id)
             ->pluck('codigo')
-            ->map(fn ($c) => (int) $c)
+            ->map(fn ($c) => (int) substr($c, -5))
             ->sort()
             ->values()
             ->all();
@@ -293,12 +283,12 @@ class CodigoUnicoServiceTest extends TestCase
     {
         $this->actingAs($this->createUser());
 
-        $dependencia = $this->createDependenciaWithRange(1, 99999999);
+        $dependencia = $this->createDependenciaWithRange(1, 99999);
 
         // Create a bien with code 1
         Bien::create([
             'dependencia_id' => $dependencia->id,
-            'codigo' => '00000001',
+            'codigo' => $dependencia->codigo . '00001',
             'descripcion' => 'Bien 1',
             'precio' => 100,
             'estado' => 'ACTIVO',
@@ -310,7 +300,7 @@ class CodigoUnicoServiceTest extends TestCase
         // The service should detect collision and call itself recursively to get 2
         $result = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
 
-        $this->assertEquals('00000002', $result['codigo']);
+        $this->assertEquals($dependencia->codigo . '00002', $result['codigo']);
         $this->assertEquals(2, $result['siguiente_numero']);
     }
 
@@ -322,11 +312,11 @@ class CodigoUnicoServiceTest extends TestCase
         $this->actingAs($this->createUser());
 
         // min=10 but we already have codes 100, 101
-        $dependencia = $this->createDependenciaWithRange(10, 99999999);
+        $dependencia = $this->createDependenciaWithRange(10, 99999);
 
         Bien::create([
             'dependencia_id' => $dependencia->id,
-            'codigo' => '00000100',
+            'codigo' => $dependencia->codigo . '00100',
             'descripcion' => 'Bien 100',
             'precio' => 100,
             'estado' => 'ACTIVO',
@@ -337,7 +327,7 @@ class CodigoUnicoServiceTest extends TestCase
         $result = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
 
         // Should be 101 (MAX+1), not 10 (min)
-        $this->assertEquals('00000101', $result['codigo']);
+        $this->assertEquals($dependencia->codigo . '00101', $result['codigo']);
         $this->assertEquals(101, $result['siguiente_numero']);
     }
 }

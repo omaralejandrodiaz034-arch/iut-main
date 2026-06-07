@@ -46,7 +46,7 @@
                                 @endforeach
                             </select>
                             {{-- Hidden input para preservar el valor al enviar --}}
-                            <input type="hidden" name="dependencia_id" value="{{ $bien->dependencia_id }}">
+                            <input type="hidden" name="dependencia_id" value="{{ old('dependencia_id', $bien->dependencia_id) }}">
                         </div>
 
                         <div>
@@ -70,8 +70,15 @@
                         <div>
                             <label for="codigo" class="block text-sm font-bold text-gray-700 mb-2">Código del Bien</label>
                             <input type="text" name="codigo" id="codigo" value="{{ old('codigo', $bien->codigo) }}"
-                                maxlength="8" inputmode="numeric"
+                                maxlength="8" inputmode="numeric" pattern="\d{8}"
+                                placeholder="Ej: 10001001"
                                 class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase">
+
+                            @error('codigo')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+
+                            <p class="text-[10px] text-gray-500 mt-1">Debe ser un código jerárquico de 8 dígitos numéricos.</p>
 
                             <div id="sugerencia-container" class="mt-1 hidden">
                                 <button type="button" id="btn-sugerencia" class="text-[10px] text-blue-600 hover:underline font-bold italic">

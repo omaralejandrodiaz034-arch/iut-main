@@ -4,70 +4,39 @@
     <meta charset="UTF-8">
     <title>Bien {{ $bien->codigo }}</title>
     <style>
-        * { box-sizing: border-box; }
-        body {
-            font-family: 'DejaVu Sans', sans-serif;
-            margin: 0;
-            padding: 24px;
-            color: #1f2937;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        h1, h2 { margin: 0 0 12px 0; }
-        .header { text-align: center; margin-bottom: 24px; }
-        .header h1 {
-            font-size: 20px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .section {
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            padding: 16px;
-            margin-bottom: 20px;
-        }
-        .section-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #111827;
-        }
-        .field { margin-bottom: 10px; }
-        .field-label {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #6b7280;
-            margin-bottom: 4px;
-        }
-        .field-value {
-            font-size: 14px;
-            color: #111827;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 12px;
-            font-size: 13px;
-        }
-        table thead { background: #f3f4f6; }
-        table th,
-        table td {
-            border: 1px solid #d1d5db;
-            padding: 8px;
-            text-align: left;
-        }
-        .small {
-            font-size: 12px;
-            color: #6b7280;
-        }
+        * { box-sizing: border-box; margin:0; padding:0 }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color:#333 }
+
+        /* Banner institucional */
+        .header-banner { width:100%; margin-bottom:16px; text-align:center }
+        .header-banner img { width:100%; max-width:100%; height:auto }
+
+        .report-title { background:#003366; color:#fff; padding:10px; text-align:center; margin:12px 0; font-size:15px; font-weight:bold; text-transform:uppercase }
+        .report-subtitle { text-align:center; font-style:italic; color:#666; margin-bottom:8px; font-size:12px }
+        .report-meta { text-align:right; font-size:10px; color:#888; margin-bottom:12px }
+
+        .section { border:1px solid #d1d5db; border-radius:6px; padding:12px; margin-bottom:14px }
+        .section-title { font-size:14px; font-weight:600; margin-bottom:8px; color:#111827 }
+        .field { margin-bottom:8px }
+        .field-label { font-size:11px; text-transform:uppercase; color:#6b7280; margin-bottom:3px }
+        .field-value { font-size:13px; color:#111827 }
+
+        table { width:100%; border-collapse:collapse; margin-top:10px; font-size:12px }
+        table thead { background:#f3f4f6 }
+        th, td { border:1px solid #ddd; padding:6px 8px; text-align:left }
+        .small { font-size:10px; color:#666 }
+
+        .footer { position: fixed; bottom: 0; width:100%; text-align:center; font-size:10px; color:#888; padding-top:6px; border-top:1px solid #ddd }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Sistema de Gestión de Inventario de Bienes</h1>
-        <p class="small">Reporte institucional del bien</p>
+    <div class="header-banner">
+        <img src="{{ public_path('images/baner.jpeg') }}" alt="Banner Institucional">
     </div>
+
+    <div class="report-title">Detalle del Bien</div>
+    <div class="report-subtitle">Reporte institucional del bien</div>
+    <div class="report-meta">Generado: {{ now()->format('d/m/Y H:i') }}</div>
 
     <div class="section">
         <div class="section-title">Datos del Bien</div>
@@ -90,14 +59,6 @@
         <div class="field">
             <div class="field-label">Fecha de registro</div>
             <div class="field-value">{{ optional($bien->fecha_registro)->format('d/m/Y') }}</div>
-        </div>
-        <div class="field">
-            <div class="field-label">Creado en el sistema</div>
-            <div class="field-value">{{ optional($bien->created_at)->format('d/m/Y H:i') }}</div>
-        </div>
-        <div class="field">
-            <div class="field-label">Última actualización</div>
-            <div class="field-value">{{ optional($bien->updated_at)->format('d/m/Y H:i') }}</div>
         </div>
     </div>
 
@@ -159,7 +120,7 @@
         @endif
     </div>
 
-    <p class="small">Generado el {{ now()->format('d/m/Y H:i') }} por {{ auth()->user()->name ?? 'Sistema' }}</p>
+    <div class="footer">Generado el {{ now()->format('d/m/Y H:i') }} por {{ auth()->user()->name ?? 'Sistema' }}</div>
 </body>
 </html>
 
