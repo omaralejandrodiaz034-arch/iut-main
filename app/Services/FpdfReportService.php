@@ -27,24 +27,16 @@ class FpdfReportService
                 $this->instName = $instName;
             }
 
-            // Header called automatically on each page
             public function Header()
             {
-                // Banner institucional en la parte superior
                 if ($this->banner && file_exists($this->banner)) {
-                    // Calcular dimensiones para que el banner ocupe todo el ancho
                     $pageWidth = $this->GetPageWidth();
-                    $bannerHeight = 20; // Altura del banner en mm
-
-                    // Centrar el banner
+                    $bannerHeight = 20;
                     $this->Image($this->banner, 10, 8, $pageWidth - 20, $bannerHeight);
-
-                    // Espacio después del banner
                     $this->SetY(8 + $bannerHeight + 3);
                 } else {
-                    // Si no hay banner, mostrar nombre de la institución
                     $this->SetFont('Arial', 'B', 14);
-                    $this->Cell(0, 8, $this->instName, 0, 1, 'C');
+                    $this->Cell(0, 8, utf8_decode($this->instName), 0, 1, 'C');
                     $this->Ln(2);
                 }
             }
@@ -55,7 +47,31 @@ class FpdfReportService
                 $this->SetY(-15);
                 $this->SetFont('Arial', 'I', 8);
                 $this->SetTextColor(100, 100, 100);
-                $this->Cell(0, 10, 'Página '.$this->PageNo().'/{nb}', 0, 0, 'C');
+                $this->Cell(0, 10, utf8_decode('Página '.$this->PageNo().'/{nb}'), 0, 0, 'C');
+            }
+
+            public function Cell($w, $h = 0, $txt = '', $border = 0, $ln = 0, $align = '', $fill = false, $link = '')
+            {
+                if (is_string($txt)) {
+                    $txt = utf8_decode($txt);
+                }
+                return parent::Cell($w, $h, $txt, $border, $ln, $align, $fill, $link);
+            }
+
+            public function MultiCell($w, $h, $txt, $border = 0, $align = 'J', $fill = false)
+            {
+                if (is_string($txt)) {
+                    $txt = utf8_decode($txt);
+                }
+                return parent::MultiCell($w, $h, $txt, $border, $align, $fill);
+            }
+
+            public function Write($h, $txt, $link = '')
+            {
+                if (is_string($txt)) {
+                    $txt = utf8_decode($txt);
+                }
+                return parent::Write($h, $txt, $link);
             }
         };
 
@@ -1001,6 +1017,220 @@ class FpdfReportService
             $pdf->Cell($widths[3], 7, '-', 1, 0, 'C', true);
             $pdf->Cell($widths[4], 7, $subtotalBienes.' bienes', 1, 1, 'C', true);
             $pdf->Ln(5);
+        }
+
+        return response($pdf->Output('S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$fileName.'"',
+        ]);
+    }
+
+    /**
+     * Genera reporte de listado general de movimientos.
+     */
+    public function downloadMovimientosListado(
+        string $fileName,
+        string $title,
+        ?string $subtitle,
+        string $generatedAt,
+        iterable $movimientos
+    ) {
+        $movimientosArray = $movimientos instanceof \Illuminate\Support\Collection
+            ? $movimientos->all()
+            : iterator_to_array($movimientos);
+
+        $pdf = $this->make('P');
+        $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        $widths = [28, 30, 55, 40, 40];
+        $headers = ['Fecha', 'Tipo', 'Entidad', 'Usuario', 'Observaciones'];
+
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetFont('Arial', 'B', 8);
+        foreach ($headers as $i => $header) {
+            $pdf->Cell($widths[$i], 7, $this->t($header), 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->SetTextColor(0, 0, 0);
+        $hasData = false;
+        $index = 0;
+
+        foreach ($movimientosArray as $mov) {
+            $hasData = true;
+            $fill = ($index % 2 == 0);
+            if ($fill) {
+                $pdf->SetFillColor(248, 248, 248);
+            }
+
+            $pdf->Cell($widths[0], 6, $mov->fecha ? $mov->fecha->format('d/m/Y') : '-', 1, 0, 'C', $fill);
+            $pdf->Cell($widths[1], 6, $this->t($this->truncate($mov->tipo ?? '-', 20)), 1, 0, 'C', $fill);
+            $pdf->Cell($widths[2], 6, $this->t($this->truncate(class_basename($mov->subject_type ?? '-'), 25)), 1, 0, 'L', $fill);
+            $pdf->Cell($widths[3], 6, $this->t($this->truncate($mov->usuario?->nombre_completo ?? $mov->usuario?->name ?? '-', 25)), 1, 0, 'L', $fill);
+            $pdf->Cell($widths[4], 6, $this->t($this->truncate($mov->observaciones ?? '-', 28)), 1, 1, 'L', $fill);
+            $index++;
+        }
+
+        if (! $hasData) {
+            $pdf->Cell(array_sum($widths), 10, $this->t('No se encontraron movimientos.'), 1, 1, 'C');
+        }
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell(array_sum($widths), 8, $this->t('TOTAL: '.count($movimientosArray).' movimientos'), 1, 1, 'C', true);
+
+        return response($pdf->Output('S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+        ]);
+    }
+
+    /**
+     * Genera reporte de movimientos agrupados por tipo.
+     */
+    public function generarMovimientosPorTipo(
+        string $fileName,
+        string $title,
+        ?string $subtitle,
+        string $generatedAt,
+        iterable $movimientos
+    ) {
+        $movimientosArray = $movimientos instanceof \Illuminate\Support\Collection
+            ? $movimientos->all()
+            : iterator_to_array($movimientos);
+
+        $pdf = $this->make('P');
+
+        $agrupados = [];
+        foreach ($movimientosArray as $mov) {
+            $tipo = $mov->tipo ?? 'Sin Tipo';
+            if (! isset($agrupados[$tipo])) {
+                $agrupados[$tipo] = [];
+            }
+            $agrupados[$tipo][] = $mov;
+        }
+
+        $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        $totalGeneral = count($movimientosArray);
+
+        foreach ($agrupados as $tipo => $movsGrupo) {
+            if ($pdf->GetY() > 170) {
+                $pdf->AddPage();
+            }
+
+            $pdf->SetFillColor(0, 51, 102);
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->SetFont('Arial', 'B', 10);
+            $pdf->Cell(0, 8, 'TIPO: '.strtoupper($this->t($tipo)).' ('.count($movsGrupo).' movimientos)', 0, 1, 'L', true);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Ln(1);
+
+            $widths = [28, 30, 45, 35, 50];
+            $headers = ['Fecha', 'Usuario', 'Entidad', 'Sujeto', 'Observaciones'];
+
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFillColor(220, 220, 220);
+            foreach ($headers as $i => $header) {
+                $pdf->Cell($widths[$i], 6, $this->t($header), 1, 0, 'C', true);
+            }
+            $pdf->Ln();
+
+            $pdf->SetFont('Arial', '', 7);
+            $index = 0;
+            foreach ($movsGrupo as $mov) {
+                $fill = ($index % 2 == 0);
+                if ($fill) {
+                    $pdf->SetFillColor(248, 248, 248);
+                }
+
+                $pdf->Cell($widths[0], 6, $mov->fecha ? $mov->fecha->format('d/m/Y') : '-', 1, 0, 'C', $fill);
+                $pdf->Cell($widths[1], 6, $this->t($this->truncate($mov->usuario?->nombre_completo ?? $mov->usuario?->name ?? '-', 20)), 1, 0, 'L', $fill);
+                $pdf->Cell($widths[2], 6, $this->t($this->truncate(class_basename($mov->subject_type ?? '-'), 22)), 1, 0, 'L', $fill);
+                $pdf->Cell($widths[3], 6, $this->t($this->truncate($mov->subject?->nombre_completo ?? $mov->subject?->nombre ?? $mov->subject?->descripcion ?? $mov->subject?->codigo ?? '-', 20)), 1, 0, 'L', $fill);
+                $pdf->Cell($widths[4], 6, $this->t($this->truncate($mov->observaciones ?? '-', 30)), 1, 1, 'L', $fill);
+                $index++;
+            }
+
+            $pdf->Ln(4);
+        }
+
+        return response($pdf->Output('S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$fileName.'"',
+        ]);
+    }
+
+    /**
+     * Genera reporte de movimientos agrupados por usuario.
+     */
+    public function generarMovimientosPorUsuario(
+        string $fileName,
+        string $title,
+        ?string $subtitle,
+        string $generatedAt,
+        iterable $movimientos
+    ) {
+        $movimientosArray = $movimientos instanceof \Illuminate\Support\Collection
+            ? $movimientos->all()
+            : iterator_to_array($movimientos);
+
+        $pdf = $this->make('P');
+
+        $agrupados = [];
+        foreach ($movimientosArray as $mov) {
+            $usuarioNombre = $mov->usuario?->nombre_completo ?? $mov->usuario?->name ?? 'Sin Usuario';
+            if (! isset($agrupados[$usuarioNombre])) {
+                $agrupados[$usuarioNombre] = [];
+            }
+            $agrupados[$usuarioNombre][] = $mov;
+        }
+
+        $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        $totalGeneral = count($movimientosArray);
+
+        foreach ($agrupados as $usuarioNombre => $movsGrupo) {
+            if ($pdf->GetY() > 170) {
+                $pdf->AddPage();
+            }
+
+            $pdf->SetFillColor(34, 85, 51);
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->SetFont('Arial', 'B', 10);
+            $pdf->Cell(0, 8, 'USUARIO: '.strtoupper($this->t($usuarioNombre)).' ('.count($movsGrupo).' movimientos)', 0, 1, 'L', true);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Ln(1);
+
+            $widths = [28, 30, 50, 50];
+            $headers = ['Fecha', 'Tipo', 'Entidad', 'Observaciones'];
+
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFillColor(220, 220, 220);
+            foreach ($headers as $i => $header) {
+                $pdf->Cell($widths[$i], 6, $this->t($header), 1, 0, 'C', true);
+            }
+            $pdf->Ln();
+
+            $pdf->SetFont('Arial', '', 7);
+            $index = 0;
+            foreach ($movsGrupo as $mov) {
+                $fill = ($index % 2 == 0);
+                if ($fill) {
+                    $pdf->SetFillColor(248, 248, 248);
+                }
+
+                $pdf->Cell($widths[0], 6, $mov->fecha ? $mov->fecha->format('d/m/Y') : '-', 1, 0, 'C', $fill);
+                $pdf->Cell($widths[1], 6, $this->t($this->truncate($mov->tipo ?? '-', 20)), 1, 0, 'L', $fill);
+                $pdf->Cell($widths[2], 6, $this->t($this->truncate(class_basename($mov->subject_type ?? '-').' - '.($mov->subject?->nombre_completo ?? $mov->subject?->nombre ?? $mov->subject?->descripcion ?? $mov->subject?->codigo ?? '-'), 28)), 1, 0, 'L', $fill);
+                $pdf->Cell($widths[3], 6, $this->t($this->truncate($mov->observaciones ?? '-', 30)), 1, 1, 'L', $fill);
+                $index++;
+            }
+
+            $pdf->Ln(4);
         }
 
         return response($pdf->Output('S'), 200, [
