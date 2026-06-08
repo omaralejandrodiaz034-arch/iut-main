@@ -55,12 +55,13 @@ class CodigoJerarquicoService
     {
         return DB::transaction(function () use ($organismoId) {
             $organismo = Organismo::lockForUpdate()->findOrFail($organismoId);
+            // Obtener el máximo número de unidad dentro del organismo usando la porción numérica
+            $start = self::LONG_ORGANISMO + 1; // SUBSTRING index (1-based)
+            $length = self::LONG_UNIDAD;
+            $maxNumero = UnidadAdministradora::where('organismo_id', $organismoId)
+                ->max(DB::raw("CAST(SUBSTRING(codigo, $start, $length) AS UNSIGNED)"));
 
-            $ultimaUnidad = UnidadAdministradora::where('organismo_id', $organismoId)
-                ->orderBy('codigo', 'desc')
-                ->first();
-
-            $siguiente = $ultimaUnidad ? (int)substr($ultimaUnidad->codigo, self::LONG_ORGANISMO, self::LONG_UNIDAD) + 1 : 1;
+            $siguiente = $maxNumero ? ((int)$maxNumero + 1) : 1;
             $maximo = pow(10, self::LONG_UNIDAD) - 1;
 
             if ($siguiente > $maximo) {
@@ -84,12 +85,13 @@ class CodigoJerarquicoService
     {
         return DB::transaction(function () use ($unidadId) {
             $unidad = UnidadAdministradora::lockForUpdate()->findOrFail($unidadId);
+            // Obtener máximo número de dependencia dentro de la unidad (porción numérica)
+            $start = self::LONG_ORGANISMO + self::LONG_UNIDAD + 1; // SUBSTRING index (1-based)
+            $length = self::LONG_DEPENDENCIA;
+            $maxNumero = Dependencia::where('unidad_administradora_id', $unidadId)
+                ->max(DB::raw("CAST(SUBSTRING(codigo, $start, $length) AS UNSIGNED)"));
 
-            $ultimaDependencia = Dependencia::where('unidad_administradora_id', $unidadId)
-                ->orderBy('codigo', 'desc')
-                ->first();
-
-            $siguiente = $ultimaDependencia ? (int)substr($ultimaDependencia->codigo, self::LONG_ORGANISMO + self::LONG_UNIDAD, self::LONG_DEPENDENCIA) + 1 : 1;
+            $siguiente = $maxNumero ? ((int)$maxNumero + 1) : 1;
             $maximo = pow(10, self::LONG_DEPENDENCIA) - 1;
 
             if ($siguiente > $maximo) {
@@ -113,13 +115,12 @@ class CodigoJerarquicoService
     {
         return DB::transaction(function () use ($dependenciaId) {
             $dependencia = Dependencia::lockForUpdate()->with(['unidadAdministradora.organismo'])->findOrFail($dependenciaId);
-
             $prefijo = self::buildPrefijoDependencia($dependencia->codigo);
-            $ultimoBien = Bien::where('codigo', 'LIKE', $prefijo . '%')
-                ->orderBy('codigo', 'desc')
-                ->first();
+            // Obtener el máximo secuencial numérico para bienes dentro de la dependencia
+            $maxNumero = Bien::where('codigo', 'LIKE', $prefijo . '%')
+                ->max(DB::raw("CAST(RIGHT(codigo, " . self::LONG_BIEN . ") AS UNSIGNED)"));
 
-            $siguiente = $ultimoBien ? (int)substr($ultimoBien->codigo, -self::LONG_BIEN) + 1 : 1;
+            $siguiente = $maxNumero ? ((int)$maxNumero + 1) : 1;
             $maximo = pow(10, self::LONG_BIEN) - 1;
 
             if ($siguiente > $maximo) {

@@ -8,11 +8,4 @@ export default defineConfig({
             refresh: true,
         }),
     ],
-    // 👇 Agrega esta sección de aquí abajo
-    server: {
-        host: '0.0.0.0', // Escucha en toda la red local
-        hmr: {
-            host: '192.168.100.195', // La IP de tu computadora
-        },
-    },
 });
