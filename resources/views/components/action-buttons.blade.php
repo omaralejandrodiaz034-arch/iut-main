@@ -102,7 +102,7 @@
 @endphp
 
 @if($canDelete && $buttonText !== 'Desincorporar')
-    <form action="{{ $destroyUrl }}" method="POST" class="inline delete-form" data-can-delete="{{ auth()->user()?->canDeleteData() ? '1' : '0' }}" data-confirm="{{ e($confirm) }}" data-label="{{ e($label ?? '') }}">
+    <form action="{{ $destroyUrl }}" method="POST" class="inline delete-form" data-can-delete="{{ $canDelete ? '1' : '0' }}" data-confirm="{{ e($confirm) }}" data-label="{{ e($label ?? '') }}">
         @csrf
         @method('DELETE')
         <button type="submit" class="inline-flex items-center px-2 py-1 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100">
@@ -113,7 +113,7 @@
 
 @once
     {{-- Modal para confirmación/el mensaje de no permiso (incluido una sola vez por página) con estilos y animación Tailwind --}}
-    <div id="delete-modal-backdrop" class="modal-overlay hidden fixed inset-0 z-50" aria-hidden="true">
+    <div id="delete-modal-backdrop" class="modal-overlay hidden fixed inset-0 z-[100]" aria-hidden="true">
         <div id="delete-modal" class="bg-white rounded-lg shadow-2xl max-w-lg w-full mx-4 p-6 transform transition-all duration-200 ease-out scale-95 opacity-0 overflow-hidden">
             <div class="flex items-start space-x-4">
                 <div id="delete-modal-icon" class="flex-shrink-0">
@@ -125,7 +125,7 @@
 
                 <div class="flex-1">
                     <h3 id="delete-modal-title" class="text-xl font-semibold text-gray-800">Confirmar acción</h3>
-                    <p id="delete-modal-message" class="mt-2 text-sm text-gray-600">¿Estás seguro?</p>
+                    <p id="delete-modal-message" class="mt-2 text-sm text-gray-600 whitespace-pre-line">¿Estás seguro?</p>
 
                     <div class="mt-5 flex justify-end space-x-3">
                         <button id="delete-modal-cancel" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition">Cancelar</button>

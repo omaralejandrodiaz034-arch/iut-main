@@ -55,6 +55,7 @@ class FpdfReportService
                 if (is_string($txt)) {
                     $txt = utf8_decode($txt);
                 }
+
                 return parent::Cell($w, $h, $txt, $border, $ln, $align, $fill, $link);
             }
 
@@ -63,6 +64,7 @@ class FpdfReportService
                 if (is_string($txt)) {
                     $txt = utf8_decode($txt);
                 }
+
                 return parent::MultiCell($w, $h, $txt, $border, $align, $fill);
             }
 
@@ -71,6 +73,7 @@ class FpdfReportService
                 if (is_string($txt)) {
                     $txt = utf8_decode($txt);
                 }
+
                 return parent::Write($h, $txt, $link);
             }
         };
@@ -380,6 +383,9 @@ class FpdfReportService
 
         $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
 
+        $totalGeneralBs = 0;
+        $totalGeneralCount = 0;
+
         foreach ($agrupados as $uniNombre => $bienesGrupo) {
             if ($pdf->GetY() > 180) {
                 $pdf->AddPage();
@@ -421,7 +427,18 @@ class FpdfReportService
             $pdf->Cell($widths[2], 6, number_format($totalBs, 2, ',', '.'), 1, 0, 'R');
             $pdf->Cell($widths[3] + $widths[4] + $widths[5] + $widths[6], 6, '', 1, 0, 'C');
             $pdf->Ln(8);
+
+            $totalGeneralBs += $totalBs;
+            $totalGeneralCount += count($bienesGrupo);
         }
+
+        // Total general
+        $pdf->SetFont('Arial', 'B', 11);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell($widths[0] + $widths[1], 8, $this->t('TOTAL GENERAL ('.$totalGeneralCount.' bienes)'), 1, 0, 'R', true);
+        $pdf->Cell($widths[2], 8, number_format($totalGeneralBs, 2, ',', '.'), 1, 0, 'R', true);
+        $pdf->Cell($widths[3] + $widths[4] + $widths[5] + $widths[6], 8, '', 1, 1, 'C', true);
 
         return response($pdf->Output('S'), 200, [
             'Content-Type' => 'application/pdf',
@@ -448,6 +465,9 @@ class FpdfReportService
         }
 
         $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        $totalGeneralBs = 0;
+        $totalGeneralCount = 0;
 
         foreach ($agrupados as $orgNombre => $bienesGrupo) {
             if ($pdf->GetY() > 180) {
@@ -490,7 +510,18 @@ class FpdfReportService
             $pdf->Cell($widths[2], 6, number_format($totalBs, 2, ',', '.'), 1, 0, 'R');
             $pdf->Cell($widths[3] + $widths[4] + $widths[5] + $widths[6], 6, '', 1, 0, 'C');
             $pdf->Ln(8);
+
+            $totalGeneralBs += $totalBs;
+            $totalGeneralCount += count($bienesGrupo);
         }
+
+        // Total general
+        $pdf->SetFont('Arial', 'B', 11);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell($widths[0] + $widths[1], 8, $this->t('TOTAL GENERAL ('.$totalGeneralCount.' bienes)'), 1, 0, 'R', true);
+        $pdf->Cell($widths[2], 8, number_format($totalGeneralBs, 2, ',', '.'), 1, 0, 'R', true);
+        $pdf->Cell($widths[3] + $widths[4] + $widths[5] + $widths[6], 8, '', 1, 1, 'C', true);
 
         return response($pdf->Output('S'), 200, [
             'Content-Type' => 'application/pdf',
@@ -517,6 +548,9 @@ class FpdfReportService
         }
 
         $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        $totalGeneralBs = 0;
+        $totalGeneralCount = 0;
 
         foreach ($agrupados as $tipo => $bienesGrupo) {
             if ($pdf->GetY() > 180) {
@@ -558,7 +592,18 @@ class FpdfReportService
             $pdf->Cell($widths[2], 6, number_format($totalBs, 2, ',', '.'), 1, 0, 'R');
             $pdf->Cell($widths[3] + $widths[4] + $widths[5], 6, '', 1, 0, 'C');
             $pdf->Ln(8);
+
+            $totalGeneralBs += $totalBs;
+            $totalGeneralCount += count($bienesGrupo);
         }
+
+        // Total general
+        $pdf->SetFont('Arial', 'B', 11);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell($widths[0] + $widths[1], 8, $this->t('TOTAL GENERAL ('.$totalGeneralCount.' bienes)'), 1, 0, 'R', true);
+        $pdf->Cell($widths[2], 8, number_format($totalGeneralBs, 2, ',', '.'), 1, 0, 'R', true);
+        $pdf->Cell($widths[3] + $widths[4] + $widths[5], 8, '', 1, 1, 'C', true);
 
         return response($pdf->Output('S'), 200, [
             'Content-Type' => 'application/pdf',
@@ -585,6 +630,9 @@ class FpdfReportService
         }
 
         $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        $totalGeneralBs = 0;
+        $totalGeneralCount = 0;
 
         foreach ($agrupados as $estado => $bienesGrupo) {
             if ($pdf->GetY() > 180) {
@@ -635,7 +683,18 @@ class FpdfReportService
             $pdf->Cell($widths[2], 6, number_format($totalBs, 2, ',', '.'), 1, 0, 'R');
             $pdf->Cell($widths[3] + $widths[4] + $widths[5], 6, '', 1, 0, 'C');
             $pdf->Ln(8);
+
+            $totalGeneralBs += $totalBs;
+            $totalGeneralCount += count($bienesGrupo);
         }
+
+        // Total general
+        $pdf->SetFont('Arial', 'B', 11);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell($widths[0] + $widths[1], 8, $this->t('TOTAL GENERAL ('.$totalGeneralCount.' bienes)'), 1, 0, 'R', true);
+        $pdf->Cell($widths[2], 8, number_format($totalGeneralBs, 2, ',', '.'), 1, 0, 'R', true);
+        $pdf->Cell($widths[3] + $widths[4] + $widths[5], 8, '', 1, 1, 'C', true);
 
         return response($pdf->Output('S'), 200, [
             'Content-Type' => 'application/pdf',
@@ -732,6 +791,9 @@ class FpdfReportService
 
         $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
 
+        $totalGeneralDeps = 0;
+        $totalGeneralBienes = 0;
+
         foreach ($agrupados as $uniNombre => $depsGrupo) {
             if ($pdf->GetY() > 170) {
                 $pdf->AddPage();
@@ -778,7 +840,16 @@ class FpdfReportService
             $pdf->Cell($widths[2] + $widths[3], 7, '', 1, 0, 'C', true);
             $pdf->Cell($widths[4], 7, $subtotalBienes.' bienes', 1, 1, 'C', true);
             $pdf->Ln(5);
+
+            $totalGeneralDeps += count($depsGrupo);
+            $totalGeneralBienes += $subtotalBienes;
         }
+
+        // Total general
+        $pdf->SetFont('Arial', 'B', 11);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell(array_sum($widths), 8, $this->t('TOTAL GENERAL: '.count($dependenciasArray).' dependencias, '.$totalGeneralBienes.' bienes'), 1, 1, 'C', true);
 
         return response($pdf->Output('S'), 200, [
             'Content-Type' => 'application/pdf',
@@ -813,6 +884,9 @@ class FpdfReportService
         }
 
         $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        $totalGeneralDeps = 0;
+        $totalGeneralBienes = 0;
 
         foreach ($agrupados as $resNombre => $depsGrupo) {
             if ($pdf->GetY() > 170) {
@@ -861,7 +935,16 @@ class FpdfReportService
             $pdf->Cell($widths[2] + $widths[3] + $widths[4], 7, '', 1, 0, 'C', true);
             $pdf->Cell($widths[5], 7, $subtotalBienes.' bienes', 1, 1, 'C', true);
             $pdf->Ln(5);
+
+            $totalGeneralDeps += count($depsGrupo);
+            $totalGeneralBienes += $subtotalBienes;
         }
+
+        // Total general
+        $pdf->SetFont('Arial', 'B', 11);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell(array_sum($widths), 8, $this->t('TOTAL GENERAL: '.count($dependenciasArray).' dependencias, '.$totalGeneralBienes.' bienes'), 1, 1, 'C', true);
 
         return response($pdf->Output('S'), 200, [
             'Content-Type' => 'application/pdf',
@@ -936,6 +1019,78 @@ class FpdfReportService
     }
 
     /**
+     * Genera reporte de listado general de organismos.
+     */
+    public function downloadOrganismosListado(
+        string $fileName,
+        string $title,
+        ?string $subtitle,
+        string $generatedAt,
+        iterable $organismos
+    ) {
+        $organismosArray = $organismos instanceof \Illuminate\Support\Collection
+            ? $organismos->all()
+            : iterator_to_array($organismos);
+
+        $pdf = $this->make('P');
+        $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        $widths = [15, 50, 25, 25, 25];
+        $headers = ['Código', 'Nombre', 'Unidades', 'Dependencias', 'Bienes'];
+
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        foreach ($headers as $i => $header) {
+            $pdf->Cell($widths[$i], 7, $this->t($header), 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->SetTextColor(0, 0, 0);
+        $totalUnidades = 0;
+        $totalDependencias = 0;
+        $totalBienes = 0;
+        $hasData = false;
+
+        foreach ($organismosArray as $org) {
+            $hasData = true;
+            $totalUnidades += $org->unidades_count ?? $org->unidadesAdministradoras->count() ?? 0;
+
+            $dependenciasCount = 0;
+            $bienesCount = 0;
+            foreach ($org->unidadesAdministradoras ?? [] as $uni) {
+                $dependenciasCount += $uni->dependencias_count ?? $uni->dependencias->count() ?? 0;
+                foreach ($uni->dependencias ?? [] as $dep) {
+                    $bienesCount += $dep->bienes_count ?? $dep->bienes->count() ?? 0;
+                }
+            }
+            $totalDependencias += $dependenciasCount;
+            $totalBienes += $bienesCount;
+
+            $pdf->Cell($widths[0], 6, $this->t($org->codigo ?? ''), 1, 0, 'C');
+            $pdf->Cell($widths[1], 6, $this->t($this->truncate($org->nombre ?? '', 40)), 1);
+            $pdf->Cell($widths[2], 6, ($org->unidades_count ?? $org->unidadesAdministradoras->count() ?? 0), 1, 0, 'C');
+            $pdf->Cell($widths[3], 6, $dependenciasCount, 1, 0, 'C');
+            $pdf->Cell($widths[4], 6, $bienesCount, 1, 1, 'C');
+        }
+
+        if (! $hasData) {
+            $pdf->Cell(array_sum($widths), 10, $this->t('No se encontraron registros.'), 1, 1, 'C');
+        }
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell(array_sum($widths), 8, $this->t('TOTAL GENERAL: '.count($organismosArray).' organismos, '.$totalUnidades.' unidades, '.$totalDependencias.' dependencias, '.$totalBienes.' bienes'), 1, 1, 'C', true);
+
+        return response($pdf->Output('S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+        ]);
+    }
+
+    /**
      * Genera reporte de unidades agrupado por organismo
      */
     public function generarUnidadesPorOrganismo(
@@ -961,6 +1116,10 @@ class FpdfReportService
         }
 
         $this->renderHeader($pdf, $title, $subtitle, $generatedAt, []);
+
+        $totalGeneralDeps = 0;
+        $totalGeneralBienes = 0;
+        $totalGeneralUnidades = 0;
 
         foreach ($agrupados as $orgNombre => $unisGrupo) {
             if ($pdf->GetY() > 170) {
@@ -1017,7 +1176,17 @@ class FpdfReportService
             $pdf->Cell($widths[3], 7, '-', 1, 0, 'C', true);
             $pdf->Cell($widths[4], 7, $subtotalBienes.' bienes', 1, 1, 'C', true);
             $pdf->Ln(5);
+
+            $totalGeneralDeps += $subtotalDeps;
+            $totalGeneralBienes += $subtotalBienes;
+            $totalGeneralUnidades += count($unisGrupo);
         }
+
+        // Total general
+        $pdf->SetFont('Arial', 'B', 11);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell(array_sum($widths), 8, $this->t('TOTAL GENERAL: '.count($unidadesArray).' unidades, '.$totalGeneralDeps.' dependencias, '.$totalGeneralBienes.' bienes'), 1, 1, 'C', true);
 
         return response($pdf->Output('S'), 200, [
             'Content-Type' => 'application/pdf',
@@ -1158,6 +1327,12 @@ class FpdfReportService
             $pdf->Ln(4);
         }
 
+        // Total general
+        $pdf->SetFont('Arial', 'B', 11);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell(array_sum($widths), 8, $this->t('TOTAL GENERAL: '.$totalGeneral.' movimientos'), 1, 1, 'C', true);
+
         return response($pdf->Output('S'), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="'.$fileName.'"',
@@ -1232,6 +1407,12 @@ class FpdfReportService
 
             $pdf->Ln(4);
         }
+
+        // Total general
+        $pdf->SetFont('Arial', 'B', 11);
+        $pdf->SetFillColor(0, 51, 102);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell(array_sum($widths), 8, $this->t('TOTAL GENERAL: '.count($movimientosArray).' movimientos'), 1, 1, 'C', true);
 
         return response($pdf->Output('S'), 200, [
             'Content-Type' => 'application/pdf',

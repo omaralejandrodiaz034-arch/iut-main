@@ -1,24 +1,21 @@
 <?php
 
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Api\UsuarioImportController as ApiUsuarioImportController;
 use App\Http\Controllers\AuditoriaController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BienController;
 use App\Http\Controllers\BienExcelController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DependenciaController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\SearchController;
 use App\Http\Controllers\HistorialMovimientoController;
 use App\Http\Controllers\MovimientoController;
 use App\Http\Controllers\OrganismoController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReporteController;
-use App\Http\Controllers\ResponsableController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\UnidadAdministradoraController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\Api\ResponsableController as ApiResponsableController;
-use App\Http\Controllers\Api\UsuarioImportController as ApiUsuarioImportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,6 +30,7 @@ Route::get('/', function () {
 Route::get('/manual-usuario', function () {
     $pdf = \Illuminate\Support\Facades\App::make('dompdf.wrapper');
     $pdf->loadView('manual.index');
+
     return $pdf->download('Manual_Usuario_Sistema_Bienes.pdf');
 })->name('manual.usuario');
 
@@ -89,27 +87,27 @@ Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () 
     // ────────────────────────────────────────────────
     Route::prefix('bienes')->name('bienes.')->group(function () {
         // Rutas específicas (deben ir antes del resource para que tengan prioridad)
-        Route::get('reporte',        [BienController::class, 'generarReporte'])     ->name('reporte');
+        Route::get('reporte', [BienController::class, 'generarReporte'])->name('reporte');
         Route::get('galeria-completa', [BienController::class, 'galeriaCompleta'])->name('galeria');
-        Route::get('{bien}/pdf',     [BienController::class, 'exportPdf'])         ->name('pdf');
+        Route::get('{bien}/pdf', [BienController::class, 'exportPdf'])->name('pdf');
 
         // Import/Export Excel
-        Route::get('importar',       [BienExcelController::class, 'showImportForm']) ->name('importar.form');
-        Route::post('importar',      [BienExcelController::class, 'importar'])        ->name('importar');
-        Route::get('descargar-template', [BienExcelController::class, 'descargarTemplate']) ->name('descargar-template');
-        Route::get('exportar',       [BienExcelController::class, 'exportar'])        ->name('exportar');
+        Route::get('importar', [BienExcelController::class, 'showImportForm'])->name('importar.form');
+        Route::post('importar', [BienExcelController::class, 'importar'])->name('importar');
+        Route::get('descargar-template', [BienExcelController::class, 'descargarTemplate'])->name('descargar-template');
+        Route::get('exportar', [BienExcelController::class, 'exportar'])->name('exportar');
 
         // Desincorporación (GET → formulario, POST → procesar y descargar acta)
-        Route::get('{bien}/desincorporar',    [BienController::class, 'showDesincorporarForm'])->name('desincorporar.form');
-        Route::post('{bien}/desincorporar',   [BienController::class, 'desincorporar'])       ->name('desincorporar');
+        Route::get('{bien}/desincorporar', [BienController::class, 'showDesincorporarForm'])->name('desincorporar.form');
+        Route::post('{bien}/desincorporar', [BienController::class, 'desincorporar'])->name('desincorporar');
 
         // Reincorporación (GET → formulario, POST → procesar)
-        Route::get('{bien}/reincorporar',     [BienController::class, 'showReincorporarForm'])->name('reincorporar.form');
-        Route::post('{bien}/reincorporar',    [BienController::class, 'reincorporar'])      ->name('reincorporar');
+        Route::get('{bien}/reincorporar', [BienController::class, 'showReincorporarForm'])->name('reincorporar.form');
+        Route::post('{bien}/reincorporar', [BienController::class, 'reincorporar'])->name('reincorporar');
 
         // Transferencia entre dependencias
-        Route::get('{bien}/transferir',  [BienController::class, 'showTransferirForm'])->name('transferir.form');
-        Route::patch('{bien}/transferir',[BienController::class, 'transferir'])->name('transferir');
+        Route::get('{bien}/transferir', [BienController::class, 'showTransferirForm'])->name('transferir.form');
+        Route::patch('{bien}/transferir', [BienController::class, 'transferir'])->name('transferir');
     });
 
     // Resource completo para bienes (índex, create, store, show, edit, update, destroy)

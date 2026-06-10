@@ -78,17 +78,19 @@ class OrganismoController extends Controller
             'codigo' => [
                 'required',
                 'string',
-                'size:' . CodigoJerarquicoService::TOTAL_ORGANISMO,
+                'size:'.CodigoJerarquicoService::TOTAL_ORGANISMO,
                 'regex:/^[0-9]+$/',
                 function ($attribute, $value, $fail) {
                     // El organismo debe tener el formato X0000000
                     if (substr($value, CodigoJerarquicoService::LONG_ORGANISMO) !== str_repeat('0', CodigoJerarquicoService::TOTAL_ORGANISMO - CodigoJerarquicoService::LONG_ORGANISMO)) {
                         $fail('El código del organismo debe terminar con zeros en las posiciones de unidad, dependencia y bien.');
+
                         return;
                     }
 
                     if (substr($value, 0, CodigoJerarquicoService::LONG_ORGANISMO) === '0') {
                         $fail('El código del organismo no puede empezar en cero.');
+
                         return;
                     }
 
@@ -101,7 +103,7 @@ class OrganismoController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
         ], [
             'codigo.required' => 'El código del organismo es requerido',
-            'codigo.size' => 'El código debe tener exactamente ' . CodigoJerarquicoService::TOTAL_ORGANISMO . ' dígitos',
+            'codigo.size' => 'El código debe tener exactamente '.CodigoJerarquicoService::TOTAL_ORGANISMO.' dígitos',
             'codigo.regex' => 'El código solo puede contener números',
         ]);
 
@@ -111,7 +113,7 @@ class OrganismoController extends Controller
         // Los códigos de unidades se generan automáticamente basados en el código del organismo
 
         return redirect()->route('organismos.index')
-            ->with('success', 'Organismo creado correctamente. Código: ' .
+            ->with('success', 'Organismo creado correctamente. Código: '.
                 CodigoJerarquicoService::formatearCodigoLegible($organismo->codigo));
     }
 
@@ -134,7 +136,7 @@ class OrganismoController extends Controller
         if ($request->has('codigo') && $request->codigo !== $organismo->codigo) {
             if ($organismo->unidadesAdministradoras()->count() > 0) {
                 return back()->withErrors([
-                    'codigo' => 'No se puede cambiar el código porque el organismo ya tiene unidades asociadas.'
+                    'codigo' => 'No se puede cambiar el código porque el organismo ya tiene unidades asociadas.',
                 ])->withInput();
             }
         }
@@ -143,17 +145,19 @@ class OrganismoController extends Controller
             'codigo' => [
                 'required',
                 'string',
-                'size:' . CodigoJerarquicoService::TOTAL_ORGANISMO,
+                'size:'.CodigoJerarquicoService::TOTAL_ORGANISMO,
                 'regex:/^[0-9]+$/',
                 function ($attribute, $value, $fail) use ($organismo) {
                     // El organismo debe tener el formato X0000000
                     if (substr($value, CodigoJerarquicoService::LONG_ORGANISMO) !== str_repeat('0', CodigoJerarquicoService::TOTAL_ORGANISMO - CodigoJerarquicoService::LONG_ORGANISMO)) {
                         $fail('El código del organismo debe terminar con zeros en las posiciones de unidad, dependencia y bien.');
+
                         return;
                     }
 
                     if (substr($value, 0, CodigoJerarquicoService::LONG_ORGANISMO) === '0') {
                         $fail('El código del organismo no puede empezar en cero.');
+
                         return;
                     }
 
@@ -225,10 +229,10 @@ class OrganismoController extends Controller
 
         $pdf = Pdf::loadView('organismos.pdf', [
             'organismo' => $organismo,
-            'codigoLegible' => $codigoLegible
+            'codigoLegible' => $codigoLegible,
         ])->setPaper('letter');
 
-        $fileName = 'organismo_' . Str::slug($organismo->codigo) . '.pdf';
+        $fileName = 'organismo_'.Str::slug($organismo->codigo).'.pdf';
 
         return $pdf->download($fileName);
     }
@@ -242,14 +246,14 @@ class OrganismoController extends Controller
         if ($organismo->unidadesAdministradoras()->count() > 0) {
             return response()->json([
                 'message' => 'No se puede eliminar el organismo porque tiene unidades asociadas.',
-                'total_unidades' => $organismo->unidadesAdministradoras()->count()
+                'total_unidades' => $organismo->unidadesAdministradoras()->count(),
             ], 409);
         }
 
         $organismo->delete();
 
         return response()->json([
-            'message' => 'Organismo eliminado correctamente'
+            'message' => 'Organismo eliminado correctamente',
         ], 200);
     }
 
@@ -263,7 +267,7 @@ class OrganismoController extends Controller
             'codigo' => ['nullable', 'string', 'max:8'],
         ]);
 
-        $query = Organismo::with(['unidadesAdministradoras']);
+        $query = Organismo::with(['unidadesAdministradoras.dependencias.bienes']);
 
         if (! empty($validated['buscar'])) {
             $buscar = $validated['buscar'];
@@ -306,12 +310,12 @@ class OrganismoController extends Controller
             return response()->json([
                 'success' => true,
                 'codigo' => $codigo,
-                'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($codigo)
+                'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($codigo),
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

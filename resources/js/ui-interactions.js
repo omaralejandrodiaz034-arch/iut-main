@@ -33,38 +33,44 @@
         });
     }
     
-    // Global Search AJAX
+// Global Search AJAX
     function initGlobalSearch() {
-        const searchInput = document.getElementById('global-search-input');
-        const searchResults = document.getElementById('global-search-results');
-        const searchWrap = document.getElementById('global-search-wrap');
-        
+        initSearch('global-search-input', 'global-search-results', 'global-search-wrap');
+        initSearch('global-search-input-mobile', 'global-search-results-mobile', 'global-search-wrap-mobile');
+    }
+
+    // Search initialization helper
+    function initSearch(inputId, resultsId, wrapId) {
+        const searchInput = document.getElementById(inputId);
+        const searchResults = document.getElementById(resultsId);
+        const searchWrap = document.getElementById(wrapId);
+
         if (!searchInput || !searchResults) return;
-        
+
         let searchTimeout;
-        
+
         searchInput.addEventListener('input', () => {
             clearTimeout(searchTimeout);
             const query = searchInput.value.trim();
-            
+
             if (query.length < 2) {
                 searchResults.classList.add('hidden');
                 searchResults.innerHTML = '';
                 return;
             }
-            
+
             searchTimeout = setTimeout(() => {
                 performSearch(query, searchResults);
             }, 300);
         });
-        
+
         // Close on click outside
         document.addEventListener('click', (e) => {
             if (searchWrap && !searchWrap.contains(e.target)) {
                 searchResults.classList.add('hidden');
             }
         });
-        
+
         // Close on Escape
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -74,17 +80,20 @@
         });
     }
     
-    // Perform search request
+// Perform search request
     function performSearch(query, resultsContainer) {
         // Get the search route from a meta tag or use a default
         const searchUrl = document.querySelector('meta[name="search-route"]')?.content || '/buscar';
-        
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
         console.log('Searching for:', query, 'at URL:', searchUrl);
-        
+
         fetch(`${searchUrl}?q=${encodeURIComponent(query)}`, {
+            credentials: 'same-origin',
             headers: {
                 'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken
             }
         })
         .then(res => {
@@ -116,7 +125,8 @@
         })
         .catch(err => {
             console.error('Search error:', err);
-            resultsContainer.classList.add('hidden');
+            resultsContainer.innerHTML = '<div class="px-4 py-3 text-sm text-red-500">Error al buscar. Intente nuevamente.</div>';
+            resultsContainer.classList.remove('hidden');
         });
     }
     

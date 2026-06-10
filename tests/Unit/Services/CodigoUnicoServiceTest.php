@@ -52,7 +52,7 @@ class CodigoUnicoServiceTest extends TestCase
             $organismoCodigo = str_pad((string) rand(1, 99999999), 8, '0', STR_PAD_LEFT);
             $organismo = Organismo::create(['codigo' => $organismoCodigo, 'nombre' => 'Organismo Test']);
 
-            $unidadCodigo = $organismoCodigo . str_pad((string) rand(1, 999), 3, '0', STR_PAD_LEFT);
+            $unidadCodigo = $organismoCodigo.str_pad((string) rand(1, 999), 3, '0', STR_PAD_LEFT);
             $unidad = UnidadAdministradora::create([
                 'organismo_id' => $organismo->id,
                 'codigo' => $unidadCodigo,
@@ -60,7 +60,7 @@ class CodigoUnicoServiceTest extends TestCase
             ]);
         }
 
-        $dependenciaCodigo = $unidad->codigo . str_pad((string) rand(1, 999), 3, '0', STR_PAD_LEFT);
+        $dependenciaCodigo = $unidad->codigo.str_pad((string) rand(1, 999), 3, '0', STR_PAD_LEFT);
 
         return Dependencia::create([
             'unidad_administradora_id' => $unidad->id,
@@ -83,7 +83,7 @@ class CodigoUnicoServiceTest extends TestCase
         // No bienes existentes
 
         $result = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
-        $expectedCodigo = $dependencia->codigo . str_pad((string) 100, 5, '0', STR_PAD_LEFT);
+        $expectedCodigo = $dependencia->codigo.str_pad((string) 100, 5, '0', STR_PAD_LEFT);
 
         $this->assertEquals($expectedCodigo, $result['codigo']);
         $this->assertEquals(100, $result['siguiente_numero']);
@@ -106,7 +106,7 @@ class CodigoUnicoServiceTest extends TestCase
         // Create some existing bienes with specific codes
         Bien::create([
             'dependencia_id' => $dependencia->id,
-            'codigo' => $dependencia->codigo . '00001',
+            'codigo' => $dependencia->codigo.'00001',
             'descripcion' => 'Bien 1',
             'precio' => 100,
             'estado' => 'ACTIVO',
@@ -116,7 +116,7 @@ class CodigoUnicoServiceTest extends TestCase
 
         Bien::create([
             'dependencia_id' => $dependencia->id,
-            'codigo' => $dependencia->codigo . '00002',
+            'codigo' => $dependencia->codigo.'00002',
             'descripcion' => 'Bien 2',
             'precio' => 200,
             'estado' => 'ACTIVO',
@@ -126,7 +126,7 @@ class CodigoUnicoServiceTest extends TestCase
 
         Bien::create([
             'dependencia_id' => $dependencia->id,
-            'codigo' => $dependencia->codigo . '00005', // Gap exists (3,4 missing) but should NOT be filled
+            'codigo' => $dependencia->codigo.'00005', // Gap exists (3,4 missing) but should NOT be filled
             'descripcion' => 'Bien 5',
             'precio' => 500,
             'estado' => 'ACTIVO',
@@ -137,7 +137,7 @@ class CodigoUnicoServiceTest extends TestCase
         $result = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
 
         // Should be 6 (MAX+1), not 3 (first gap)
-        $this->assertEquals($dependencia->codigo . '00006', $result['codigo']);
+        $this->assertEquals($dependencia->codigo.'00006', $result['codigo']);
         $this->assertEquals(6, $result['siguiente_numero']);
     }
 
@@ -155,7 +155,7 @@ class CodigoUnicoServiceTest extends TestCase
         for ($i = 1; $i <= 5; $i++) {
             Bien::create([
                 'dependencia_id' => $dependencia->id,
-                'codigo' => $dependencia->codigo . str_pad((string) $i, 5, '0', STR_PAD_LEFT),
+                'codigo' => $dependencia->codigo.str_pad((string) $i, 5, '0', STR_PAD_LEFT),
                 'descripcion' => "Bien {$i}",
                 'precio' => 100,
                 'estado' => 'ACTIVO',
@@ -191,7 +191,7 @@ class CodigoUnicoServiceTest extends TestCase
         foreach ($testCases as $case) {
             $dependencia = $this->createDependenciaWithRange($case['min'], 99999);
             $result = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
-            $this->assertEquals($dependencia->codigo . $case['expected'], $result['codigo'], "Failed for code {$case['min']}");
+            $this->assertEquals($dependencia->codigo.$case['expected'], $result['codigo'], "Failed for code {$case['min']}");
         }
     }
 
@@ -212,7 +212,7 @@ class CodigoUnicoServiceTest extends TestCase
         $this->assertEquals(99999, $dependencia->code_max);
 
         $result = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
-        $this->assertEquals($dependencia->codigo . '00001', $result['codigo']);
+        $this->assertEquals($dependencia->codigo.'00001', $result['codigo']);
         $this->assertEquals(1, $result['rango_min']);
         $this->assertEquals(99999, $result['rango_max']);
     }
@@ -231,7 +231,7 @@ class CodigoUnicoServiceTest extends TestCase
         // First, create one initial code
         Bien::create([
             'dependencia_id' => $dependencia->id,
-            'codigo' => $dependencia->codigo . '00001',
+            'codigo' => $dependencia->codigo.'00001',
             'descripcion' => 'Bien inicial',
             'precio' => 100,
             'estado' => 'ACTIVO',
@@ -288,7 +288,7 @@ class CodigoUnicoServiceTest extends TestCase
         // Create a bien with code 1
         Bien::create([
             'dependencia_id' => $dependencia->id,
-            'codigo' => $dependencia->codigo . '00001',
+            'codigo' => $dependencia->codigo.'00001',
             'descripcion' => 'Bien 1',
             'precio' => 100,
             'estado' => 'ACTIVO',
@@ -300,7 +300,7 @@ class CodigoUnicoServiceTest extends TestCase
         // The service should detect collision and call itself recursively to get 2
         $result = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
 
-        $this->assertEquals($dependencia->codigo . '00002', $result['codigo']);
+        $this->assertEquals($dependencia->codigo.'00002', $result['codigo']);
         $this->assertEquals(2, $result['siguiente_numero']);
     }
 
@@ -316,7 +316,7 @@ class CodigoUnicoServiceTest extends TestCase
 
         Bien::create([
             'dependencia_id' => $dependencia->id,
-            'codigo' => $dependencia->codigo . '00100',
+            'codigo' => $dependencia->codigo.'00100',
             'descripcion' => 'Bien 100',
             'precio' => 100,
             'estado' => 'ACTIVO',
@@ -327,7 +327,7 @@ class CodigoUnicoServiceTest extends TestCase
         $result = CodigoUnicoService::recomendarSiguienteCodigoParaDependencia($dependencia->id);
 
         // Should be 101 (MAX+1), not 10 (min)
-        $this->assertEquals($dependencia->codigo . '00101', $result['codigo']);
+        $this->assertEquals($dependencia->codigo.'00101', $result['codigo']);
         $this->assertEquals(101, $result['siguiente_numero']);
     }
 }

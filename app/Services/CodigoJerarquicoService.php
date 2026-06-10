@@ -16,16 +16,22 @@ class CodigoJerarquicoService
      * Longitudes de cada segmento
      */
     public const LONG_ORGANISMO = 1;
+
     public const LONG_UNIDAD = 4;
+
     public const LONG_DEPENDENCIA = 1;
+
     public const LONG_BIEN = 2;
 
     /**
      * Longitud fija de todos los códigos.
      */
     public const TOTAL_ORGANISMO = 8;
+
     public const TOTAL_UNIDAD = 8;
+
     public const TOTAL_DEPENDENCIA = 8;
+
     public const TOTAL_BIEN = 8;
 
     /**
@@ -35,17 +41,17 @@ class CodigoJerarquicoService
     {
         $ultimo = Organismo::max('codigo');
 
-        if (!$ultimo) {
+        if (! $ultimo) {
             return str_pad('1', self::TOTAL_ORGANISMO, '0', STR_PAD_RIGHT);
         }
 
-        $siguiente = (int)substr($ultimo, 0, self::LONG_ORGANISMO) + 1;
+        $siguiente = (int) substr($ultimo, 0, self::LONG_ORGANISMO) + 1;
 
         if ($siguiente > pow(10, self::LONG_ORGANISMO) - 1) {
             throw new RuntimeException('Límite de organismos alcanzado');
         }
 
-        return str_pad((string)$siguiente, self::TOTAL_ORGANISMO, '0', STR_PAD_RIGHT);
+        return str_pad((string) $siguiente, self::TOTAL_ORGANISMO, '0', STR_PAD_RIGHT);
     }
 
     /**
@@ -61,7 +67,7 @@ class CodigoJerarquicoService
             $maxNumero = UnidadAdministradora::where('organismo_id', $organismoId)
                 ->max(DB::raw("CAST(SUBSTRING(codigo, $start, $length) AS UNSIGNED)"));
 
-            $siguiente = $maxNumero ? ((int)$maxNumero + 1) : 1;
+            $siguiente = $maxNumero ? ((int) $maxNumero + 1) : 1;
             $maximo = pow(10, self::LONG_UNIDAD) - 1;
 
             if ($siguiente > $maximo) {
@@ -91,7 +97,7 @@ class CodigoJerarquicoService
             $maxNumero = Dependencia::where('unidad_administradora_id', $unidadId)
                 ->max(DB::raw("CAST(SUBSTRING(codigo, $start, $length) AS UNSIGNED)"));
 
-            $siguiente = $maxNumero ? ((int)$maxNumero + 1) : 1;
+            $siguiente = $maxNumero ? ((int) $maxNumero + 1) : 1;
             $maximo = pow(10, self::LONG_DEPENDENCIA) - 1;
 
             if ($siguiente > $maximo) {
@@ -117,10 +123,10 @@ class CodigoJerarquicoService
             $dependencia = Dependencia::lockForUpdate()->with(['unidadAdministradora.organismo'])->findOrFail($dependenciaId);
             $prefijo = self::buildPrefijoDependencia($dependencia->codigo);
             // Obtener el máximo secuencial numérico para bienes dentro de la dependencia
-            $maxNumero = Bien::where('codigo', 'LIKE', $prefijo . '%')
-                ->max(DB::raw("CAST(RIGHT(codigo, " . self::LONG_BIEN . ") AS UNSIGNED)"));
+            $maxNumero = Bien::where('codigo', 'LIKE', $prefijo.'%')
+                ->max(DB::raw('CAST(RIGHT(codigo, '.self::LONG_BIEN.') AS UNSIGNED)'));
 
-            $siguiente = $maxNumero ? ((int)$maxNumero + 1) : 1;
+            $siguiente = $maxNumero ? ((int) $maxNumero + 1) : 1;
             $maximo = pow(10, self::LONG_BIEN) - 1;
 
             if ($siguiente > $maximo) {
@@ -143,7 +149,7 @@ class CodigoJerarquicoService
     public static function decodificarCodigo(string $codigo): array
     {
         if (strlen($codigo) !== self::TOTAL_BIEN) {
-            throw new InvalidArgumentException('Longitud de código inválida: ' . strlen($codigo));
+            throw new InvalidArgumentException('Longitud de código inválida: '.strlen($codigo));
         }
 
         $organismo = substr($codigo, 0, self::LONG_ORGANISMO);
@@ -212,9 +218,9 @@ class CodigoJerarquicoService
 
         return match ($tipo) {
             'organismo' => null,
-            'unidad' => substr($codigo, 0, self::LONG_ORGANISMO) . str_repeat('0', self::TOTAL_BIEN - self::LONG_ORGANISMO),
-            'dependencia' => substr($codigo, 0, self::LONG_ORGANISMO + self::LONG_UNIDAD) . str_repeat('0', self::TOTAL_BIEN - self::LONG_ORGANISMO - self::LONG_UNIDAD),
-            'bien' => substr($codigo, 0, self::LONG_ORGANISMO + self::LONG_UNIDAD + self::LONG_DEPENDENCIA) . str_repeat('0', self::TOTAL_BIEN - self::LONG_ORGANISMO - self::LONG_UNIDAD - self::LONG_DEPENDENCIA),
+            'unidad' => substr($codigo, 0, self::LONG_ORGANISMO).str_repeat('0', self::TOTAL_BIEN - self::LONG_ORGANISMO),
+            'dependencia' => substr($codigo, 0, self::LONG_ORGANISMO + self::LONG_UNIDAD).str_repeat('0', self::TOTAL_BIEN - self::LONG_ORGANISMO - self::LONG_UNIDAD),
+            'bien' => substr($codigo, 0, self::LONG_ORGANISMO + self::LONG_UNIDAD + self::LONG_DEPENDENCIA).str_repeat('0', self::TOTAL_BIEN - self::LONG_ORGANISMO - self::LONG_UNIDAD - self::LONG_DEPENDENCIA),
             default => null,
         };
     }
@@ -302,13 +308,13 @@ class CodigoJerarquicoService
                     $dependencia = Dependencia::find($codigoPadre);
                     if ($dependencia) {
                         $prefijo = self::buildPrefijoBien($dependencia);
-                        $total = Bien::where('codigo', 'LIKE', $prefijo . '%')->count();
+                        $total = Bien::where('codigo', 'LIKE', $prefijo.'%')->count();
                     }
                 } elseif (is_string($codigoPadre)) {
                     $dependencia = Dependencia::where('codigo', $codigoPadre)->first();
                     if ($dependencia) {
                         $prefijo = self::buildPrefijoBien($dependencia);
-                        $total = Bien::where('codigo', 'LIKE', $prefijo . '%')->count();
+                        $total = Bien::where('codigo', 'LIKE', $prefijo.'%')->count();
                     }
                 }
                 break;
@@ -341,7 +347,7 @@ class CodigoJerarquicoService
             'dependencia_id' => $dependenciaId,
             'dependencia_nombre' => $dependencia->nombre,
             'estadisticas' => $stats,
-            'siguiente_numero' => (int)$decodificado['secuencial'],
+            'siguiente_numero' => (int) $decodificado['secuencial'],
             'rango_min' => 1,
             'rango_max' => pow(10, self::LONG_BIEN) - 1,
             'disponibles_restantes' => max(0, pow(10, self::LONG_BIEN) - 1 - $stats['usados']),
@@ -375,24 +381,27 @@ class CodigoJerarquicoService
     private static function buildCodigoUnidad(string $codigoOrganismo, int $unidad): string
     {
         $organismoSegment = substr($codigoOrganismo, 0, self::LONG_ORGANISMO);
+
         return $organismoSegment
-            . str_pad((string)$unidad, self::LONG_UNIDAD, '0', STR_PAD_LEFT)
-            . str_repeat('0', self::LONG_DEPENDENCIA + self::LONG_BIEN);
+            .str_pad((string) $unidad, self::LONG_UNIDAD, '0', STR_PAD_LEFT)
+            .str_repeat('0', self::LONG_DEPENDENCIA + self::LONG_BIEN);
     }
 
     private static function buildCodigoDependencia(string $codigoUnidad, int $dependencia): string
     {
         $prefijo = substr($codigoUnidad, 0, self::LONG_ORGANISMO + self::LONG_UNIDAD);
+
         return $prefijo
-            . str_pad((string)$dependencia, self::LONG_DEPENDENCIA, '0', STR_PAD_LEFT)
-            . str_repeat('0', self::LONG_BIEN);
+            .str_pad((string) $dependencia, self::LONG_DEPENDENCIA, '0', STR_PAD_LEFT)
+            .str_repeat('0', self::LONG_BIEN);
     }
 
     private static function buildCodigoBien(string $codigoDependencia, int $secuencial): string
     {
         $prefijo = substr($codigoDependencia, 0, self::LONG_ORGANISMO + self::LONG_UNIDAD + self::LONG_DEPENDENCIA);
+
         return $prefijo
-            . str_pad((string)$secuencial, self::LONG_BIEN, '0', STR_PAD_LEFT);
+            .str_pad((string) $secuencial, self::LONG_BIEN, '0', STR_PAD_LEFT);
     }
 
     private static function buildPrefijoDependencia(string $codigoDependencia): string

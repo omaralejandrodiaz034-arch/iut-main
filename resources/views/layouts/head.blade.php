@@ -218,6 +218,9 @@
                     fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
                 </svg>
+                <div id="global-search-results-mobile"
+                    class="absolute top-full mt-1 left-0 right-0 bg-white shadow-xl rounded-xl border border-gray-100 z-50 hidden overflow-hidden max-h-80 overflow-y-auto">
+                </div>
             </div>
             
             {{-- Enlaces de navegación móvil --}}

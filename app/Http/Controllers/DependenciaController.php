@@ -10,7 +10,6 @@ use App\Services\FpdfReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class DependenciaController extends Controller
 {
@@ -71,7 +70,7 @@ class DependenciaController extends Controller
                 $codigoSugerido = CodigoJerarquicoService::generarCodigoDependencia($unidad->id);
                 $sugerenciasPorUnidad[$unidad->id] = [
                     'codigo' => $codigoSugerido,
-                    'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($codigoSugerido)
+                    'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($codigoSugerido),
                 ];
 
                 // Obtener estadísticas de uso
@@ -86,9 +85,9 @@ class DependenciaController extends Controller
                     'usados' => 0,
                     'disponibles' => 0,
                     'porcentaje_uso' => 0,
-                    'siguiente' => 1
+                    'siguiente' => 1,
                 ];
-                \Log::warning("No se pudo sugerir código para unidad {$unidad->id}: " . $e->getMessage());
+                \Log::warning("No se pudo sugerir código para unidad {$unidad->id}: ".$e->getMessage());
             }
         }
 
@@ -116,13 +115,13 @@ class DependenciaController extends Controller
                     'organismo' => [
                         'codigo' => $unidad->organismo->codigo,
                         'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($unidad->organismo->codigo),
-                        'nombre' => $unidad->organismo->nombre
+                        'nombre' => $unidad->organismo->nombre,
                     ],
                     'unidad' => [
                         'codigo' => $unidad->codigo,
                         'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($unidad->codigo),
-                        'nombre' => $unidad->nombre
-                    ]
+                        'nombre' => $unidad->nombre,
+                    ],
                 ];
             }
         }
@@ -153,39 +152,45 @@ class DependenciaController extends Controller
                 function ($attribute, $value, $fail) use ($request) {
                     // Validar longitud correcta (8 dígitos)
                     if (strlen($value) !== CodigoJerarquicoService::TOTAL_DEPENDENCIA) {
-                        $fail("El código debe tener exactamente " . CodigoJerarquicoService::TOTAL_DEPENDENCIA . " dígitos.");
+                        $fail('El código debe tener exactamente '.CodigoJerarquicoService::TOTAL_DEPENDENCIA.' dígitos.');
+
                         return;
                     }
 
                     // Validar que sea numérico
-                    if (!preg_match('/^[0-9]+$/', $value)) {
-                        $fail("El código solo puede contener números.");
+                    if (! preg_match('/^[0-9]+$/', $value)) {
+                        $fail('El código solo puede contener números.');
+
                         return;
                     }
 
                     // Validar que el código pertenezca a la unidad
                     $unidad = UnidadAdministradora::find($request->unidad_administradora_id);
-                    if (!$unidad) {
-                        $fail("Unidad no encontrada.");
+                    if (! $unidad) {
+                        $fail('Unidad no encontrada.');
+
                         return;
                     }
 
                     // El código debe comenzar con el prefijo de la unidad (organismo + unidad)
                     $prefijoUnidad = substr($unidad->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD);
-                    if (!str_starts_with($value, $prefijoUnidad)) {
+                    if (! str_starts_with($value, $prefijoUnidad)) {
                         $fail("El código debe comenzar con el prefijo de la unidad ({$prefijoUnidad}).");
+
                         return;
                     }
 
                     if (substr($value, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD + CodigoJerarquicoService::LONG_DEPENDENCIA) !== str_repeat('0', CodigoJerarquicoService::LONG_BIEN)) {
                         $fail('El código de dependencia debe terminar con 00.');
+
                         return;
                     }
 
                     // Validar que la parte de dependencia no sea cero
                     $parteDependencia = substr($value, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD, CodigoJerarquicoService::LONG_DEPENDENCIA);
-                    if ((int)$parteDependencia === 0) {
-                        $fail("El código de dependencia no puede ser 0.");
+                    if ((int) $parteDependencia === 0) {
+                        $fail('El código de dependencia no puede ser 0.');
+
                         return;
                     }
 
@@ -213,7 +218,7 @@ class DependenciaController extends Controller
 
         return redirect()
             ->route('dependencias.index')
-            ->with('success', '✅ Dependencia registrada exitosamente. Código: ' .
+            ->with('success', '✅ Dependencia registrada exitosamente. Código: '.
                 CodigoJerarquicoService::formatearCodigoLegible($dependencia->codigo));
     }
 
@@ -238,18 +243,18 @@ class DependenciaController extends Controller
             'organismo' => [
                 'codigo' => $dependencia->unidadAdministradora->organismo->codigo,
                 'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($dependencia->unidadAdministradora->organismo->codigo),
-                'nombre' => $dependencia->unidadAdministradora->organismo->nombre
+                'nombre' => $dependencia->unidadAdministradora->organismo->nombre,
             ],
             'unidad' => [
                 'codigo' => $dependencia->unidadAdministradora->codigo,
                 'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($dependencia->unidadAdministradora->codigo),
-                'nombre' => $dependencia->unidadAdministradora->nombre
+                'nombre' => $dependencia->unidadAdministradora->nombre,
             ],
             'dependencia' => [
                 'codigo' => $dependencia->codigo,
                 'codigo_legible' => $codigoLegible,
-                'nombre' => $dependencia->nombre
-            ]
+                'nombre' => $dependencia->nombre,
+            ],
         ];
 
         return view('dependencias.show', compact('dependencia', 'codigoLegible', 'stats', 'jerarquia'));
@@ -269,7 +274,7 @@ class DependenciaController extends Controller
             'total_bienes' => $dependencia->bienes()->count(),
             'capacidad_maxima' => pow(10, CodigoJerarquicoService::LONG_BIEN),
             'codigo_legible' => $codigoLegible,
-            'porcentaje_uso' => 0
+            'porcentaje_uso' => 0,
         ];
 
         if ($stats['capacidad_maxima'] > 0) {
@@ -279,7 +284,7 @@ class DependenciaController extends Controller
         $pdf = Pdf::loadView('dependencias.pdf', [
             'dependencia' => $dependencia,
             'codigoLegible' => $codigoLegible,
-            'stats' => $stats
+            'stats' => $stats,
         ])->setPaper('letter');
 
         $fileName = sprintf(
@@ -325,7 +330,7 @@ class DependenciaController extends Controller
         if ($request->has('codigo') && $request->codigo !== $dependencia->codigo) {
             if ($dependencia->bienes()->count() > 0) {
                 return back()->withErrors([
-                    'codigo' => 'No se puede cambiar el código porque la dependencia ya tiene bienes asociados.'
+                    'codigo' => 'No se puede cambiar el código porque la dependencia ya tiene bienes asociados.',
                 ])->withInput();
             }
         }
@@ -337,31 +342,36 @@ class DependenciaController extends Controller
                 'string',
                 function ($attribute, $value, $fail) use ($request, $dependencia) {
                     if (strlen($value) !== CodigoJerarquicoService::TOTAL_DEPENDENCIA) {
-                        $fail("El código debe tener exactamente " . CodigoJerarquicoService::TOTAL_DEPENDENCIA . " dígitos.");
+                        $fail('El código debe tener exactamente '.CodigoJerarquicoService::TOTAL_DEPENDENCIA.' dígitos.');
+
                         return;
                     }
 
-                    if (!preg_match('/^[0-9]+$/', $value)) {
-                        $fail("El código solo puede contener números.");
+                    if (! preg_match('/^[0-9]+$/', $value)) {
+                        $fail('El código solo puede contener números.');
+
                         return;
                     }
 
                     $unidadId = $request->unidad_administradora_id ?? $dependencia->unidad_administradora_id;
                     $unidad = UnidadAdministradora::find($unidadId);
 
-                    if (!$unidad) {
-                        $fail("Unidad no encontrada.");
+                    if (! $unidad) {
+                        $fail('Unidad no encontrada.');
+
                         return;
                     }
 
                     $prefijoUnidad = substr($unidad->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD);
-                    if (!str_starts_with($value, $prefijoUnidad)) {
+                    if (! str_starts_with($value, $prefijoUnidad)) {
                         $fail("El código debe comenzar con el prefijo de la unidad ({$prefijoUnidad}).");
+
                         return;
                     }
 
                     if (substr($value, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD + CodigoJerarquicoService::LONG_DEPENDENCIA) !== str_repeat('0', CodigoJerarquicoService::LONG_BIEN)) {
                         $fail('El código de dependencia debe terminar con 00.');
+
                         return;
                     }
 
@@ -396,14 +406,14 @@ class DependenciaController extends Controller
         if ($totalBienes > 0) {
             return response()->json([
                 'message' => 'No se puede eliminar la dependencia porque tiene bienes asociados.',
-                'total_bienes' => $totalBienes
+                'total_bienes' => $totalBienes,
             ], 409);
         }
 
         $dependencia->delete();
 
         return response()->json([
-            'message' => 'Dependencia eliminada correctamente'
+            'message' => 'Dependencia eliminada correctamente',
         ], 200);
     }
 
@@ -420,7 +430,7 @@ class DependenciaController extends Controller
 
         $query = Dependencia::with(['unidadAdministradora.organismo', 'responsable', 'bienes']);
 
-        if (!empty($validated['search'])) {
+        if (! empty($validated['search'])) {
             $search = $validated['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('nombre', 'like', "%{$search}%")
@@ -428,11 +438,11 @@ class DependenciaController extends Controller
             });
         }
 
-        if (!empty($validated['unidad_id'])) {
+        if (! empty($validated['unidad_id'])) {
             $query->where('unidad_administradora_id', $validated['unidad_id']);
         }
 
-        if (!empty($validated['responsable_id'])) {
+        if (! empty($validated['responsable_id'])) {
             $query->where('responsable_id', $validated['responsable_id']);
         }
 
@@ -454,21 +464,21 @@ class DependenciaController extends Controller
 
         return match ($tipoReporte) {
             'unidad' => $this->fpdf->generarDependenciasPorUnidad(
-                'reporte_dependencias_por_unidad_' . $now->format('dmY_His') . '.pdf',
+                'reporte_dependencias_por_unidad_'.$now->format('dmY_His').'.pdf',
                 'DEPENDENCIAS POR UNIDAD ADMINISTRADORA',
                 'Listado de dependencias agrupadas por unidad administradora',
                 $now->format('d/m/Y H:i'),
                 $dependencias
             ),
             'responsable' => $this->fpdf->generarDependenciasPorResponsable(
-                'reporte_dependencias_por_responsable_' . $now->format('dmY_His') . '.pdf',
+                'reporte_dependencias_por_responsable_'.$now->format('dmY_His').'.pdf',
                 'DEPENDENCIAS POR RESPONSABLE',
                 'Listado de dependencias agrupadas por responsable',
                 $now->format('d/m/Y H:i'),
                 $dependencias
             ),
             default => $this->fpdf->downloadDependenciasListado(
-                'reporte_dependencias_general_' . $now->format('dmY_His') . '.pdf',
+                'reporte_dependencias_general_'.$now->format('dmY_His').'.pdf',
                 'REPORTE DE DEPENDENCIAS',
                 'Listado general de dependencias',
                 $now->format('d/m/Y H:i'),
@@ -483,7 +493,7 @@ class DependenciaController extends Controller
     public function obtenerSiguienteCodigo(Request $request)
     {
         $request->validate([
-            'unidad_id' => ['required', 'exists:unidades_administradoras,id']
+            'unidad_id' => ['required', 'exists:unidades_administradoras,id'],
         ]);
 
         try {
@@ -496,13 +506,13 @@ class DependenciaController extends Controller
                 'organismo' => [
                     'codigo' => $unidad->organismo->codigo,
                     'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($unidad->organismo->codigo),
-                    'nombre' => $unidad->organismo->nombre
+                    'nombre' => $unidad->organismo->nombre,
                 ],
                 'unidad' => [
                     'codigo' => $unidad->codigo,
                     'codigo_legible' => CodigoJerarquicoService::formatearCodigoLegible($unidad->codigo),
-                    'nombre' => $unidad->nombre
-                ]
+                    'nombre' => $unidad->nombre,
+                ],
             ];
 
             return response()->json([
@@ -514,13 +524,13 @@ class DependenciaController extends Controller
                 'unidad' => [
                     'id' => $unidad->id,
                     'codigo' => $unidad->codigo,
-                    'nombre' => $unidad->nombre
-                ]
+                    'nombre' => $unidad->nombre,
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -530,10 +540,10 @@ class DependenciaController extends Controller
      */
     private function determinarTipoReporte(array $filtros): string
     {
-        if (!empty($filtros['unidad_id'])) {
+        if (! empty($filtros['unidad_id'])) {
             return 'unidad';
         }
-        if (!empty($filtros['responsable_id'])) {
+        if (! empty($filtros['responsable_id'])) {
             return 'responsable';
         }
 

@@ -52,6 +52,26 @@
         </div>
 
         <div class="glass-card rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-8 md:p-10">
+            @if(session('error'))
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl flex items-start gap-3">
+                    <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-sm font-medium">{{ session('error') }}</span>
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl">
+                    <p class="text-sm font-bold mb-2">Por favor corrija los siguientes errores:</p>
+                    <ul class="list-disc list-inside text-sm space-y-1">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('login') }}" id="loginForm" class="space-y-6">
                 @csrf
 
@@ -59,9 +79,12 @@
                     <label for="cedula" class="text-[13px] font-bold text-gray-700 ml-1">Cédula de Identidad</label>
                     <div class="relative">
                         <input type="text" name="cedula" id="cedula"
-                            class="input-elegant w-full px-4 py-3.5 rounded-xl bg-white/50 text-gray-900 placeholder:text-gray-400 outline-none"
-                            placeholder="V-00.000.000" required>
+                            class="input-elegant w-full px-4 py-3.5 rounded-xl bg-white/50 text-gray-900 placeholder:text-gray-400 outline-none @error('cedula') border-red-500 @enderror"
+                            placeholder="V-00.000.000" required value="{{ old('cedula') }}">
                     </div>
+                    @error('cedula')
+                        <p class="text-xs text-red-600 mt-1 ml-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div class="space-y-2">
@@ -71,7 +94,7 @@
                     </div>
                     <div class="relative">
                         <input type="password" name="password" id="password"
-                            class="input-elegant w-full px-4 py-3.5 rounded-xl bg-white/50 text-gray-900 placeholder:text-gray-400 outline-none"
+                            class="input-elegant w-full px-4 py-3.5 rounded-xl bg-white/50 text-gray-900 placeholder:text-gray-400 outline-none @error('password') border-red-500 @enderror"
                             placeholder="••••••••">
                         <button type="button" id="togglePassword" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
                             <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,6 +103,9 @@
                             </svg>
                         </button>
                     </div>
+                    @error('password')
+                        <p class="text-xs text-red-600 mt-1 ml-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div class="flex items-center px-1">

@@ -6,11 +6,9 @@ use App\Models\Bien;
 use App\Models\Dependencia;
 use App\Models\Organismo;
 use App\Models\UnidadAdministradora;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use RuntimeException;
 use InvalidArgumentException;
+use RuntimeException;
 
 class CodigoJerarquicoService
 {
@@ -18,14 +16,20 @@ class CodigoJerarquicoService
      * Longitudes de cada nivel
      */
     private const LONG_ORGANISMO = 8;
+
     private const LONG_UNIDAD = 3;      // Dígitos adicionales
+
     private const LONG_DEPENDENCIA = 3;  // Dígitos adicionales
+
     private const LONG_BIEN = 5;         // Dígitos adicionales
 
     // Longitudes totales acumuladas
     private const TOTAL_ORGANISMO = 8;
+
     private const TOTAL_UNIDAD = 11;     // 8 + 3
+
     private const TOTAL_DEPENDENCIA = 14; // 11 + 3
+
     private const TOTAL_BIEN = 19;        // 14 + 5
 
     /**
@@ -35,14 +39,14 @@ class CodigoJerarquicoService
     {
         $ultimo = Organismo::max('codigo');
 
-        if (!$ultimo) {
+        if (! $ultimo) {
             return str_pad('1', self::TOTAL_ORGANISMO, '0', STR_PAD_LEFT);
         }
 
-        $siguiente = (int)$ultimo + 1;
+        $siguiente = (int) $ultimo + 1;
 
         if ($siguiente > pow(10, self::TOTAL_ORGANISMO) - 1) {
-            throw new RuntimeException("Límite de organismos alcanzado");
+            throw new RuntimeException('Límite de organismos alcanzado');
         }
 
         return str_pad($siguiente, self::TOTAL_ORGANISMO, '0', STR_PAD_LEFT);
@@ -61,16 +65,16 @@ class CodigoJerarquicoService
             $prefijo = $organismo->codigo;
 
             // Buscar el último código de unidad que tenga este prefijo
-            $ultimaUnidad = UnidadAdministradora::where('codigo', 'LIKE', $prefijo . '%')
+            $ultimaUnidad = UnidadAdministradora::where('codigo', 'LIKE', $prefijo.'%')
                 ->orderBy('codigo', 'desc')
                 ->first();
 
-            if (!$ultimaUnidad) {
+            if (! $ultimaUnidad) {
                 // Primera unidad: prefijo + 001
                 $siguiente = 1;
             } else {
                 // Extraer los últimos 3 dígitos
-                $ultimoNumero = (int)substr($ultimaUnidad->codigo, -self::LONG_UNIDAD);
+                $ultimoNumero = (int) substr($ultimaUnidad->codigo, -self::LONG_UNIDAD);
                 $siguiente = $ultimoNumero + 1;
             }
 
@@ -79,7 +83,7 @@ class CodigoJerarquicoService
                 throw new RuntimeException("Límite de unidades para el organismo {$organismo->codigo} alcanzado (máximo {$maximo})");
             }
 
-            $codigoUnidad = $prefijo . str_pad($siguiente, self::LONG_UNIDAD, '0', STR_PAD_LEFT);
+            $codigoUnidad = $prefijo.str_pad($siguiente, self::LONG_UNIDAD, '0', STR_PAD_LEFT);
 
             // Validar que no exista
             if (self::codigoExiste($codigoUnidad)) {
@@ -103,15 +107,15 @@ class CodigoJerarquicoService
             $prefijo = $unidad->codigo;
 
             // Buscar última dependencia
-            $ultimaDependencia = Dependencia::where('codigo', 'LIKE', $prefijo . '%')
+            $ultimaDependencia = Dependencia::where('codigo', 'LIKE', $prefijo.'%')
                 ->orderBy('codigo', 'desc')
                 ->first();
 
-            if (!$ultimaDependencia) {
+            if (! $ultimaDependencia) {
                 $siguiente = 1;
             } else {
                 // Extraer los últimos 3 dígitos
-                $ultimoNumero = (int)substr($ultimaDependencia->codigo, -self::LONG_DEPENDENCIA);
+                $ultimoNumero = (int) substr($ultimaDependencia->codigo, -self::LONG_DEPENDENCIA);
                 $siguiente = $ultimoNumero + 1;
             }
 
@@ -120,7 +124,7 @@ class CodigoJerarquicoService
                 throw new RuntimeException("Límite de dependencias para la unidad {$unidad->codigo} alcanzado");
             }
 
-            $codigoDependencia = $prefijo . str_pad($siguiente, self::LONG_DEPENDENCIA, '0', STR_PAD_LEFT);
+            $codigoDependencia = $prefijo.str_pad($siguiente, self::LONG_DEPENDENCIA, '0', STR_PAD_LEFT);
 
             if (self::codigoExiste($codigoDependencia)) {
                 throw new RuntimeException("Conflicto de código: {$codigoDependencia} ya existe");
@@ -143,15 +147,15 @@ class CodigoJerarquicoService
             $prefijo = $dependencia->codigo;
 
             // Buscar el último bien
-            $ultimoBien = Bien::where('codigo', 'LIKE', $prefijo . '%')
+            $ultimoBien = Bien::where('codigo', 'LIKE', $prefijo.'%')
                 ->orderBy('codigo', 'desc')
                 ->first();
 
-            if (!$ultimoBien) {
+            if (! $ultimoBien) {
                 $siguiente = 1;
             } else {
                 // Extraer los últimos 5 dígitos
-                $ultimoNumero = (int)substr($ultimoBien->codigo, -self::LONG_BIEN);
+                $ultimoNumero = (int) substr($ultimoBien->codigo, -self::LONG_BIEN);
                 $siguiente = $ultimoNumero + 1;
             }
 
@@ -160,7 +164,7 @@ class CodigoJerarquicoService
                 throw new RuntimeException("Límite de bienes para la dependencia {$dependencia->codigo} alcanzado (máximo {$maximo})");
             }
 
-            $codigoBien = $prefijo . str_pad($siguiente, self::LONG_BIEN, '0', STR_PAD_LEFT);
+            $codigoBien = $prefijo.str_pad($siguiente, self::LONG_BIEN, '0', STR_PAD_LEFT);
 
             if (self::codigoExiste($codigoBien)) {
                 throw new RuntimeException("Conflicto de código: {$codigoBien} ya existe");
@@ -288,15 +292,15 @@ class CodigoJerarquicoService
     {
         switch ($tipo) {
             case 'unidades':
-                $total = UnidadAdministradora::where('codigo', 'LIKE', $codigoPadre . '%')->count();
+                $total = UnidadAdministradora::where('codigo', 'LIKE', $codigoPadre.'%')->count();
                 $maximo = pow(10, self::LONG_UNIDAD);
                 break;
             case 'dependencias':
-                $total = Dependencia::where('codigo', 'LIKE', $codigoPadre . '%')->count();
+                $total = Dependencia::where('codigo', 'LIKE', $codigoPadre.'%')->count();
                 $maximo = pow(10, self::LONG_DEPENDENCIA);
                 break;
             case 'bienes':
-                $total = Bien::where('codigo', 'LIKE', $codigoPadre . '%')->count();
+                $total = Bien::where('codigo', 'LIKE', $codigoPadre.'%')->count();
                 $maximo = pow(10, self::LONG_BIEN);
                 break;
             default:
