@@ -45,15 +45,23 @@
 
             {{-- Código de Unidad --}}
             <div class="px-2">
-                <label for="codigo" class="block text-sm font-bold text-gray-700 mb-2">Código de Unidad</label>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Código de Unidad</label>
                 <div class="relative">
-                    <input type="text" name="codigo" id="codigo"
-                        value="{{ old('codigo', $siguienteCodigo ?? '') }}"
-                        maxlength="8" inputmode="numeric" autocomplete="off"
-                        placeholder="00000000"
-                        class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono bg-blue-50">
+                    <div class="flex items-center gap-1">
+                        <input type="text" id="prefijo_unidad" value="" readonly
+                            class="w-12 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
+                        <span class="text-gray-400 font-bold">-</span>
+                        <input type="text" name="codigo_unidad" id="codigo_unidad"
+                            value="" maxlength="4" inputmode="numeric" pattern="\d{4}"
+                            placeholder="0000"
+                            class="w-24 px-3 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center" required>
+                        <span class="text-gray-400 font-bold">-</span>
+                        <input type="text" id="sufijo_unidad" value="000" readonly
+                            class="w-16 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
+                    </div>
 
-                    {{-- Botón Requerido --}}
+                    <input type="hidden" name="codigo" id="codigo_completo" value="">
+
                     <button type="button"
                             class="absolute right-3 top-3 text-[10px] bg-red-100 text-red-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider border border-red-200 cursor-default">
                         Requerido
@@ -65,19 +73,15 @@
                     <span class="text-red-800 text-[11px] font-medium">⚠️ Este código es requerido:</span>
                     <button type="button" id="btnRecuperar"
                             class="text-red-600 text-[11px] font-bold hover:text-red-800 underline flex items-center gap-1">
-                        Restaurar valor requerido ({{ $siguienteCodigo ?? '' }})
+                        Restaurar valor requerido (<span id="sugerencia-original"></span>)
                     </button>
                 </div>
 
-                @error('codigo')
+                @error('codigo_unidad')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
-
-                {{-- Mensajes de error dinámicos --}}
-                <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten números.</p>
-                <p id="error-ceros" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ El código no puede ser solo ceros; debe tener un valor real.</p>
-
-                <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Campo obligatorio de 8 dígitos numéricos.</p>
+                <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic"></p>
+                <p class="text-gray-400 text-[11px] mt-2">Solo edite los 4 dígitos de la unidad (posiciones 2-5).</p>
             </div>
 
             {{-- Nombre de la Unidad --}}
@@ -114,30 +118,39 @@
 </div>
 
 <script>
+    function actualizarCamposDesdeCompleto(codigo) {
+        document.getElementById('prefijo_unidad').value = codigo.substring(0, 1);
+        document.getElementById('codigo_unidad').value = codigo.substring(1, 5);
+        document.getElementById('sufijo_unidad').value = codigo.substring(5);
+        document.getElementById('codigo_completo').value = codigo;
+    }
+
+    function actualizarCodigoCompleto() {
+        const prefijo = document.getElementById('prefijo_unidad').value || '';
+        const unidad = document.getElementById('codigo_unidad').value || '';
+        const sufijo = document.getElementById('sufijo_unidad').value || '';
+        document.getElementById('codigo_completo').value = prefijo + unidad + sufijo;
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const sugerenciaInicial = "{{ $siguienteCodigo ?? '' }}";
         const organismosData = @json($sugerenciasPorOrganismo ?? []);
 
-        const codigoInput = document.getElementById('codigo');
+        const prefijoInput = document.getElementById('prefijo_unidad');
+        const unidadInput = document.getElementById('codigo_unidad');
+        const sufijoInput = document.getElementById('sufijo_unidad');
+        const codigoCompletoInput = document.getElementById('codigo_completo');
         const errorCodigo = document.getElementById('error-codigo');
         const errorCeros = document.getElementById('error-ceros');
         const recuperarContenedor = document.getElementById('recuperar-contenedor');
         const btnRecuperar = document.getElementById('btnRecuperar');
+        const sugerenciaOriginalSpan = document.getElementById('sugerencia-original');
         const nombreInput = document.getElementById('nombre');
         const errorNombre = document.getElementById('error-nombre');
         const organismoSelect = document.getElementById('organismo_id');
         const form = document.getElementById('unidadForm');
 
-        // Función para restaurar sugerencia
-        function restaurarSugerencia() {
-            codigoInput.value = sugerenciaInicial;
-            recuperarContenedor.classList.add('hidden');
-            errorCeros.classList.add('hidden');
-            codigoInput.classList.add('ring-2', 'ring-green-400', 'bg-green-50');
-            setTimeout(() => {
-                codigoInput.classList.remove('ring-2', 'ring-green-400', 'bg-green-50');
-            }, 800);
-        }
+        sugerenciaOriginalSpan.textContent = sugerenciaInicial;
 
         // Actualizar código sugerido al cambiar organismo
         if (organismoSelect) {
@@ -145,61 +158,66 @@
                 const organismoId = this.value;
                 const sugerencia = organismosData[organismoId] ?? null;
                 const nuevoCodigo = sugerencia ? sugerencia.codigo : sugerenciaInicial;
-                codigoInput.value = nuevoCodigo ?? '';
+                actualizarCamposDesdeCompleto(nuevoCodigo);
                 recuperarContenedor.classList.add('hidden');
                 errorCeros.classList.add('hidden');
             });
         }
 
-        // Validación de código (solo números)
-        if (codigoInput) {
-            codigoInput.addEventListener('input', function(e) {
+        // Validación de código (solo números en la parte de unidad)
+        if (unidadInput) {
+            unidadInput.addEventListener('input', function(e) {
                 let original = e.target.value;
                 let cleaned = original.replace(/\D/g, '');
 
-                if (cleaned.length > 8) {
-                    cleaned = cleaned.slice(0, 8);
+                if (cleaned.length > 4) {
+                    cleaned = cleaned.slice(0, 4);
                 }
 
                 if (original !== cleaned) {
                     e.target.value = cleaned;
                 }
 
-                if (cleaned && cleaned.length > 0) {
-                    const isOnlyZeros = /^0+$/.test(cleaned);
-                    if (isOnlyZeros && cleaned.length === 8) {
-                        errorCeros.classList.remove('hidden');
-                        recuperarContenedor.classList.remove('hidden');
-                    } else {
-                        errorCeros.classList.add('hidden');
-                        if (cleaned === sugerenciaInicial || cleaned === '') {
-                            recuperarContenedor.classList.add('hidden');
-                        } else {
-                            recuperarContenedor.classList.remove('hidden');
-                        }
-                    }
-                } else {
-                    errorCeros.classList.add('hidden');
-                    recuperarContenedor.classList.remove('hidden');
-                }
+                actualizarCodigoCompleto();
 
-                if (cleaned && !/^\d*$/.test(cleaned)) {
+                const codigoCompleto = codigoCompletoInput.value;
+                const esTodoCeros = codigoCompleto.length > 0 && /^0+$/.test(codigoCompleto);
+                const estaVacio = codigoCompleto.length === 0;
+
+                if (esTodoCeros || estaVacio) {
+                    errorCodigo.innerText = estaVacio ? "⚠️ El código es requerido." : "⚠️ El código no puede ser solo ceros.";
                     errorCodigo.classList.remove('hidden');
                 } else {
                     errorCodigo.classList.add('hidden');
                 }
+
+                if (codigoCompleto !== sugerenciaInicial || estaVacio || esTodoCeros) {
+                    recuperarContenedor.classList.remove('hidden');
+                } else {
+                    recuperarContenedor.classList.add('hidden');
+                }
             });
 
-            codigoInput.addEventListener('blur', function() {
-                if (this.value && this.value.length > 0 && this.value.length < 8) {
-                    this.value = this.value.padStart(8, '0');
+            unidadInput.addEventListener('blur', function() {
+                if (this.value && this.value.length > 0 && this.value.length < 4) {
+                    this.value = this.value.padStart(4, '0');
+                    actualizarCodigoCompleto();
                 }
             });
         }
 
         // Botón recuperar
         if (btnRecuperar) {
-            btnRecuperar.addEventListener('click', restaurarSugerencia);
+            btnRecuperar.addEventListener('click', function() {
+                actualizarCamposDesdeCompleto(sugerenciaInicial);
+                recuperarContenedor.classList.add('hidden');
+                errorCodigo.classList.add('hidden');
+
+                codigoCompletoInput.classList.add('ring-2', 'ring-green-400', 'bg-green-50');
+                setTimeout(() => {
+                    codigoCompletoInput.classList.remove('ring-2', 'ring-green-400', 'bg-green-50');
+                }, 800);
+            });
         }
 
         // Validación de nombre (letras, números y espacios)
@@ -220,7 +238,7 @@
         // Validación antes de enviar
         if (form) {
             form.addEventListener('submit', function(e) {
-                const codigo = codigoInput.value.trim();
+                const codigo = codigoCompletoInput.value.trim();
                 const nombre = nombreInput.value.trim();
                 const organismo = organismoSelect.value;
                 let hasError = false;
@@ -237,14 +255,14 @@
                 if (!codigo || codigo.length !== 8 || !/^\d{8}$/.test(codigo)) {
                     e.preventDefault();
                     alert('El código debe contener exactamente 8 dígitos numéricos.');
-                    codigoInput.focus();
+                    unidadInput.focus();
                     return;
                 }
 
                 if (/^0+$/.test(codigo)) {
                     e.preventDefault();
                     alert('El código no puede ser solo ceros.');
-                    codigoInput.focus();
+                    unidadInput.focus();
                     return;
                 }
 

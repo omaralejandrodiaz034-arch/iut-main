@@ -144,36 +144,39 @@ class DependenciaController extends Controller
      */
     public function store(Request $request)
     {
+        $request->validate([
+            'codigo_dependencia' => ['required', 'string', 'regex:/^\d{1}$/'],
+        ]);
+
+        $unidadId = $request->input('unidad_administradora_id');
+        $unidad = UnidadAdministradora::findOrFail($unidadId);
+        $prefijoUnidad = substr($unidad->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD);
+
+        $digitoDep = str_pad($request->input('codigo_dependencia'), 1, '0', STR_PAD_LEFT);
+        $codigoCompleto = $prefijoUnidad.$digitoDep.'00';
+
+        $request->merge([
+            'codigo' => $codigoCompleto,
+        ]);
+
         $validated = $request->validate([
             'unidad_administradora_id' => 'required|exists:unidades_administradoras,id',
             'codigo' => [
                 'required',
                 'string',
-                function ($attribute, $value, $fail) use ($request) {
-                    // Validar longitud correcta (8 dígitos)
+                function ($attribute, $value, $fail) use ($prefijoUnidad) {
                     if (strlen($value) !== CodigoJerarquicoService::TOTAL_DEPENDENCIA) {
                         $fail('El código debe tener exactamente '.CodigoJerarquicoService::TOTAL_DEPENDENCIA.' dígitos.');
 
                         return;
                     }
 
-                    // Validar que sea numérico
                     if (! preg_match('/^[0-9]+$/', $value)) {
                         $fail('El código solo puede contener números.');
 
                         return;
                     }
 
-                    // Validar que el código pertenezca a la unidad
-                    $unidad = UnidadAdministradora::find($request->unidad_administradora_id);
-                    if (! $unidad) {
-                        $fail('Unidad no encontrada.');
-
-                        return;
-                    }
-
-                    // El código debe comenzar con el prefijo de la unidad (organismo + unidad)
-                    $prefijoUnidad = substr($unidad->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD);
                     if (! str_starts_with($value, $prefijoUnidad)) {
                         $fail("El código debe comenzar con el prefijo de la unidad ({$prefijoUnidad}).");
 
@@ -186,7 +189,6 @@ class DependenciaController extends Controller
                         return;
                     }
 
-                    // Validar que la parte de dependencia no sea cero
                     $parteDependencia = substr($value, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD, CodigoJerarquicoService::LONG_DEPENDENCIA);
                     if ((int) $parteDependencia === 0) {
                         $fail('El código de dependencia no puede ser 0.');
@@ -194,7 +196,6 @@ class DependenciaController extends Controller
                         return;
                     }
 
-                    // Validar unicidad dentro de la unidad
                     $existe = Dependencia::where('codigo', $value)->exists();
                     if ($existe) {
                         $fail('Este código ya está en uso por otra dependencia.');
@@ -210,11 +211,7 @@ class DependenciaController extends Controller
             'nombre.max' => 'El nombre no puede exceder los 40 caracteres.',
         ]);
 
-        // Crear la dependencia
         $dependencia = Dependencia::create($validated);
-
-        // Nota: No es necesario reservar códigos porque el sistema es jerárquico
-        // Los códigos de bienes se generarán automáticamente
 
         return redirect()
             ->route('dependencias.index')
@@ -326,11 +323,21 @@ class DependenciaController extends Controller
      */
     public function update(Request $request, Dependencia $dependencia)
     {
-        // Validar que no se cambie el código si tiene bienes
+        $unidadId = $request->input('unidad_administradora_id', $dependencia->unidad_administradora_id);
+        $unidad = UnidadAdministradora::findOrFail($unidadId);
+        $prefijoUnidad = substr($unidad->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD);
+
+        if ($request->has('codigo_dependencia')) {
+            $digitoDep = str_pad($request->input('codigo_dependencia'), 1, '0', STR_PAD_LEFT);
+            $request->merge([
+                'codigo' => $prefijoUnidad.$digitoDep.'00',
+            ]);
+        }
+
         if ($request->has('codigo') && $request->codigo !== $dependencia->codigo) {
             if ($dependencia->bienes()->count() > 0) {
                 return back()->withErrors([
-                    'codigo' => 'No se puede cambiar el código porque la dependencia ya tiene bienes asociados.',
+                    'codigo_dependencia' => 'No se puede cambiar el código porque la dependencia ya tiene bienes asociados.',
                 ])->withInput();
             }
         }
@@ -340,7 +347,7 @@ class DependenciaController extends Controller
             'codigo' => [
                 'sometimes',
                 'string',
-                function ($attribute, $value, $fail) use ($request, $dependencia) {
+                function ($attribute, $value, $fail) use ($dependencia, $prefijoUnidad) {
                     if (strlen($value) !== CodigoJerarquicoService::TOTAL_DEPENDENCIA) {
                         $fail('El código debe tener exactamente '.CodigoJerarquicoService::TOTAL_DEPENDENCIA.' dígitos.');
 
@@ -353,16 +360,6 @@ class DependenciaController extends Controller
                         return;
                     }
 
-                    $unidadId = $request->unidad_administradora_id ?? $dependencia->unidad_administradora_id;
-                    $unidad = UnidadAdministradora::find($unidadId);
-
-                    if (! $unidad) {
-                        $fail('Unidad no encontrada.');
-
-                        return;
-                    }
-
-                    $prefijoUnidad = substr($unidad->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD);
                     if (! str_starts_with($value, $prefijoUnidad)) {
                         $fail("El código debe comenzar con el prefijo de la unidad ({$prefijoUnidad}).");
 
@@ -375,7 +372,6 @@ class DependenciaController extends Controller
                         return;
                     }
 
-                    // Verificar existencia, ignorando el registro actual
                     if ($value !== $dependencia->codigo) {
                         $existe = Dependencia::where('codigo', $value)->exists();
                         if ($existe) {

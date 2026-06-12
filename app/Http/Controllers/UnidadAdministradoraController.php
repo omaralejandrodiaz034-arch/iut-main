@@ -131,13 +131,27 @@ class UnidadAdministradoraController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate([
+            'codigo_unidad' => ['required', 'string', 'regex:/^\d{4}$/'],
+        ]);
+
+        $organismoId = $request->input('organismo_id');
+        $organismo = Organismo::findOrFail($organismoId);
+        $prefijoOrganismo = substr($organismo->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO);
+
+        $digitosUnidad = str_pad($request->input('codigo_unidad'), CodigoJerarquicoService::LONG_UNIDAD, '0', STR_PAD_LEFT);
+        $codigoCompleto = $prefijoOrganismo.$digitosUnidad.str_repeat('0', CodigoJerarquicoService::LONG_DEPENDENCIA + CodigoJerarquicoService::LONG_BIEN);
+
+        $request->merge([
+            'codigo' => $codigoCompleto,
+        ]);
+
         $validated = $request->validate([
             'organismo_id' => ['required', 'exists:organismos,id'],
             'codigo' => [
                 'required',
                 'string',
-                function ($attribute, $value, $fail) use ($request) {
-                    // ✅ CAMBIAR: validar longitud de 8 dígitos
+                function ($attribute, $value, $fail) use ($prefijoOrganismo) {
                     if (strlen($value) !== CodigoJerarquicoService::TOTAL_UNIDAD) {
                         $fail('El código debe tener exactamente '.CodigoJerarquicoService::TOTAL_UNIDAD.' dígitos.');
 
@@ -150,22 +164,12 @@ class UnidadAdministradoraController extends Controller
                         return;
                     }
 
-                    $organismo = Organismo::find($request->organismo_id);
-                    if (! $organismo) {
-                        $fail('Organismo no encontrado.');
-
-                        return;
-                    }
-
-                    // ✅ CAMBIAR: validar que comience con el código del organismo (primer dígito)
-                    $prefijoOrganismo = substr($organismo->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO);
                     if (! str_starts_with($value, $prefijoOrganismo)) {
                         $fail("El código debe comenzar con el código del organismo ({$prefijoOrganismo}).");
 
                         return;
                     }
 
-                    // ✅ AGREGAR: validar que la parte de unidad no sea 0000
                     $parteUnidad = substr($value, CodigoJerarquicoService::LONG_ORGANISMO, CodigoJerarquicoService::LONG_UNIDAD);
                     if ((int) $parteUnidad === 0) {
                         $fail('El código de unidad no puede ser 0000.');
@@ -173,7 +177,6 @@ class UnidadAdministradoraController extends Controller
                         return;
                     }
 
-                    // ✅ CAMBIAR: usar codigoExiste del nuevo servicio
                     if (CodigoJerarquicoService::codigoExiste($value)) {
                         $fail('Este código ya está en uso por otra unidad.');
                     }
@@ -181,13 +184,10 @@ class UnidadAdministradoraController extends Controller
             ],
             'nombre' => ['required', 'string', 'max:255'],
         ], [
-        'organismo_id.required' => 'Debe seleccionar un organismo.',
-        'codigo.required' => 'El código de la unidad es obligatorio.',
-        'nombre.required' => 'El nombre de la unidad es obligatorio.',
-    ]);
-
-        // ✅ ELIMINAR: toda la validación de rangos (ya no es necesaria)
-        // ✅ ELIMINAR: reservarCodigosParaOrganismo y reservarCodigosParaUnidad
+            'organismo_id.required' => 'Debe seleccionar un organismo.',
+            'codigo.required' => 'El código de la unidad es obligatorio.',
+            'nombre.required' => 'El nombre de la unidad es obligatorio.',
+        ]);
 
         $unidad = UnidadAdministradora::create($validated);
 
@@ -301,9 +301,20 @@ class UnidadAdministradoraController extends Controller
 
     public function update(Request $request, UnidadAdministradora $unidadAdministradora)
     {
+        $organismoId = $request->input('organismo_id', $unidadAdministradora->organismo_id);
+        $organismo = Organismo::findOrFail($organismoId);
+        $prefijoOrganismo = substr($organismo->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO);
+
+        if ($request->has('codigo_unidad')) {
+            $digitosUnidad = str_pad($request->input('codigo_unidad'), CodigoJerarquicoService::LONG_UNIDAD, '0', STR_PAD_LEFT);
+            $request->merge([
+                'codigo' => $prefijoOrganismo.$digitosUnidad.str_repeat('0', CodigoJerarquicoService::LONG_DEPENDENCIA + CodigoJerarquicoService::LONG_BIEN),
+            ]);
+        }
+
         if ($request->has('codigo') && $request->codigo !== $unidadAdministradora->codigo) {
             if ($unidadAdministradora->dependencias()->count() > 0) {
-                return back()->withErrors(['codigo' => 'No se puede cambiar el código porque la unidad ya tiene dependencias asociadas.'])->withInput();
+                return back()->withErrors(['codigo_unidad' => 'No se puede cambiar el código porque la unidad ya tiene dependencias asociadas.'])->withInput();
             }
         }
 
@@ -312,8 +323,7 @@ class UnidadAdministradoraController extends Controller
             'codigo' => [
                 'sometimes',
                 'string',
-                function ($attribute, $value, $fail) use ($request, $unidadAdministradora) {
-                    // ✅ CAMBIAR: validar longitud de 8 dígitos
+                function ($attribute, $value, $fail) use ($unidadAdministradora, $prefijoOrganismo) {
                     if (strlen($value) !== CodigoJerarquicoService::TOTAL_UNIDAD) {
                         $fail('El código debe tener exactamente '.CodigoJerarquicoService::TOTAL_UNIDAD.' dígitos.');
 
@@ -326,16 +336,6 @@ class UnidadAdministradoraController extends Controller
                         return;
                     }
 
-                    $organismoId = $request->organismo_id ?? $unidadAdministradora->organismo_id;
-                    $organismo = Organismo::find($organismoId);
-
-                    if (! $organismo) {
-                        $fail('Organismo no encontrado.');
-
-                        return;
-                    }
-
-                    $prefijoOrganismo = substr($organismo->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO);
                     if (! str_starts_with($value, $prefijoOrganismo)) {
                         $fail("El código debe comenzar con el código del organismo ({$prefijoOrganismo}).");
 
@@ -348,7 +348,6 @@ class UnidadAdministradoraController extends Controller
                         return;
                     }
 
-                    // ✅ CAMBIAR: usar codigoExiste ignorando actual
                     if ($value !== $unidadAdministradora->codigo && CodigoJerarquicoService::codigoExiste($value)) {
                         $fail('Este código ya está en uso por otra unidad.');
                     }

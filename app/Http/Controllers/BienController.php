@@ -234,37 +234,46 @@ class BienController extends Controller
      */
     public function store(Request $request)
     {
-        // Reglas base ACTUALIZADAS para código jerárquico (8 dígitos numéricos)
+        $request->validate([
+            'codigo_secuencial' => ['required', 'string', 'regex:/^\d{2}$/'],
+        ]);
+
+        $dependenciaId = $request->input('dependencia_id');
+        $dependencia = Dependencia::findOrFail($dependenciaId);
+        $prefijoDependencia = substr($dependencia->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD + CodigoJerarquicoService::LONG_DEPENDENCIA);
+
+        $secuencial = str_pad($request->input('codigo_secuencial'), 2, '0', STR_PAD_LEFT);
+        $codigoCompleto = $prefijoDependencia.$secuencial;
+
+        $request->merge([
+            'codigo' => $codigoCompleto,
+            'dependencia_id' => $dependenciaId,
+        ]);
+
         $rules = $this->getBaseValidationRules();
 
-        // Agregar reglas específicas por tipo
         $tipo = $request->input('tipo_bien');
         $rules = array_merge($rules, $this->getSpecificValidationRules($tipo));
 
         $validated = $request->validate($rules);
 
-        // Validación adicional: código dentro del rango de la dependencia
         $this->validarCodigoEnRango($validated['codigo'], $validated['dependencia_id']);
 
         DB::beginTransaction();
 
         try {
-            // Procesar fotografía
             if ($request->hasFile('fotografia')) {
                 $validated['fotografia'] = $this->procesarFotografia($request);
             }
 
-            // Separar datos de la tabla bienes
             $datosBien = $this->extractBienData($validated);
 
             $bien = Bien::create($datosBien);
 
-            // Guardar datos específicos del tipo
             if ($tipo) {
                 $this->bienTypeService->sync($bien, $tipo, $validated);
             }
 
-            // Crear registro de desincorporación si aplica
             if ($bien->estado === EstadoBien::DESINCORPORADO && $request->hasFile('acta_desincorporacion')) {
                 $actaPath = $request->file('acta_desincorporacion')->store('actas_desincorporacion', 'public');
                 $bien->desincorporado()->create([
@@ -402,6 +411,10 @@ class BienController extends Controller
      */
     public function update(Request $request, Bien $bien)
     {
+        $request->merge([
+            'codigo' => $request->input('codigo', $bien->codigo),
+        ]);
+
         $rules = $this->getUpdateValidationRules($bien);
 
         $tipo = $request->input('tipo_bien', $bien->tipo_bien?->value);
@@ -409,7 +422,6 @@ class BienController extends Controller
 
         $validated = $request->validate($rules);
 
-        // Determinar la dependencia usada para la validación del código
         $dependenciaId = $validated['dependencia_id'] ?? $bien->dependencia_id;
         $codigoAVerificar = $validated['codigo'] ?? $bien->codigo;
 
@@ -420,14 +432,12 @@ class BienController extends Controller
         DB::beginTransaction();
 
         try {
-            // Procesar fotografía
             if ($request->hasFile('fotografia')) {
                 $validated['fotografia'] = $this->procesarFotografia($request, $bien);
             }
 
             $datosBien = $this->extractBienData($validated);
 
-            // Si cambió el tipo de bien, eliminar subtipo anterior
             $tipoAnterior = $bien->tipo_bien?->value;
             if ($tipo && $tipoAnterior && strtoupper($tipo) !== strtoupper($tipoAnterior)) {
                 $this->eliminarSubtipoAnterior($bien, $tipoAnterior);
@@ -435,7 +445,6 @@ class BienController extends Controller
 
             $bien->update($datosBien);
 
-            // Sincronizar datos específicos
             if ($tipo) {
                 $this->bienTypeService->sync($bien, $tipo, $validated);
             }
@@ -1452,7 +1461,7 @@ class BienController extends Controller
         return match ($tipo) {
             'ELECTRONICO' => [
                 'subtipo' => ['nullable', 'string', 'max:50', Rule::in(['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR', 'LAPTOP', 'TABLET', 'OTRO'])],
-                'serial' => ['required', 'string', 'max:255', 'unique:electronicos,serial'],
+                'serial' => ['required', 'string', 'max:255', 'unique:bienes_electronicos,serial'],
                 'modelo' => ['nullable', 'string', 'max:255'],
                 'procesador' => ['nullable', 'string', 'max:255'],
                 'memoria' => ['nullable', 'string', 'max:255'],
@@ -1461,12 +1470,12 @@ class BienController extends Controller
                 'garantia' => ['nullable', 'date', 'after:fecha_registro'],
             ],
             'VEHICULO' => [
-                'placa' => ['required', 'string', 'max:20', 'unique:vehiculos,placa'],
+                'placa' => ['required', 'string', 'max:20', 'unique:bienes_vehiculos,placa'],
                 'marca' => ['required', 'string', 'max:100'],
                 'modelo' => ['required', 'string', 'max:100'],
                 'anio' => ['required', 'string', 'max:10', 'regex:/^\d{4}$/'],
-                'motor' => ['nullable', 'string', 'max:100', 'unique:vehiculos,motor'],
-                'chasis' => ['nullable', 'string', 'max:100', 'unique:vehiculos,chasis'],
+                'motor' => ['nullable', 'string', 'max:100', 'unique:bienes_vehiculos,motor'],
+                'chasis' => ['nullable', 'string', 'max:100', 'unique:bienes_vehiculos,chasis'],
                 'combustible' => ['nullable', 'string', 'max:50', Rule::in(['GASOLINA', 'DIESEL', 'ELECTRICO', 'HIBRIDO', 'GNV'])],
                 'kilometraje' => ['nullable', 'integer', 'min:0'],
             ],

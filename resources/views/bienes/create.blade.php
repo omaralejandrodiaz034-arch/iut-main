@@ -89,25 +89,33 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {{-- Código del Bien con Sugerencia --}}
-                        <div>
-                            <label for="codigo" class="block text-sm font-bold text-gray-700 mb-2">Código del Bien</label>
-                            <input type="text" name="codigo" id="codigo" value="{{ old('codigo') }}"
-                                maxlength="8" inputmode="numeric" placeholder="Ej: 00000001"
-                                class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase bg-white text-gray-900"
-                                required pattern="\d{8}" title="El código debe contener exactamente 8 dígitos numéricos">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Código del Bien</label>
+                        <div class="flex items-center gap-1">
+                            <input type="text" id="prefijo_bien" value="" readonly
+                                class="w-32 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
+                            <span class="text-gray-400 font-bold">-</span>
+                            <input type="text" name="codigo_secuencial" id="codigo_secuencial"
+                                value="" maxlength="2" inputmode="numeric" pattern="\d{2}"
+                                placeholder="00"
+                                class="w-20 px-3 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase text-center" required>
 
-                            @error('codigo')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-
-                            {{-- Contenedor para la sugerencia --}}
-                            <div id="sugerencia-container" class="mt-1 hidden">
-                                <button type="button" id="btn-sugerencia"
-                                    class="text-[10px] text-blue-600 hover:underline font-bold italic">
-                                    💡 ¿Usar código sugerido: <span id="span-sugerencia"></span>?
-                                </button>
-                            </div>
+                            <input type="hidden" name="codigo" id="codigo_completo" value="">
                         </div>
+
+                        @error('codigo_secuencial')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+
+                        <div id="sugerencia-container" class="mt-1 hidden">
+                            <button type="button" id="btn-sugerencia"
+                                class="text-[10px] text-blue-600 hover:underline font-bold italic">
+                                💡 ¿Usar código sugerido: <span id="span-sugerencia"></span>?
+                            </button>
+                        </div>
+
+                        <p class="text-[10px] text-gray-500 mt-1">Solo edite el secuencial del bien (últimos 2 dígitos). Formato: <span class="font-mono">XXXXXX-XX</span></p>
+                    </div>
 
                         {{-- Tipo de Bien --}}
                         <div>
@@ -215,7 +223,9 @@
             }
 
             /* 2. Lógica de Código con Sugerencia por Dependencia */
-            const codigoInput = document.getElementById('codigo');
+            const prefijoInput = document.getElementById('prefijo_bien');
+            const secuencialInput = document.getElementById('codigo_secuencial');
+            const codigoCompletoInput = document.getElementById('codigo_completo');
             const sugerenciaContainer = document.getElementById('sugerencia-container');
             const spanSugerencia = document.getElementById('span-sugerencia');
             const btnSugerencia = document.getElementById('btn-sugerencia');
@@ -225,8 +235,10 @@
 
             function actualizarSugerencia(codigo) {
                 codigoSugeridoDependencia = codigo;
+                prefijoInput.value = codigo.substring(0, 6);
                 spanSugerencia.textContent = codigo;
                 sugerenciaContainer.classList.remove('hidden');
+                actualizarCodigoCompleto();
             }
 
             function ocultarSugerencia() {
@@ -234,9 +246,18 @@
                 sugerenciaContainer.classList.add('hidden');
             }
 
+            function actualizarCodigoCompleto() {
+                const prefijo = prefijoInput.value || '';
+                const secuencial = secuencialInput.value || '';
+                codigoCompletoInput.value = prefijo + secuencial;
+            }
+
             function obtenerSugerencia(dependenciaId) {
                 if (!dependenciaId) {
                     ocultarSugerencia();
+                    prefijoInput.value = '';
+                    secuencialInput.value = '';
+                    codigoCompletoInput.value = '';
                     return;
                 }
 
@@ -247,6 +268,9 @@
                                 if (data.success === false && data.error === 'rango_exhausto') {
                                     alert(data.mensaje);
                                     ocultarSugerencia();
+                                    prefijoInput.value = '';
+                                    secuencialInput.value = '';
+                                    codigoCompletoInput.value = '';
                                 } else {
                                     throw new Error('Error al obtener sugerencia');
                                 }
@@ -267,25 +291,20 @@
 
             depSelect.addEventListener('change', function () {
                 const depId = this.value;
-                codigoInput.value = '';
+                prefijoInput.value = '';
+                secuencialInput.value = '';
+                codigoCompletoInput.value = '';
                 ocultarSugerencia();
                 if (depId) obtenerSugerencia(depId);
             });
 
-            if (codigoInput) {
-                codigoInput.addEventListener('input', function (e) {
-                    let original = e.target.value;
-                    let cleaned = original.replace(/\D/g, '');
+            if (secuencialInput) {
+                secuencialInput.addEventListener('input', function (e) {
+                    let cleaned = this.value.replace(/\D/g, '').slice(0, 2);
+                    this.value = cleaned;
+                    actualizarCodigoCompleto();
 
-                    if (cleaned.length > 8) {
-                        cleaned = cleaned.slice(0, 8);
-                    }
-
-                    if (original !== cleaned) {
-                        e.target.value = cleaned;
-                    }
-
-                    if (codigoSugeridoDependencia && cleaned !== codigoSugeridoDependencia) {
+                    if (codigoSugeridoDependencia && codigoCompletoInput.value !== codigoSugeridoDependencia) {
                         spanSugerencia.textContent = codigoSugeridoDependencia;
                         sugerenciaContainer.classList.remove('hidden');
                     } else if (sugerenciaContainer) {
@@ -293,9 +312,10 @@
                     }
                 });
 
-                codigoInput.addEventListener('blur', function () {
-                    if (this.value && this.value.length > 0) {
-                        this.value = this.value.padStart(8, '0');
+                secuencialInput.addEventListener('blur', function () {
+                    if (this.value && this.value.length > 0 && this.value.length < 2) {
+                        this.value = this.value.padStart(2, '0');
+                        actualizarCodigoCompleto();
                     }
                 });
             }
@@ -303,7 +323,9 @@
             if (btnSugerencia && sugerenciaContainer) {
                 btnSugerencia.addEventListener('click', function () {
                     if (codigoSugeridoDependencia) {
-                        codigoInput.value = codigoSugeridoDependencia;
+                        prefijoInput.value = codigoSugeridoDependencia.substring(0, 6);
+                        secuencialInput.value = codigoSugeridoDependencia.substring(6);
+                        codigoCompletoInput.value = codigoSugeridoDependencia;
                         sugerenciaContainer.classList.add('hidden');
                     }
                 });
@@ -342,7 +364,7 @@
                     },
                     fields: [
                         { name: 'subtipo', label: 'Subtipo', type: 'select', options: ['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR'], required: true },
-                        { name: 'serial', label: 'Número de Serie', type: 'text' },
+                        { name: 'serial', label: 'Número de Serie', type: 'text', required: true, maxlength: 255 },
                         { name: 'modelo', label: 'Modelo', type: 'text' },
                         { name: 'procesador', label: 'Procesador', type: 'text' },
                         { name: 'memoria', label: 'RAM/Memoria', type: 'text' },
@@ -352,10 +374,11 @@
                 },
                 'VEHICULO': {
                     fields: [
-                        { name: 'placa', label: 'Número de Placa', type: 'text' },
-                        { name: 'marca', label: 'Marca', type: 'text' },
-                        { name: 'motor', label: 'Serial de Motor', type: 'text' },
-                        { name: 'chasis', label: 'Serial de Carrocería', type: 'text' }
+                        { name: 'placa', label: 'Número de Placa', type: 'text', required: true, maxlength: 20 },
+                        { name: 'marca', label: 'Marca', type: 'text', required: true, maxlength: 100 },
+                        { name: 'modelo', label: 'Modelo', type: 'text', required: true, maxlength: 100 },
+                        { name: 'motor', label: 'Serial de Motor', type: 'text', maxlength: 100 },
+                        { name: 'chasis', label: 'Serial de Carrocería', type: 'text', maxlength: 100 }
                     ]
                 },
                 'MOBILIARIO': {
@@ -370,6 +393,15 @@
                         { name: 'especificaciones', label: 'Especificaciones Extra', type: 'textarea' }
                     ]
                 }
+            };
+
+            const validacionesCampo = {
+                'serial': { required: true, maxlength: 255, label: 'Número de Serie' },
+                'placa': { required: true, maxlength: 20, label: 'Número de Placa' },
+                'marca': { required: true, maxlength: 100, label: 'Marca' },
+                'modelo': { required: true, maxlength: 100, label: 'Modelo' },
+                'motor': { required: false, maxlength: 100, label: 'Serial de Motor' },
+                'chasis': { required: false, maxlength: 100, label: 'Serial de Carrocería' }
             };
 
             const tipoBienSelect = document.getElementById('tipo_bien');
@@ -410,12 +442,13 @@
                             const isReadonly = config.isParent ? 'readonly' : '';
                             const bgClass = config.isParent ? 'bg-gray-100' : 'bg-white';
                             const defaultValue = config.isParent ? 'S/N' : '';
+                            const maxlengthAttr = campo.maxlength ? `maxlength="${campo.maxlength}"` : '';
 
                             html += `<div>
-                                        <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label}</label>
+                                        <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label} ${campo.required ? '<span class="text-red-500">*</span>' : ''}</label>
                                         <input type="text" name="${campo.name}" data-field="${campo.name}"
                                             class="dynamic-field w-full px-4 py-2 border border-blue-200 rounded-lg ${bgClass}"
-                                            ${isReadonly} value="${defaultValue}">
+                                            ${isReadonly} value="${defaultValue}" ${maxlengthAttr}>
                                     </div>`;
                         }
                     });
@@ -460,8 +493,8 @@
             const form = document.querySelector('form[action*="bienes"]');
             if (form) {
                 form.addEventListener('submit', function (e) {
-                    const codigo = document.getElementById('codigo');
-                    const codigoValue = codigo ? codigo.value.trim() : '';
+                    const codigoCompletoInput = document.getElementById('codigo_completo');
+                    const codigoValue = codigoCompletoInput ? codigoCompletoInput.value.trim() : '';
                     const descripcion = document.getElementById('descripcion');
                     const descripcionValue = descripcion ? descripcion.value.trim() : '';
                     const tipo = tipoBienSelect ? tipoBienSelect.value : '';
@@ -472,7 +505,7 @@
                     if (!codigoValue || codigoValue.length !== 8 || !/^\d{8}$/.test(codigoValue)) {
                         e.preventDefault();
                         alert('El código debe contener exactamente 8 dígitos numéricos.');
-                        if (codigo) codigo.focus();
+                        if (secuencialInput) secuencialInput.focus();
                         return;
                     }
 
@@ -501,6 +534,39 @@
                         e.preventDefault();
                         alert('Debe seleccionar el estado del bien.');
                         if (estado) estado.focus();
+                        return;
+                    }
+
+                    const dynamicFields = document.querySelectorAll('.dynamic-field');
+                    let camposDinamicosValidos = true;
+                    let camposDinamicosErrores = [];
+
+                    dynamicFields.forEach(input => {
+                        const fieldName = input.getAttribute('data-field');
+                        const val = input.value.trim();
+                        const validacion = validacionesCampo[fieldName];
+
+                        if (validacion) {
+                            if (validacion.required && !val) {
+                                camposDinamicosValidos = false;
+                                camposDinamicosErrores.push(`El campo "${validacion.label}" es obligatorio.`);
+                                input.classList.add('border-red-500');
+                                input.classList.remove('border-blue-200');
+                            } else if (validacion.maxlength && val.length > validacion.maxlength) {
+                                camposDinamicosValidos = false;
+                                camposDinamicosErrores.push(`El campo "${validacion.label}" no debe exceder ${validacion.maxlength} caracteres.`);
+                                input.classList.add('border-red-500');
+                                input.classList.remove('border-blue-200');
+                            } else {
+                                input.classList.remove('border-red-500');
+                                input.classList.add('border-blue-200');
+                            }
+                        }
+                    });
+
+                    if (!camposDinamicosValidos) {
+                        e.preventDefault();
+                        alert(camposDinamicosErrores.join('\n'));
                         return;
                     }
 

@@ -43,35 +43,30 @@
                 @enderror
             </div>
 
-            {{-- Código de Unidad --}}
+            {{-- Código de Unidad (solo editable los 4 dígitos de unidad) --}}
             <div class="px-2">
-                <label for="codigo" class="block text-sm font-bold text-slate-700 mb-2">Código de Unidad</label>
-                <div class="relative">
-                    <input type="text" name="codigo" id="codigo" value="{{ old('codigo', $unidadAdministradora->codigo) }}"
-                           maxlength="8" inputmode="numeric" autocomplete="off"
-                           class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono bg-blue-50/10 text-gray-600">
-
-                    <button type="button"
-                            class="absolute right-3 top-3 text-[10px] bg-red-100 text-red-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider border border-red-200 cursor-default">
-                        Requerido
-                    </button>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Código de Unidad</label>
+                <div class="flex items-center gap-1">
+                    <input type="text" value="{{ substr($unidadAdministradora->codigo, 0, 1) }}" readonly
+                        class="w-12 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
+                    <span class="text-gray-400 font-bold">-</span>
+                    <input type="text" name="codigo_unidad" id="codigo_unidad"
+                        value="{{ old('codigo_unidad', substr($unidadAdministradora->codigo, 1, 4)) }}"
+                        maxlength="4" inputmode="numeric" pattern="\d{4}"
+                        placeholder="0000"
+                        class="w-24 px-3 py-3 border @error('codigo_unidad') border-red-500 @else border-gray-300 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center">
+                    <span class="text-gray-400 font-bold">-</span>
+                    <input type="text" value="{{ substr($unidadAdministradora->codigo, 5) }}" readonly
+                        class="w-20 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                 </div>
 
-                {{-- Aviso de recuperación --}}
-                <div id="recuperar-contenedor" class="hidden mt-2 flex items-center gap-2 bg-red-50/50 p-2 rounded-md border border-red-100">
-                    <span class="text-red-800 text-[11px] font-medium">⚠️ El código es requerido o distinto:</span>
-                    <button type="button" id="btnRecuperar"
-                            data-original="{{ $unidadAdministradora->codigo }}"
-                            class="text-red-600 text-[11px] font-bold hover:text-red-800 underline flex items-center gap-1">
-                        Restaurar código: {{ $unidadAdministradora->codigo }}
-                    </button>
-                </div>
+                <input type="hidden" name="codigo" id="codigo_completo" value="{{ $unidadAdministradora->codigo }}">
 
-                @error('codigo')
+                @error('codigo_unidad')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic"></p>
-                <p class="text-gray-400 text-[11px] mt-2">Solo 8 números. Se completará con ceros automáticamente.</p>
+                <p class="text-gray-400 text-[11px] mt-2">Solo edite los 4 dígitos de la unidad (posiciones 2-5). Formato: <span class="font-mono">{{ substr($unidadAdministradora->codigo, 0, 1) }}.{{ substr($unidadAdministradora->codigo, 1, 4) }}.{{ substr($unidadAdministradora->codigo, 5) }}</span></p>
             </div>
 
             {{-- Nombre de la Unidad --}}
@@ -115,18 +110,17 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const codigoInput = document.getElementById('codigo');
+        const prefijoUnidad = "{{ substr($unidadAdministradora->codigo, 0, 1) }}";
+        const sufijoUnidad = "{{ substr($unidadAdministradora->codigo, 5) }}";
+        const codigoUnidadInput = document.getElementById('codigo_unidad');
+        const codigoCompletoInput = document.getElementById('codigo_completo');
         const errorCodigo = document.getElementById('error-codigo');
-        const recuperarContenedor = document.getElementById('recuperar-contenedor');
-        const btnRecuperar = document.getElementById('btnRecuperar');
-        const valorOriginalBD = btnRecuperar.getAttribute('data-original');
-
         const nombreInput = document.getElementById('nombre');
         const errorNombre = document.getElementById('error-nombre');
         const form = document.getElementById('editUnidadForm');
 
-        // 1. LÓGICA DE CÓDIGO (Unificada con Organismo)
-        codigoInput.addEventListener('input', function(e) {
+        // 1. LÓGICA DE CÓDIGO (solo dígitos de unidad editables)
+        codigoUnidadInput.addEventListener('input', function(e) {
             let currentVal = e.target.value;
             let filteredValue = currentVal.replace(/[^0-9]/g, '');
 
@@ -136,10 +130,13 @@
                 setTimeout(() => errorCodigo.classList.add('hidden'), 2000);
             }
 
-            e.target.value = filteredValue.slice(0, 8);
+            e.target.value = filteredValue.slice(0, 4);
 
-            const esTodoCeros = e.target.value.length > 0 && /^0+$/.test(e.target.value);
-            const estaVacio = e.target.value.length === 0;
+            const nuevoCodigo = prefijoUnidad + e.target.value + sufijoUnidad;
+            codigoCompletoInput.value = nuevoCodigo;
+
+            const esTodoCeros = nuevoCodigo.length > 0 && /^0+$/.test(nuevoCodigo);
+            const estaVacio = nuevoCodigo.length === 0;
 
             if (esTodoCeros || estaVacio) {
                 errorCodigo.innerText = estaVacio ? "⚠️ El código es requerido." : "⚠️ El código no puede ser solo ceros.";
@@ -147,31 +144,12 @@
             } else {
                 errorCodigo.classList.add('hidden');
             }
-
-            if (e.target.value !== valorOriginalBD || estaVacio || esTodoCeros) {
-                recuperarContenedor.classList.remove('hidden');
-            } else {
-                recuperarContenedor.classList.add('hidden');
-            }
         });
 
-        btnRecuperar.addEventListener('click', function() {
-            codigoInput.value = valorOriginalBD;
-            recuperarContenedor.classList.add('hidden');
-            errorCodigo.classList.add('hidden');
-
-            codigoInput.classList.add('ring-2', 'ring-green-500', 'bg-green-50');
-            setTimeout(() => {
-                codigoInput.classList.remove('ring-2', 'ring-green-500', 'bg-green-50');
-            }, 1000);
-        });
-
-        codigoInput.addEventListener('blur', function(e) {
+        codigoUnidadInput.addEventListener('blur', function(e) {
             if (e.target.value.length > 0 && !/^0+$/.test(e.target.value)) {
-                e.target.value = e.target.value.padStart(8, '0');
-                if (e.target.value === valorOriginalBD) {
-                    recuperarContenedor.classList.add('hidden');
-                }
+                e.target.value = e.target.value.padStart(4, '0');
+                codigoCompletoInput.value = prefijoUnidad + e.target.value + sufijoUnidad;
             }
         });
 
@@ -189,7 +167,7 @@
 
         // 3. ENVÍO Y VALIDACIÓN FINAL
         form.addEventListener('submit', function(e) {
-            const val = codigoInput.value;
+            const val = codigoCompletoInput.value;
             const esTodoCeros = /^0+$/.test(val);
             const estaVacio = val.trim() === "";
 
@@ -198,7 +176,7 @@
                 if (estaVacio || esTodoCeros || val.length < 8) {
                     errorCodigo.innerText = "⚠️ Ingrese un código válido de 8 dígitos.";
                     errorCodigo.classList.remove('hidden');
-                    codigoInput.focus();
+                    codigoUnidadInput.focus();
                 }
                 return;
             }

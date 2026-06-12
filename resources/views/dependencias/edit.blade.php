@@ -45,41 +45,33 @@
                 @enderror
             </div>
 
-            {{-- Código de Dependencia --}}
+            {{-- Código de Dependencia (solo editable el dígito de dependencia, posición 6) --}}
             <div class="px-2">
-                <label for="codigo" class="block text-sm font-bold text-slate-700 mb-2">Código de Dependencia</label>
-                <div class="relative">
-                    <input type="text" name="codigo" id="codigo"
-                           value="{{ old('codigo', $dependencia->codigo) }}"
-                           maxlength="8" inputmode="numeric" autocomplete="off"
-                           placeholder="00000000"
-                           class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono bg-blue-50/10 text-gray-600">
-
-                    {{-- Botón Estilo Organismo --}}
-                    <button type="button"
-                            class="absolute right-3 top-3 text-[10px] bg-red-100 text-red-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider border border-red-200 cursor-default">
-                        Requerido
-                    </button>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Código de Dependencia</label>
+                <div class="flex items-center gap-1">
+                    <input type="text" value="{{ substr($dependencia->codigo, 0, 5) }}" readonly
+                        class="w-28 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
+                    <span class="text-gray-400 font-bold">-</span>
+                    <input type="text" name="codigo_dependencia" id="codigo_dependencia"
+                        value="{{ old('codigo_dependencia', substr($dependencia->codigo, 5, 1)) }}"
+                        maxlength="1" inputmode="numeric" pattern="\d{1}"
+                        placeholder="0"
+                        class="w-16 px-3 py-3 border @error('codigo_dependencia') border-red-500 @else border-gray-300 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center">
+                    <span class="text-gray-400 font-bold">-</span>
+                    <input type="text" value="{{ substr($dependencia->codigo, 6) }}" readonly
+                        class="w-16 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                 </div>
 
-                {{-- Aviso de recuperación (Estilo Organismo) --}}
-                <div id="recuperar-contenedor" class="hidden mt-2 flex items-center gap-2 bg-red-50/50 p-2 rounded-md border border-red-100">
-                    <span class="text-red-800 text-[11px] font-medium">⚠️ Este código es requerido:</span>
-                    <button type="button" id="btnRecuperar"
-                            class="text-red-600 text-[11px] font-bold hover:text-red-800 underline flex items-center gap-1">
-                        Restaurar código original ({{ $dependencia->codigo }})
-                    </button>
-                </div>
+                <input type="hidden" name="codigo" id="codigo_completo" value="{{ $dependencia->codigo }}">
 
-                @error('codigo')
+                @error('codigo_dependencia')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
 
-                {{-- Errores de JS --}}
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten números.</p>
-                <p id="error-ceros" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ El código no puede estar vacío ni ser solo ceros; debe tener un valor real.</p>
+                <p id="error-ceros" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ El código no puede ser solo ceros.</p>
 
-                <p class="text-gray-400 text-[11px] mt-2">Código único de la dependencia (8 números).</p>
+                <p class="text-gray-400 text-[11px] mt-2">Solo edite el dígito de la dependencia (posición 6). Formato: <span class="font-mono">{{ substr($dependencia->codigo, 0, 5) }}.{{ substr($dependencia->codigo, 5, 1) }}.{{ substr($dependencia->codigo, 6) }}</span></p>
             </div>
 
             {{-- Nombre de la Dependencia --}}
@@ -141,35 +133,21 @@
 </div>
 
 <script>
+    const prefijoDep = "{{ substr($dependencia->codigo, 0, 5) }}";
+    const sufijoDep = "{{ substr($dependencia->codigo, 6) }}";
     const codigoOriginal = "{{ $dependencia->codigo }}";
 
-    function restaurarSugerencia() {
-        const codigoInput = document.getElementById('codigo');
-        const recuperarContenedor = document.getElementById('recuperar-contenedor');
-        const errorCeros = document.getElementById('error-ceros');
-
-        codigoInput.value = codigoOriginal;
-        recuperarContenedor.classList.add('hidden');
-        errorCeros.classList.add('hidden');
-
-        codigoInput.classList.add('ring-2', 'ring-green-500', 'bg-green-50');
-        setTimeout(() => {
-            codigoInput.classList.remove('ring-2', 'ring-green-500', 'bg-green-50');
-        }, 1000);
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
-        const codigoInput = document.getElementById('codigo');
+        const codigoDepInput = document.getElementById('codigo_dependencia');
+        const codigoCompletoInput = document.getElementById('codigo_completo');
         const errorCodigo = document.getElementById('error-codigo');
         const errorCeros = document.getElementById('error-ceros');
-        const recuperarContenedor = document.getElementById('recuperar-contenedor');
-        const btnRecuperar = document.getElementById('btnRecuperar');
         const nombreInput = document.getElementById('nombre');
         const errorNombre = document.getElementById('error-nombre');
         const form = document.getElementById('editDependenciaForm');
 
-        // 1. Lógica de entrada de Código
-        codigoInput.addEventListener('input', function(e) {
+        // 1. Lógica de entrada de Código de Dependencia (solo dígito editable)
+        codigoDepInput.addEventListener('input', function(e) {
             let val = e.target.value.replace(/[^0-9]/g, '');
 
             if (e.target.value !== val) {
@@ -177,35 +155,41 @@
                 setTimeout(() => errorCodigo.classList.add('hidden'), 2000);
             }
 
-            e.target.value = val.slice(0, 8);
+            e.target.value = val.slice(0, 1);
 
-            // Validar ceros en tiempo real
-            const esTodoCeros = e.target.value.length > 0 && /^0+$/.test(e.target.value);
+            const nuevoCodigo = prefijoDep + e.target.value + sufijoDep;
+            codigoCompletoInput.value = nuevoCodigo;
+
+            const esTodoCeros = nuevoCodigo.length > 0 && /^0+$/.test(nuevoCodigo);
             if (esTodoCeros) {
                 errorCeros.classList.remove('hidden');
             } else {
                 errorCeros.classList.add('hidden');
             }
+        });
 
-            // Mostrar aviso de restauración si es distinto al original
-            if (e.target.value !== codigoOriginal || e.target.value.length < 8) {
-                recuperarContenedor.classList.remove('hidden');
-            } else {
-                recuperarContenedor.classList.add('hidden');
+        codigoDepInput.addEventListener('blur', function() {
+            if (this.value && this.value.length > 0 && this.value.length < 1) {
+                this.value = this.value.padStart(1, '0');
+                codigoCompletoInput.value = prefijoDep + this.value + sufijoDep;
             }
         });
 
-        btnRecuperar.addEventListener('click', restaurarSugerencia);
-
         // 2. VALIDACIÓN FINAL AL ENVIAR (Bloqueo de ceros y vacío)
         form.addEventListener('submit', function(e) {
-            const val = codigoInput.value.trim();
+            const val = codigoCompletoInput.value.trim();
             const esTodoCeros = /^0+$/.test(val);
 
             if (val === "" || esTodoCeros || val.length < 8) {
                 e.preventDefault();
                 errorCeros.classList.remove('hidden');
-                codigoInput.focus();
+                codigoDepInput.focus();
+                return;
+            }
+
+            if (!nombreInput.value.trim()) {
+                e.preventDefault();
+                nombreInput.focus();
                 return;
             }
 

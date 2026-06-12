@@ -45,13 +45,22 @@
 
             {{-- Código de Dependencia --}}
             <div class="px-2">
-                <label for="codigo" class="block text-sm font-bold text-slate-700 mb-2">Código de Dependencia</label>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Código de Dependencia</label>
                 <div class="relative">
-                    <input type="text" name="codigo" id="codigo"
-                        value="{{ old('codigo', $proximoCodigo ?? '') }}"
-                        maxlength="8" inputmode="numeric" autocomplete="off"
-                        placeholder="00000001"
-                        class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono bg-blue-50/20">
+                    <div class="flex items-center gap-1">
+                        <input type="text" id="prefijo_dependencia" value="" readonly
+                            class="w-28 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
+                        <span class="text-gray-400 font-bold">-</span>
+                        <input type="text" name="codigo_dependencia" id="codigo_dependencia"
+                            value="" maxlength="1" inputmode="numeric" pattern="\d{1}"
+                            placeholder="0"
+                            class="w-16 px-3 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center" required>
+                        <span class="text-gray-400 font-bold">-</span>
+                        <input type="text" id="sufijo_dependencia" value="" readonly
+                            class="w-16 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
+                    </div>
+
+                    <input type="hidden" name="codigo" id="codigo_completo" value="">
 
                     <button type="button"
                             class="absolute right-3 top-3 text-[10px] bg-red-100 text-red-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider border border-red-200 cursor-default">
@@ -59,21 +68,21 @@
                     </button>
                 </div>
 
-                {{-- Aviso de recuperación (Estilo Organismo) --}}
+                {{-- Aviso de recuperación --}}
                 <div id="recuperar-contenedor" class="hidden mt-2 flex items-center gap-2 bg-red-50/50 p-2 rounded-md border border-red-100">
                     <span class="text-red-800 text-[11px] font-medium">⚠️ Este código es requerido:</span>
                     <button type="button" id="btnRecuperar"
                             class="text-red-600 text-[11px] font-bold hover:text-red-800 underline flex items-center gap-1">
-                        Restaurar valor requerido ({{ $proximoCodigo ?? '' }})
+                        Restaurar valor requerido (<span id="sugerencia-original"></span>)
                     </button>
                 </div>
 
-                @error('codigo')
+                @error('codigo_dependencia')
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten números.</p>
                 <p id="error-ceros" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ El código no puede ser solo ceros.</p>
-                <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Campo obligatorio de 8 dígitos numéricos.</p>
+                <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Solo edite el dígito de la dependencia (posición 6).</p>
             </div>
 
             {{-- Nombre --}}
@@ -130,63 +139,85 @@
     const unidadesData = @json($sugerenciasPorUnidad ?? []);
 
     function restaurarSugerencia() {
-        const codigoInput = document.getElementById('codigo');
+        const codigoCompletoInput = document.getElementById('codigo_completo');
         const recuperarContenedor = document.getElementById('recuperar-contenedor');
         const errorCeros = document.getElementById('error-ceros');
 
-        codigoInput.value = sugerenciaInicial;
+        actualizarCamposDesdeCompleto(sugerenciaInicial);
         recuperarContenedor.classList.add('hidden');
         errorCeros.classList.add('hidden');
 
-        codigoInput.classList.add('ring-2', 'ring-green-400', 'bg-green-50');
+        codigoCompletoInput.classList.add('ring-2', 'ring-green-400', 'bg-green-50');
         setTimeout(() => {
-            codigoInput.classList.remove('ring-2', 'ring-green-400', 'bg-green-50');
+            codigoCompletoInput.classList.remove('ring-2', 'ring-green-400', 'bg-green-50');
         }, 800);
     }
 
+    function actualizarCamposDesdeCompleto(codigo) {
+        const prefijoInput = document.getElementById('prefijo_dependencia');
+        const depInput = document.getElementById('codigo_dependencia');
+        const sufijoInput = document.getElementById('sufijo_dependencia');
+        const codigoCompletoInput = document.getElementById('codigo_completo');
+
+        prefijoInput.value = codigo.substring(0, 5);
+        depInput.value = codigo.substring(5, 6);
+        sufijoInput.value = codigo.substring(6);
+        codigoCompletoInput.value = codigo;
+    }
+
+    function actualizarCodigoCompleto() {
+        const prefijo = document.getElementById('prefijo_dependencia').value || '';
+        const dep = document.getElementById('codigo_dependencia').value || '';
+        const sufijo = document.getElementById('sufijo_dependencia').value || '';
+        document.getElementById('codigo_completo').value = prefijo + dep + sufijo;
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-        const codigoInput = document.getElementById('codigo');
+        const prefijoInput = document.getElementById('prefijo_dependencia');
+        const depInput = document.getElementById('codigo_dependencia');
+        const sufijoInput = document.getElementById('sufijo_dependencia');
+        const codigoCompletoInput = document.getElementById('codigo_completo');
         const errorCodigo = document.getElementById('error-codigo');
         const errorCeros = document.getElementById('error-ceros');
         const recuperarContenedor = document.getElementById('recuperar-contenedor');
         const btnRecuperar = document.getElementById('btnRecuperar');
+        const sugerenciaOriginalSpan = document.getElementById('sugerencia-original');
         const nombreInput = document.getElementById('nombre');
         const errorNombre = document.getElementById('error-nombre');
         const unidadSelect = document.getElementById('unidad_administradora_id');
         const responsableSelect = document.getElementById('responsable_id');
         const form = document.getElementById('dependenciaForm');
 
-        // Actualizar código sugerido al cambiar unidad
+        sugerenciaOriginalSpan.textContent = sugerenciaInicial;
+
         unidadSelect.addEventListener('change', function() {
             const unidadId = this.value;
             const sugerencia = unidadesData[unidadId] ?? null;
             const nuevoCodigo = sugerencia ? sugerencia.codigo : sugerenciaInicial;
-            codigoInput.value = nuevoCodigo ?? '';
+            actualizarCamposDesdeCompleto(nuevoCodigo);
             recuperarContenedor.classList.add('hidden');
         });
 
-        // 1. Lógica de Código
-        codigoInput.addEventListener('input', function(e) {
-            let original = e.target.value;
-            let filtrado = original.replace(/[^0-9]/g, '');
+        depInput.addEventListener('input', function(e) {
+            let val = e.target.value.replace(/[^0-9]/g, '');
 
-            if (original !== filtrado) {
+            if (e.target.value !== val) {
                 errorCodigo.classList.remove('hidden');
                 setTimeout(() => errorCodigo.classList.add('hidden'), 2000);
             }
 
-            e.target.value = filtrado.slice(0, 8);
+            e.target.value = val.slice(0, 1);
+            actualizarCodigoCompleto();
 
-            // Validar si son puros ceros
-            const esTodoCeros = e.target.value.length > 0 && /^0+$/.test(e.target.value);
+            const codigoCompleto = codigoCompletoInput.value;
+            const esTodoCeros = codigoCompleto.length > 0 && /^0+$/.test(codigoCompleto);
             if (esTodoCeros) {
                 errorCeros.classList.remove('hidden');
             } else {
                 errorCeros.classList.add('hidden');
             }
 
-            // Mostrar aviso de recuperación si cambia o está incompleto
-            if (e.target.value !== sugerenciaInicial || e.target.value.length < 8) {
+            if (codigoCompleto !== sugerenciaInicial || codigoCompleto.length < 8) {
                 recuperarContenedor.classList.remove('hidden');
             } else {
                 recuperarContenedor.classList.add('hidden');
@@ -195,16 +226,13 @@
 
         btnRecuperar.addEventListener('click', restaurarSugerencia);
 
-        codigoInput.addEventListener('blur', function(e) {
-            if (e.target.value.length > 0 && e.target.value.length < 8) {
-                e.target.value = e.target.value.padStart(8, '0');
-                if (e.target.value === sugerenciaInicial) {
-                    recuperarContenedor.classList.add('hidden');
-                }
+        depInput.addEventListener('blur', function(e) {
+            if (e.target.value.length > 0 && e.target.value.length < 1) {
+                e.target.value = e.target.value.padStart(1, '0');
+                actualizarCodigoCompleto();
             }
         });
 
-        // 2. Restricción de Nombre
         nombreInput.addEventListener('input', function(e) {
             let val = e.target.value;
             let filtered = val.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]/g, '');
@@ -216,20 +244,18 @@
             e.target.value = filtered.slice(0, 40);
         });
 
-        // 3. Validación final y Efecto de carga
         form.addEventListener('submit', function(e) {
-            const codVal = codigoInput.value;
+            const codVal = codigoCompletoInput.value;
             const esTodoCeros = /^0+$/.test(codVal);
             const nombreVal = nombreInput.value.trim();
             const unidadVal = unidadSelect.value;
 
-            // Validaciones de bloqueo
             if (codVal.length < 8 || esTodoCeros || nombreVal === "" || unidadVal === "") {
                 e.preventDefault();
 
                 if (esTodoCeros) {
                     errorCeros.classList.remove('hidden');
-                    codigoInput.focus();
+                    depInput.focus();
                 }
 
                 if(nombreVal === "") nombreInput.focus();
@@ -237,7 +263,6 @@
                 return;
             }
 
-            // Si pasa validaciones, mostrar carga
             const btn = document.getElementById('btnGuardar');
             const icon = document.getElementById('btnIcon');
             const text = document.getElementById('btnText');
