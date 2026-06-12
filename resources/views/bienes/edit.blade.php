@@ -69,11 +69,11 @@
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Código del Bien</label>
                         <div class="flex items-center gap-1">
-                            <input type="text" value="{{ substr($bien->codigo, 0, 6) }}" readonly
+                            <input type="text" value="{{ substr($bien->codigo, 0, 8) }}" readonly
                                 class="w-32 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                             <span class="text-gray-400 font-bold">-</span>
                             <input type="text" name="codigo_secuencial" id="codigo_secuencial"
-                                value="{{ old('codigo_secuencial', substr($bien->codigo, 6)) }}"
+                                value="{{ old('codigo_secuencial', substr($bien->codigo, 8)) }}"
                                 maxlength="2" inputmode="numeric" pattern="\d{2}"
                                 placeholder="00"
                                 class="w-20 px-3 py-3 border @error('codigo_secuencial') border-red-500 @else border-gray-300 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase text-center">
@@ -83,7 +83,7 @@
                         @error('codigo_secuencial')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
-                        <p class="text-[10px] text-gray-500 mt-1">Solo puede editar el secuencial del bien (últimos 2 dígitos). Formato: <span class="font-mono">XXXXXX-XX</span></p>
+                        <p class="text-[10px] text-gray-500 mt-1">Solo puede editar el secuencial del bien (últimos 2 dígitos). Formato: <span class="font-mono">XXXXXXXX-XX</span></p>
                     </div>
 
                     {{-- Tipo de Bien --}}
@@ -187,7 +187,7 @@
 
     /* 2. Código: solo editar secuencial (últimos 2 dígitos) */
     const codigoCompleto = "{{ $bien->codigo }}";
-    const prefijoBien = codigoCompleto.substring(0, 6);
+    const prefijoBien = codigoCompleto.substring(0, 8);
     const secuencialInput = document.getElementById('codigo_secuencial');
     const codigoCompletoInput = document.getElementById('codigo_completo');
 
@@ -359,9 +359,9 @@
                 }
             }
 
-            if (!codigo || codigo.length !== 8) {
+            if (!codigo || codigo.length !== 10) {
                 e.preventDefault();
-                alert('El código debe contener exactamente 8 dígitos.');
+                alert('El código debe contener exactamente 10 dígitos.');
                 return;
             }
             if (!descripcion) {

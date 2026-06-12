@@ -52,11 +52,11 @@
                             class="w-28 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                         <span class="text-gray-400 font-bold">-</span>
                         <input type="text" name="codigo_dependencia" id="codigo_dependencia"
-                            value="" maxlength="1" inputmode="numeric" pattern="\d{1}"
-                            placeholder="0"
-                            class="w-16 px-3 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center" required>
+                            value="" maxlength="3" inputmode="numeric" pattern="\d{3}"
+                            placeholder="000"
+                            class="w-20 px-3 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center" required>
                         <span class="text-gray-400 font-bold">-</span>
-                        <input type="text" id="sufijo_dependencia" value="" readonly
+                        <input type="text" id="sufijo_dependencia" value="00" readonly
                             class="w-16 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                     </div>
 
@@ -82,7 +82,7 @@
                 @enderror
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten números.</p>
                 <p id="error-ceros" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ El código no puede ser solo ceros.</p>
-                <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Solo edite el dígito de la dependencia (posición 6).</p>
+                <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Solo edite los 3 dígitos de la dependencia (posiciones 6-8).</p>
             </div>
 
             {{-- Nombre --}}
@@ -160,8 +160,8 @@
         const codigoCompletoInput = document.getElementById('codigo_completo');
 
         prefijoInput.value = codigo.substring(0, 5);
-        depInput.value = codigo.substring(5, 6);
-        sufijoInput.value = codigo.substring(6);
+        depInput.value = codigo.substring(5, 8);
+        sufijoInput.value = codigo.substring(8);
         codigoCompletoInput.value = codigo;
     }
 
@@ -206,7 +206,7 @@
                 setTimeout(() => errorCodigo.classList.add('hidden'), 2000);
             }
 
-            e.target.value = val.slice(0, 1);
+            e.target.value = val.slice(0, 3);
             actualizarCodigoCompleto();
 
             const codigoCompleto = codigoCompletoInput.value;
@@ -217,7 +217,7 @@
                 errorCeros.classList.add('hidden');
             }
 
-            if (codigoCompleto !== sugerenciaInicial || codigoCompleto.length < 8) {
+            if (codigoCompleto !== sugerenciaInicial || codigoCompleto.length < 10) {
                 recuperarContenedor.classList.remove('hidden');
             } else {
                 recuperarContenedor.classList.add('hidden');
@@ -227,8 +227,8 @@
         btnRecuperar.addEventListener('click', restaurarSugerencia);
 
         depInput.addEventListener('blur', function(e) {
-            if (e.target.value.length > 0 && e.target.value.length < 1) {
-                e.target.value = e.target.value.padStart(1, '0');
+            if (e.target.value.length > 0 && e.target.value.length < 3) {
+                e.target.value = e.target.value.padStart(3, '0');
                 actualizarCodigoCompleto();
             }
         });
@@ -250,7 +250,7 @@
             const nombreVal = nombreInput.value.trim();
             const unidadVal = unidadSelect.value;
 
-            if (codVal.length < 8 || esTodoCeros || nombreVal === "" || unidadVal === "") {
+            if (codVal.length < 10 || esTodoCeros || nombreVal === "" || unidadVal === "") {
                 e.preventDefault();
 
                 if (esTodoCeros) {

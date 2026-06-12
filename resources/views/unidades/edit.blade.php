@@ -171,10 +171,10 @@
             const esTodoCeros = /^0+$/.test(val);
             const estaVacio = val.trim() === "";
 
-            if (estaVacio || esTodoCeros || val.length < 8 || nombreInput.value.trim() === "") {
+            if (estaVacio || esTodoCeros || val.length < 10 || nombreInput.value.trim() === "") {
                 e.preventDefault();
-                if (estaVacio || esTodoCeros || val.length < 8) {
-                    errorCodigo.innerText = "⚠️ Ingrese un código válido de 8 dígitos.";
+                if (estaVacio || esTodoCeros || val.length < 10) {
+                    errorCodigo.innerText = "⚠️ Ingrese un código válido de 10 dígitos.";
                     errorCodigo.classList.remove('hidden');
                     codigoUnidadInput.focus();
                 }

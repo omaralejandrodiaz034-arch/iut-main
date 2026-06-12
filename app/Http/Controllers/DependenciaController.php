@@ -145,14 +145,14 @@ class DependenciaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'codigo_dependencia' => ['required', 'string', 'regex:/^\d{1}$/'],
+            'codigo_dependencia' => ['required', 'string', 'regex:/^\d{3}$/'],
         ]);
 
         $unidadId = $request->input('unidad_administradora_id');
         $unidad = UnidadAdministradora::findOrFail($unidadId);
         $prefijoUnidad = substr($unidad->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD);
 
-        $digitoDep = str_pad($request->input('codigo_dependencia'), 1, '0', STR_PAD_LEFT);
+        $digitoDep = str_pad($request->input('codigo_dependencia'), 3, '0', STR_PAD_LEFT);
         $codigoCompleto = $prefijoUnidad.$digitoDep.'00';
 
         $request->merge([
@@ -328,7 +328,7 @@ class DependenciaController extends Controller
         $prefijoUnidad = substr($unidad->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD);
 
         if ($request->has('codigo_dependencia')) {
-            $digitoDep = str_pad($request->input('codigo_dependencia'), 1, '0', STR_PAD_LEFT);
+            $digitoDep = str_pad($request->input('codigo_dependencia'), 3, '0', STR_PAD_LEFT);
             $request->merge([
                 'codigo' => $prefijoUnidad.$digitoDep.'00',
             ]);

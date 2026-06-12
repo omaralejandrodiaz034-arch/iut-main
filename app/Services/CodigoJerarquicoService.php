@@ -19,20 +19,20 @@ class CodigoJerarquicoService
 
     public const LONG_UNIDAD = 4;
 
-    public const LONG_DEPENDENCIA = 1;
+    public const LONG_DEPENDENCIA = 3;
 
     public const LONG_BIEN = 2;
 
     /**
      * Longitud fija de todos los códigos.
      */
-    public const TOTAL_ORGANISMO = 8;
+    public const TOTAL_ORGANISMO = 10;
 
-    public const TOTAL_UNIDAD = 8;
+    public const TOTAL_UNIDAD = 10;
 
-    public const TOTAL_DEPENDENCIA = 8;
+    public const TOTAL_DEPENDENCIA = 10;
 
-    public const TOTAL_BIEN = 8;
+    public const TOTAL_BIEN = 10;
 
     /**
      * Genera el siguiente código para un organismo.
@@ -115,7 +115,7 @@ class CodigoJerarquicoService
     }
 
     /**
-     * Genera el siguiente código completo de bien (8 dígitos) para una dependencia.
+     * Genera el siguiente código completo de bien (10 dígitos) para una dependencia.
      */
     public static function generarCodigoBien(int $dependenciaId): string
     {
@@ -124,7 +124,7 @@ class CodigoJerarquicoService
             $prefijo = self::buildPrefijoDependencia($dependencia->codigo);
             // Obtener el máximo secuencial numérico para bienes dentro de la dependencia
             $maxNumero = Bien::where('codigo', 'LIKE', $prefijo.'%')
-                ->max(DB::raw('CAST(RIGHT(codigo, '.self::LONG_BIEN.') AS UNSIGNED)'));
+                ->max(DB::raw('CAST(SUBSTR(codigo, -'.self::LONG_BIEN.') AS UNSIGNED)'));
 
             $siguiente = $maxNumero ? ((int) $maxNumero + 1) : 1;
             $maximo = pow(10, self::LONG_BIEN) - 1;
@@ -202,7 +202,11 @@ class CodigoJerarquicoService
      */
     public static function validarJerarquia(string $codigoHijo, string $codigoPadreEsperado): bool
     {
-        return str_starts_with($codigoHijo, $codigoPadreEsperado);
+        if (strlen($codigoHijo) !== self::TOTAL_BIEN || strlen($codigoPadreEsperado) !== self::TOTAL_BIEN) {
+            return false;
+        }
+
+        return self::obtenerCodigoPadre($codigoHijo) === $codigoPadreEsperado;
     }
 
     /**

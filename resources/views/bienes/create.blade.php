@@ -114,7 +114,7 @@
                             </button>
                         </div>
 
-                        <p class="text-[10px] text-gray-500 mt-1">Solo edite el secuencial del bien (últimos 2 dígitos). Formato: <span class="font-mono">XXXXXX-XX</span></p>
+                        <p class="text-[10px] text-gray-500 mt-1">Solo edite el secuencial del bien (últimos 2 dígitos). Formato: <span class="font-mono">XXXXXXXX-XX</span></p>
                     </div>
 
                         {{-- Tipo de Bien --}}
@@ -235,7 +235,7 @@
 
             function actualizarSugerencia(codigo) {
                 codigoSugeridoDependencia = codigo;
-                prefijoInput.value = codigo.substring(0, 6);
+                prefijoInput.value = codigo.substring(0, 8);
                 spanSugerencia.textContent = codigo;
                 sugerenciaContainer.classList.remove('hidden');
                 actualizarCodigoCompleto();
@@ -323,7 +323,7 @@
             if (btnSugerencia && sugerenciaContainer) {
                 btnSugerencia.addEventListener('click', function () {
                     if (codigoSugeridoDependencia) {
-                        prefijoInput.value = codigoSugeridoDependencia.substring(0, 6);
+                        prefijoInput.value = codigoSugeridoDependencia.substring(0, 8);
                         secuencialInput.value = codigoSugeridoDependencia.substring(6);
                         codigoCompletoInput.value = codigoSugeridoDependencia;
                         sugerenciaContainer.classList.add('hidden');
@@ -502,9 +502,9 @@
                     const estadoValue = estado ? estado.value : '';
                     const dependenciaSel = depSelect ? depSelect.value : '';
 
-                    if (!codigoValue || codigoValue.length !== 8 || !/^\d{8}$/.test(codigoValue)) {
+                    if (!codigoValue || codigoValue.length !== 10 || !/^\d{10}$/.test(codigoValue)) {
                         e.preventDefault();
-                        alert('El código debe contener exactamente 8 dígitos numéricos.');
+                        alert('El código debe contener exactamente 10 dígitos numéricos.');
                         if (secuencialInput) secuencialInput.focus();
                         return;
                     }

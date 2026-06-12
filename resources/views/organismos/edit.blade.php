@@ -31,7 +31,7 @@
                 <div class="relative">
                     <input type="text" name="codigo" id="codigo"
                            value="{{ old('codigo', $organismo->codigo) }}"
-                           maxlength="8" inputmode="numeric" autocomplete="off"
+                           maxlength="10" inputmode="numeric" autocomplete="off"
                            class="w-full px-4 py-3 border @error('codigo') border-red-500 @else border-gray-300 @enderror rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-600 font-mono bg-blue-50/10">
 
                     {{-- Botón cambiado de Sugerir a Requerido --}}
@@ -55,7 +55,7 @@
                 @enderror
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten números.</p>
                 <p id="error-ceros" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ El código no puede ser solo ceros; debe tener un valor real.</p>
-                <p class="text-gray-400 text-[11px] mt-2">Código único del organismo (8 números).</p>
+                <p class="text-gray-400 text-[11px] mt-2">Código único del organismo (10 números).</p>
             </div>
 
             {{-- Nombre --}}
@@ -136,7 +136,7 @@
                 setTimeout(() => errorCodigo.classList.add('hidden'), 2000);
             }
 
-            e.target.value = filteredValue.slice(0, 8);
+            e.target.value = filteredValue.slice(0, 10);
 
             // Validar si son puros ceros
             const esTodoCeros = e.target.value.length > 0 && /^0+$/.test(e.target.value);
@@ -147,7 +147,7 @@
             }
 
             // Mostrar aviso de requerido si es distinto al original
-            if (e.target.value !== valorOriginalBD || e.target.value.length < 8) {
+            if (e.target.value !== valorOriginalBD || e.target.value.length < 10) {
                 recuperarContenedor.classList.remove('hidden');
             } else {
                 recuperarContenedor.classList.add('hidden');
@@ -161,7 +161,7 @@
             const val = codigoInput.value;
             const esTodoCeros = /^0+$/.test(val);
 
-            if (val.length < 8 || esTodoCeros) {
+            if (val.length < 10 || esTodoCeros) {
                 e.preventDefault();
                 errorCeros.classList.remove('hidden');
                 codigoInput.focus();

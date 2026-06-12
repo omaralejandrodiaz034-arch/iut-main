@@ -56,7 +56,7 @@
                             placeholder="0000"
                             class="w-24 px-3 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center" required>
                         <span class="text-gray-400 font-bold">-</span>
-                        <input type="text" id="sufijo_unidad" value="000" readonly
+                        <input type="text" id="sufijo_unidad" value="00000" readonly
                             class="w-16 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                     </div>
 
@@ -252,9 +252,9 @@
                 }
 
                 // Validar código
-                if (!codigo || codigo.length !== 8 || !/^\d{8}$/.test(codigo)) {
+                if (!codigo || codigo.length !== 10 || !/^\d{10}$/.test(codigo)) {
                     e.preventDefault();
-                    alert('El código debe contener exactamente 8 dígitos numéricos.');
+                    alert('El código debe contener exactamente 10 dígitos numéricos.');
                     unidadInput.focus();
                     return;
                 }

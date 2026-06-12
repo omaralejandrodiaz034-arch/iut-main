@@ -65,11 +65,11 @@
                 <div>
                     <label for="codigo" class="block text-sm font-medium text-gray-700 mb-1.5">Código exacto</label>
                     <input type="text" name="codigo" id="codigo" inputmode="numeric"
-                           value="{{ request('codigo') ?? '' }}" maxlength="8"
-                           placeholder="Solo números (máx. 8 dígitos)"
+                           value="{{ request('codigo') ?? '' }}" maxlength="10"
+                           placeholder="Solo números (máx. 10 dígitos)"
                            class="w-full border border-gray-300 bg-white text-gray-900 rounded-xl px-4 py-2.5 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200/50 transition-all filtro-auto filtro-input">
                     <p id="error-codigo-msg" class="mt-1.5 text-xs text-red-600 font-medium hidden">
-                        Solo números permitidos (máx. 8 dígitos)
+                        Solo números permitidos (máx. 10 dígitos)
                     </p>
                 </div>
             </div>

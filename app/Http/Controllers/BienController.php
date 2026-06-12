@@ -1404,7 +1404,7 @@ class BienController extends Controller
             'codigo' => [
                 'required',
                 'string',
-                'size:'.CodigoJerarquicoService::TOTAL_BIEN, // 8 dígitos
+                'size:'.CodigoJerarquicoService::TOTAL_BIEN, // 10 dígitos
                 'regex:/^[0-9]+$/', // Solo números, sin guiones en BD
                 function ($attribute, $value, $fail) {
                     if (CodigoJerarquicoService::codigoExiste($value)) {

@@ -25,7 +25,7 @@ class OrganismoController extends Controller
     {
         $validated = $request->validate([
             'buscar' => ['nullable', 'string', 'max:255'],
-            'codigo' => ['nullable', 'string', 'max:8'],
+            'codigo' => ['nullable', 'string', 'max:'.CodigoJerarquicoService::TOTAL_ORGANISMO],
             'nombre' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -264,7 +264,7 @@ class OrganismoController extends Controller
     {
         $validated = $request->validate([
             'buscar' => ['nullable', 'string', 'max:255'],
-            'codigo' => ['nullable', 'string', 'max:8'],
+            'codigo' => ['nullable', 'string', 'max:'.CodigoJerarquicoService::TOTAL_ORGANISMO],
         ]);
 
         $query = Organismo::with(['unidadesAdministradoras.dependencias.bienes']);
