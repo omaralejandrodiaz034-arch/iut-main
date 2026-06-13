@@ -153,7 +153,7 @@ class DependenciaController extends Controller
         $prefijoUnidad = substr($unidad->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD);
 
         $digitoDep = str_pad($request->input('codigo_dependencia'), 3, '0', STR_PAD_LEFT);
-        $codigoCompleto = $prefijoUnidad.$digitoDep.'00';
+        $codigoCompleto = $prefijoUnidad.$digitoDep.str_repeat('0', CodigoJerarquicoService::LONG_BIEN);
 
         $request->merge([
             'codigo' => $codigoCompleto,
@@ -191,7 +191,7 @@ class DependenciaController extends Controller
 
                     $parteDependencia = substr($value, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD, CodigoJerarquicoService::LONG_DEPENDENCIA);
                     if ((int) $parteDependencia === 0) {
-                        $fail('El código de dependencia no puede ser 0.');
+                        $fail('El código de dependencia no puede ser 000.');
 
                         return;
                     }
@@ -269,7 +269,7 @@ class DependenciaController extends Controller
         // Preparar estadísticas para el PDF
         $stats = [
             'total_bienes' => $dependencia->bienes()->count(),
-            'capacidad_maxima' => pow(10, CodigoJerarquicoService::LONG_BIEN),
+            'capacidad_maxima' => pow(10, CodigoJerarquicoService::LONG_DEPENDENCIA),
             'codigo_legible' => $codigoLegible,
             'porcentaje_uso' => 0,
         ];
@@ -330,7 +330,7 @@ class DependenciaController extends Controller
         if ($request->has('codigo_dependencia')) {
             $digitoDep = str_pad($request->input('codigo_dependencia'), 3, '0', STR_PAD_LEFT);
             $request->merge([
-                'codigo' => $prefijoUnidad.$digitoDep.'00',
+                'codigo' => $prefijoUnidad.$digitoDep.str_repeat('0', CodigoJerarquicoService::LONG_BIEN),
             ]);
         }
 

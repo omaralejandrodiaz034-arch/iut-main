@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acceso | Sistema de Gestión</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/imask"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    {{-- Usar assets locales compilados por Vite en lugar de CDN para funcionar sin internet --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -136,36 +135,60 @@
     </div>
 
     <script>
-        // Máscara Cédula
-        IMask(document.getElementById('cedula'), {
-            mask: [
-                { mask: 'V-00.000.000' },
-                { mask: 'E-00.000.000' }
-            ]
-        });
-
-        // Toggle Password
-        const toggleBtn = document.getElementById('togglePassword');
-        const passwordInput = document.getElementById('password');
-        toggleBtn.addEventListener('click', () => {
-            const isPassword = passwordInput.type === 'password';
-            passwordInput.type = isPassword ? 'text' : 'password';
-        });
-
-        // Form Loading
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            const password = document.getElementById('password').value;
-            // Bloquear sólo si se ingresó contraseña con menos de 8 caracteres
-            if (password.length > 0 && password.length < 8) {
-                e.preventDefault();
-                return false;
+        // Máscara simple para cédula: formatea como V-00.000.000 o E-00.000.000
+        (function () {
+            const cedula = document.getElementById('cedula');
+            if (cedula) {
+                cedula.addEventListener('input', function (e) {
+                    let v = cedula.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    if (v.length === 0) { cedula.value = ''; return; }
+                    // Asegurar prefijo letra
+                    let letter = v.charAt(0);
+                    if (!/[VE]/.test(letter)) {
+                        // si no inicia con V/E, no forzar, pero permitir entrada
+                        letter = v.charAt(0);
+                    }
+                    let digits = v.slice(1).replace(/[^0-9]/g, '').slice(0,9);
+                    // Formato: X-00.000.000 (hasta 9 dígitos)
+                    let formatted = letter;
+                    if (digits.length > 0) formatted += '-';
+                    if (digits.length <= 2) formatted += digits;
+                    else if (digits.length <= 5) formatted += digits.slice(0,2) + '.' + digits.slice(2);
+                    else formatted += digits.slice(0,2) + '.' + digits.slice(2,5) + '.' + digits.slice(5);
+                    cedula.value = formatted;
+                });
             }
-            const btn = document.getElementById('btnSubmit');
-            btn.disabled = true;
-            document.getElementById('btnText').innerText = 'Validando...';
-            document.getElementById('btnIcon').classList.add('hidden');
-            document.getElementById('btnSpinner').classList.remove('hidden');
-        });
+
+            // Toggle Password
+            const toggleBtn = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            if (toggleBtn && passwordInput) {
+                toggleBtn.addEventListener('click', () => {
+                    const isPassword = passwordInput.type === 'password';
+                    passwordInput.type = isPassword ? 'text' : 'password';
+                });
+            }
+
+            // Form Loading
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    const password = document.getElementById('password').value;
+                    if (password.length > 0 && password.length < 8) {
+                        e.preventDefault();
+                        return false;
+                    }
+                    const btn = document.getElementById('btnSubmit');
+                    if (btn) btn.disabled = true;
+                    const btnText = document.getElementById('btnText');
+                    const btnIcon = document.getElementById('btnIcon');
+                    const btnSpinner = document.getElementById('btnSpinner');
+                    if (btnText) btnText.innerText = 'Validando...';
+                    if (btnIcon) btnIcon.classList.add('hidden');
+                    if (btnSpinner) btnSpinner.classList.remove('hidden');
+                });
+            }
+        })();
     </script>
 </body>
 </html>

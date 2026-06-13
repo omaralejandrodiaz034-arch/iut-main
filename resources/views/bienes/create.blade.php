@@ -93,12 +93,12 @@
                         <label class="block text-sm font-bold text-gray-700 mb-2">Código del Bien</label>
                         <div class="flex items-center gap-1">
                             <input type="text" id="prefijo_bien" value="" readonly
-                                class="w-32 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
+                                class="w-24 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                             <span class="text-gray-400 font-bold">-</span>
                             <input type="text" name="codigo_secuencial" id="codigo_secuencial"
-                                value="" maxlength="2" inputmode="numeric" pattern="\d{2}"
-                                placeholder="00"
-                                class="w-20 px-3 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase text-center" required>
+                                value="" maxlength="4" inputmode="numeric" pattern="\d{4}"
+                                placeholder="0000"
+                                class="w-24 px-3 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase text-center" required>
 
                             <input type="hidden" name="codigo" id="codigo_completo" value="">
                         </div>
@@ -114,7 +114,7 @@
                             </button>
                         </div>
 
-                        <p class="text-[10px] text-gray-500 mt-1">Solo edite el secuencial del bien (últimos 2 dígitos). Formato: <span class="font-mono">XXXXXXXX-XX</span></p>
+                        <p class="text-[10px] text-gray-500 mt-1">Solo edite el secuencial del bien (últimos 4 dígitos). Formato: <span class="font-mono">XXXXXX-XXXX</span></p>
                     </div>
 
                         {{-- Tipo de Bien --}}
@@ -235,7 +235,7 @@
 
             function actualizarSugerencia(codigo) {
                 codigoSugeridoDependencia = codigo;
-                prefijoInput.value = codigo.substring(0, 8);
+                prefijoInput.value = codigo.substring(0, 6);
                 spanSugerencia.textContent = codigo;
                 sugerenciaContainer.classList.remove('hidden');
                 actualizarCodigoCompleto();
@@ -300,7 +300,7 @@
 
             if (secuencialInput) {
                 secuencialInput.addEventListener('input', function (e) {
-                    let cleaned = this.value.replace(/\D/g, '').slice(0, 2);
+                    let cleaned = this.value.replace(/\D/g, '').slice(0, 4);
                     this.value = cleaned;
                     actualizarCodigoCompleto();
 
@@ -313,8 +313,8 @@
                 });
 
                 secuencialInput.addEventListener('blur', function () {
-                    if (this.value && this.value.length > 0 && this.value.length < 2) {
-                        this.value = this.value.padStart(2, '0');
+                    if (this.value && this.value.length > 0 && this.value.length < 4) {
+                        this.value = this.value.padStart(4, '0');
                         actualizarCodigoCompleto();
                     }
                 });
@@ -323,7 +323,7 @@
             if (btnSugerencia && sugerenciaContainer) {
                 btnSugerencia.addEventListener('click', function () {
                     if (codigoSugeridoDependencia) {
-                        prefijoInput.value = codigoSugeridoDependencia.substring(0, 8);
+                        prefijoInput.value = codigoSugeridoDependencia.substring(0, 6);
                         secuencialInput.value = codigoSugeridoDependencia.substring(6);
                         codigoCompletoInput.value = codigoSugeridoDependencia;
                         sugerenciaContainer.classList.add('hidden');

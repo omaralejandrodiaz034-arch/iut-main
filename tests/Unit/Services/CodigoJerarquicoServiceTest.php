@@ -48,28 +48,30 @@ class CodigoJerarquicoServiceTest extends TestCase
         $this->assertSame(10, strlen($dependencia->codigo));
         $this->assertSame(10, strlen($bien->codigo));
 
-        $this->assertSame('1.0000.000.00', CodigoJerarquicoService::formatearCodigoLegible($organismo->codigo));
-        $this->assertSame('1.0001.000.00', CodigoJerarquicoService::formatearCodigoLegible($unidad->codigo));
-        $this->assertSame('1.0001.001.00', CodigoJerarquicoService::formatearCodigoLegible($dependencia->codigo));
-        $this->assertSame('1.0001.001.01', CodigoJerarquicoService::formatearCodigoLegible($bien->codigo));
+        $this->assertSame('1.00.000.0000', CodigoJerarquicoService::formatearCodigoLegible($organismo->codigo));
+        $this->assertSame('1.01.000.0000', CodigoJerarquicoService::formatearCodigoLegible($unidad->codigo));
+        $this->assertSame('1.01.001.0000', CodigoJerarquicoService::formatearCodigoLegible($dependencia->codigo));
+        $this->assertSame('1.01.001.0001', CodigoJerarquicoService::formatearCodigoLegible($bien->codigo));
+
+        $this->assertSame('1010010001', $bien->codigo);
     }
 
     public function test_decodifica_y_valida_padres_de_codigo_de_10_digitos(): void
     {
-        $decodificado = CodigoJerarquicoService::decodificarCodigo('1000100101');
+        $decodificado = CodigoJerarquicoService::decodificarCodigo('1010010001');
 
         $this->assertSame('bien', $decodificado['tipo']);
         $this->assertSame('1', $decodificado['organismo']);
-        $this->assertSame('0001', $decodificado['unidad']);
+        $this->assertSame('01', $decodificado['unidad']);
         $this->assertSame('001', $decodificado['dependencia']);
-        $this->assertSame('01', $decodificado['secuencial']);
+        $this->assertSame('0001', $decodificado['secuencial']);
 
-        $this->assertSame('1000100100', CodigoJerarquicoService::obtenerCodigoPadre('1000100101'));
-        $this->assertSame('1000100000', CodigoJerarquicoService::obtenerCodigoPadre('1000100100'));
-        $this->assertSame('1000000000', CodigoJerarquicoService::obtenerCodigoPadre('1000100000'));
+        $this->assertSame('1010010000', CodigoJerarquicoService::obtenerCodigoPadre('1010010001'));
+        $this->assertSame('1010000000', CodigoJerarquicoService::obtenerCodigoPadre('1010010000'));
+        $this->assertSame('1000000000', CodigoJerarquicoService::obtenerCodigoPadre('1010000000'));
 
-        $this->assertTrue(CodigoJerarquicoService::validarJerarquia('1000100101', '1000100100'));
-        $this->assertFalse(CodigoJerarquicoService::validarJerarquia('1000100101', '1000100000'));
+        $this->assertTrue(CodigoJerarquicoService::validarJerarquia('1010010001', '1010010000'));
+        $this->assertFalse(CodigoJerarquicoService::validarJerarquia('1010010001', '1010000000'));
     }
 
     public function test_permite_hasta_999_dependencias_por_unidad(): void

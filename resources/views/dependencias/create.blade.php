@@ -49,14 +49,14 @@
                 <div class="relative">
                     <div class="flex items-center gap-1">
                         <input type="text" id="prefijo_dependencia" value="" readonly
-                            class="w-28 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
+                            class="w-16 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                         <span class="text-gray-400 font-bold">-</span>
                         <input type="text" name="codigo_dependencia" id="codigo_dependencia"
                             value="" maxlength="3" inputmode="numeric" pattern="\d{3}"
                             placeholder="000"
                             class="w-20 px-3 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center" required>
                         <span class="text-gray-400 font-bold">-</span>
-                        <input type="text" id="sufijo_dependencia" value="00" readonly
+                        <input type="text" id="sufijo_dependencia" value="0000" readonly
                             class="w-16 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                     </div>
 
@@ -82,7 +82,7 @@
                 @enderror
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten números.</p>
                 <p id="error-ceros" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ El código no puede ser solo ceros.</p>
-                <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Solo edite los 3 dígitos de la dependencia (posiciones 6-8).</p>
+                <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Solo edite los 3 dígitos de la dependencia (posiciones 4-6).</p>
             </div>
 
             {{-- Nombre --}}
@@ -159,9 +159,9 @@
         const sufijoInput = document.getElementById('sufijo_dependencia');
         const codigoCompletoInput = document.getElementById('codigo_completo');
 
-        prefijoInput.value = codigo.substring(0, 5);
-        depInput.value = codigo.substring(5, 8);
-        sufijoInput.value = codigo.substring(8);
+        prefijoInput.value = codigo.substring(0, 3);
+        depInput.value = codigo.substring(3, 6);
+        sufijoInput.value = codigo.substring(6);
         codigoCompletoInput.value = codigo;
     }
 

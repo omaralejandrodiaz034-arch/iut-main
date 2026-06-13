@@ -45,20 +45,20 @@
                 @enderror
             </div>
 
-            {{-- Código de Dependencia (solo editables los 3 dígitos de dependencia, posiciones 6-8) --}}
+            {{-- Código de Dependencia (solo editables los 3 dígitos de dependencia, posiciones 4-6) --}}
             <div class="px-2">
                 <label class="block text-sm font-bold text-slate-700 mb-2">Código de Dependencia</label>
                 <div class="flex items-center gap-1">
-                    <input type="text" value="{{ substr($dependencia->codigo, 0, 5) }}" readonly
-                        class="w-28 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
+                    <input type="text" value="{{ substr($dependencia->codigo, 0, 3) }}" readonly
+                        class="w-16 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                     <span class="text-gray-400 font-bold">-</span>
                     <input type="text" name="codigo_dependencia" id="codigo_dependencia"
-                        value="{{ old('codigo_dependencia', substr($dependencia->codigo, 5, 3)) }}"
+                        value="{{ old('codigo_dependencia', substr($dependencia->codigo, 3, 3)) }}"
                         maxlength="3" inputmode="numeric" pattern="\d{3}"
                         placeholder="000"
                         class="w-20 px-3 py-3 border @error('codigo_dependencia') border-red-500 @else border-gray-300 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center">
                     <span class="text-gray-400 font-bold">-</span>
-                    <input type="text" value="{{ substr($dependencia->codigo, 8) }}" readonly
+                    <input type="text" value="{{ substr($dependencia->codigo, 6) }}" readonly
                         class="w-16 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                 </div>
 
@@ -71,7 +71,7 @@
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten números.</p>
                 <p id="error-ceros" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ El código no puede ser solo ceros.</p>
 
-                <p class="text-gray-400 text-[11px] mt-2">Solo edite los 3 dígitos de la dependencia (posiciones 6-8). Formato: <span class="font-mono">{{ substr($dependencia->codigo, 0, 5) }}.{{ substr($dependencia->codigo, 5, 3) }}.{{ substr($dependencia->codigo, 8) }}</span></p>
+                <p class="text-gray-400 text-[11px] mt-2">Solo edite los 3 dígitos de la dependencia (posiciones 4-6). Formato: <span class="font-mono">{{ substr($dependencia->codigo, 0, 3) }}.{{ substr($dependencia->codigo, 3, 3) }}.{{ substr($dependencia->codigo, 6) }}</span></p>
             </div>
 
             {{-- Nombre de la Dependencia --}}
@@ -133,8 +133,8 @@
 </div>
 
 <script>
-    const prefijoDep = "{{ substr($dependencia->codigo, 0, 5) }}";
-    const sufijoDep = "{{ substr($dependencia->codigo, 8) }}";
+    const prefijoDep = "{{ substr($dependencia->codigo, 0, 3) }}";
+    const sufijoDep = "{{ substr($dependencia->codigo, 6) }}";
     const codigoOriginal = "{{ $dependencia->codigo }}";
 
     document.addEventListener('DOMContentLoaded', function() {

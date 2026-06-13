@@ -17,11 +17,13 @@ class CodigoJerarquicoService
      */
     public const LONG_ORGANISMO = 1;
 
-    public const LONG_UNIDAD = 4;
+    public const LONG_UNIDAD = 2;
 
     public const LONG_DEPENDENCIA = 3;
 
-    public const LONG_BIEN = 2;
+    public const LONG_BIEN = 4;
+
+    public const LONG_PREFIJO_BIEN = 6;
 
     /**
      * Longitud fija de todos los códigos.
@@ -121,7 +123,7 @@ class CodigoJerarquicoService
     {
         return DB::transaction(function () use ($dependenciaId) {
             $dependencia = Dependencia::lockForUpdate()->with(['unidadAdministradora.organismo'])->findOrFail($dependenciaId);
-            $prefijo = self::buildPrefijoDependencia($dependencia->codigo);
+            $prefijo = self::buildPrefijoBien($dependencia);
             // Obtener el máximo secuencial numérico para bienes dentro de la dependencia
             $maxNumero = Bien::where('codigo', 'LIKE', $prefijo.'%')
                 ->max(DB::raw('CAST(SUBSTR(codigo, -'.self::LONG_BIEN.') AS UNSIGNED)'));
@@ -133,9 +135,10 @@ class CodigoJerarquicoService
                 throw new RuntimeException("Límite de bienes para la dependencia {$dependencia->codigo} alcanzado (máximo {$maximo}).");
             }
 
-            $codigoBien = self::buildCodigoBien($dependencia->codigo, $siguiente);
+            $codigoBien = $prefijo
+                .str_pad((string) $siguiente, self::LONG_BIEN, '0', STR_PAD_LEFT);
 
-            if (self::codigoExisteBien($codigoBien)) {
+            if (self::codigoExiste($codigoBien)) {
                 throw new RuntimeException("Conflicto de código: {$codigoBien} ya existe.");
             }
 
@@ -341,17 +344,17 @@ class CodigoJerarquicoService
     {
         $dependencia = Dependencia::findOrFail($dependenciaId);
         $codigoSugerido = self::generarCodigoBien($dependenciaId);
-        $decodificado = self::decodificarCodigo($codigoSugerido);
+        $secuencial = substr($codigoSugerido, -self::LONG_BIEN);
         $stats = self::obtenerEstadisticas($dependenciaId, 'bienes');
 
         return [
             'codigo' => $codigoSugerido,
             'codigo_legible' => self::formatearCodigoLegible($codigoSugerido),
-            'secuencial' => $decodificado['secuencial'],
+            'secuencial' => $secuencial,
             'dependencia_id' => $dependenciaId,
             'dependencia_nombre' => $dependencia->nombre,
             'estadisticas' => $stats,
-            'siguiente_numero' => (int) $decodificado['secuencial'],
+            'siguiente_numero' => (int) $secuencial,
             'rango_min' => 1,
             'rango_max' => pow(10, self::LONG_BIEN) - 1,
             'disponibles_restantes' => max(0, pow(10, self::LONG_BIEN) - 1 - $stats['usados']),
@@ -402,7 +405,7 @@ class CodigoJerarquicoService
 
     private static function buildCodigoBien(string $codigoDependencia, int $secuencial): string
     {
-        $prefijo = substr($codigoDependencia, 0, self::LONG_ORGANISMO + self::LONG_UNIDAD + self::LONG_DEPENDENCIA);
+        $prefijo = substr($codigoDependencia, 0, self::LONG_PREFIJO_BIEN);
 
         return $prefijo
             .str_pad((string) $secuencial, self::LONG_BIEN, '0', STR_PAD_LEFT);
@@ -415,6 +418,6 @@ class CodigoJerarquicoService
 
     private static function buildPrefijoBien(Dependencia $dependencia): string
     {
-        return self::buildPrefijoDependencia($dependencia->codigo);
+        return substr($dependencia->codigo, 0, self::LONG_PREFIJO_BIEN);
     }
 }

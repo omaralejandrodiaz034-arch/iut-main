@@ -132,7 +132,7 @@ class UnidadAdministradoraController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'codigo_unidad' => ['required', 'string', 'regex:/^\d{4}$/'],
+            'codigo_unidad' => ['required', 'string', 'regex:/^\d{2}$/'],
         ]);
 
         $organismoId = $request->input('organismo_id');
@@ -172,7 +172,7 @@ class UnidadAdministradoraController extends Controller
 
                     $parteUnidad = substr($value, CodigoJerarquicoService::LONG_ORGANISMO, CodigoJerarquicoService::LONG_UNIDAD);
                     if ((int) $parteUnidad === 0) {
-                        $fail('El código de unidad no puede ser 0000.');
+                        $fail('El código de unidad no puede ser 00.');
 
                         return;
                     }
@@ -343,7 +343,7 @@ class UnidadAdministradoraController extends Controller
                     }
 
                     if (substr($value, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD) !== str_repeat('0', CodigoJerarquicoService::LONG_DEPENDENCIA + CodigoJerarquicoService::LONG_BIEN)) {
-                        $fail('El código de unidad debe terminar con 000.');
+                        $fail('El código de unidad debe terminar con 0000000.');
 
                         return;
                     }

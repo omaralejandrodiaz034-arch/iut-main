@@ -85,7 +85,7 @@ return new class extends Migration
     private function expandirCodigoDependencia(string $codigo): string
     {
         if (strlen($codigo) === 8 && ctype_digit($codigo)) {
-            return substr($codigo, 0, 5).'00'.substr($codigo, 5);
+            return substr($codigo, 0, 6).'00'.substr($codigo, 6);
         }
 
         return $codigo;
@@ -94,7 +94,7 @@ return new class extends Migration
     private function expandirCodigoBien(string $codigo): string
     {
         if (strlen($codigo) === 8 && ctype_digit($codigo)) {
-            return substr($codigo, 0, 5).'00'.substr($codigo, 5);
+            return substr($codigo, 0, 6).'00'.substr($codigo, 6);
         }
 
         return $codigo;
@@ -102,8 +102,8 @@ return new class extends Migration
 
     private function contraerCodigoDependencia(string $codigo): string
     {
-        if (strlen($codigo) === 10 && ctype_digit($codigo) && substr($codigo, 5, 2) === '00') {
-            return substr($codigo, 0, 5).substr($codigo, 7);
+        if (strlen($codigo) === 10 && ctype_digit($codigo) && substr($codigo, 6, 2) === '00') {
+            return substr($codigo, 0, 6).substr($codigo, 8);
         }
 
         return $codigo;
@@ -111,8 +111,8 @@ return new class extends Migration
 
     private function contraerCodigoBien(string $codigo): string
     {
-        if (strlen($codigo) === 10 && ctype_digit($codigo) && substr($codigo, 5, 2) === '00') {
-            return substr($codigo, 0, 5).substr($codigo, 7);
+        if (strlen($codigo) === 10 && ctype_digit($codigo) && substr($codigo, 6, 2) === '00') {
+            return substr($codigo, 0, 6).substr($codigo, 8);
         }
 
         return $codigo;

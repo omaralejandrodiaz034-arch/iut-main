@@ -235,14 +235,14 @@ class BienController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'codigo_secuencial' => ['required', 'string', 'regex:/^\d{2}$/'],
+            'codigo_secuencial' => ['required', 'string', 'regex:/^\d{4}$/'],
         ]);
 
         $dependenciaId = $request->input('dependencia_id');
         $dependencia = Dependencia::findOrFail($dependenciaId);
-        $prefijoDependencia = substr($dependencia->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD + CodigoJerarquicoService::LONG_DEPENDENCIA);
+        $prefijoDependencia = substr($dependencia->codigo, 0, CodigoJerarquicoService::LONG_PREFIJO_BIEN);
 
-        $secuencial = str_pad($request->input('codigo_secuencial'), 2, '0', STR_PAD_LEFT);
+        $secuencial = str_pad($request->input('codigo_secuencial'), CodigoJerarquicoService::LONG_BIEN, '0', STR_PAD_LEFT);
         $codigoCompleto = $prefijoDependencia.$secuencial;
 
         $request->merge([
@@ -1524,8 +1524,8 @@ class BienController extends Controller
             throw new \RuntimeException('Dependencia no encontrada');
         }
 
-        // Verificar que el código comience con el prefijo de la dependencia (organismo+unidad+dependencia)
-        $prefijoDependencia = substr($dependencia->codigo, 0, CodigoJerarquicoService::LONG_ORGANISMO + CodigoJerarquicoService::LONG_UNIDAD + CodigoJerarquicoService::LONG_DEPENDENCIA);
+        // Verificar que el código comience con el prefijo de la dependencia (organismo+unidad)
+        $prefijoDependencia = substr($dependencia->codigo, 0, CodigoJerarquicoService::LONG_PREFIJO_BIEN);
         if (! str_starts_with($codigo, $prefijoDependencia)) {
             throw new \RuntimeException(
                 "El código debe comenzar con el prefijo de la dependencia ({$prefijoDependencia}). ".
@@ -1533,10 +1533,10 @@ class BienController extends Controller
             );
         }
 
-        // Extraer el secuencial (últimos 2 dígitos)
+        // Extraer el secuencial (últimos 4 dígitos)
         $secuencial = (int) substr($codigo, -CodigoJerarquicoService::LONG_BIEN);
 
-        // Validar que el secuencial esté dentro del rango permitido (1 - 99)
+        // Validar que el secuencial esté dentro del rango permitido (1 - 9999)
         $maximoBienes = pow(10, CodigoJerarquicoService::LONG_BIEN) - 1;
         if ($secuencial < 1 || $secuencial > $maximoBienes) {
             throw new \RuntimeException(

@@ -43,7 +43,7 @@
                 @enderror
             </div>
 
-            {{-- Código de Unidad (solo editable los 4 dígitos de unidad) --}}
+            {{-- Código de Unidad (solo editable los 2 dígitos de unidad) --}}
             <div class="px-2">
                 <label class="block text-sm font-bold text-gray-700 mb-2">Código de Unidad</label>
                 <div class="flex items-center gap-1">
@@ -51,12 +51,12 @@
                         class="w-12 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                     <span class="text-gray-400 font-bold">-</span>
                     <input type="text" name="codigo_unidad" id="codigo_unidad"
-                        value="{{ old('codigo_unidad', substr($unidadAdministradora->codigo, 1, 4)) }}"
-                        maxlength="4" inputmode="numeric" pattern="\d{4}"
-                        placeholder="0000"
-                        class="w-24 px-3 py-3 border @error('codigo_unidad') border-red-500 @else border-gray-300 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center">
+                        value="{{ old('codigo_unidad', substr($unidadAdministradora->codigo, 1, 2)) }}"
+                        maxlength="2" inputmode="numeric" pattern="\d{2}"
+                        placeholder="00"
+                        class="w-16 px-3 py-3 border @error('codigo_unidad') border-red-500 @else border-gray-300 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center">
                     <span class="text-gray-400 font-bold">-</span>
-                    <input type="text" value="{{ substr($unidadAdministradora->codigo, 5) }}" readonly
+                    <input type="text" value="{{ substr($unidadAdministradora->codigo, 3) }}" readonly
                         class="w-20 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                 </div>
 
@@ -66,7 +66,7 @@
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic"></p>
-                <p class="text-gray-400 text-[11px] mt-2">Solo edite los 4 dígitos de la unidad (posiciones 2-5). Formato: <span class="font-mono">{{ substr($unidadAdministradora->codigo, 0, 1) }}.{{ substr($unidadAdministradora->codigo, 1, 4) }}.{{ substr($unidadAdministradora->codigo, 5) }}</span></p>
+                <p class="text-gray-400 text-[11px] mt-2">Solo edite los 2 dígitos de la unidad (posiciones 2-3). Formato: <span class="font-mono">{{ substr($unidadAdministradora->codigo, 0, 1) }}.{{ substr($unidadAdministradora->codigo, 1, 2) }}.{{ substr($unidadAdministradora->codigo, 3) }}</span></p>
             </div>
 
             {{-- Nombre de la Unidad --}}
@@ -111,7 +111,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const prefijoUnidad = "{{ substr($unidadAdministradora->codigo, 0, 1) }}";
-        const sufijoUnidad = "{{ substr($unidadAdministradora->codigo, 5) }}";
+        const sufijoUnidad = "{{ substr($unidadAdministradora->codigo, 3) }}";
         const codigoUnidadInput = document.getElementById('codigo_unidad');
         const codigoCompletoInput = document.getElementById('codigo_completo');
         const errorCodigo = document.getElementById('error-codigo');
@@ -130,7 +130,7 @@
                 setTimeout(() => errorCodigo.classList.add('hidden'), 2000);
             }
 
-            e.target.value = filteredValue.slice(0, 4);
+            e.target.value = filteredValue.slice(0, 2);
 
             const nuevoCodigo = prefijoUnidad + e.target.value + sufijoUnidad;
             codigoCompletoInput.value = nuevoCodigo;
@@ -148,7 +148,7 @@
 
         codigoUnidadInput.addEventListener('blur', function(e) {
             if (e.target.value.length > 0 && !/^0+$/.test(e.target.value)) {
-                e.target.value = e.target.value.padStart(4, '0');
+                e.target.value = e.target.value.padStart(2, '0');
                 codigoCompletoInput.value = prefijoUnidad + e.target.value + sufijoUnidad;
             }
         });

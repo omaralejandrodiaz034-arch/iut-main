@@ -35,13 +35,13 @@ class BienesTypeCreationTest extends TestCase
         $organismo = Organismo::create(['codigo' => '1000000000', 'nombre' => 'Org Test']);
         $unidad = UnidadAdministradora::create([
             'organismo_id' => $organismo->id,
-            'codigo' => '1000100000',
+            'codigo' => '1001000000',
             'nombre' => 'Unidad Test',
         ]);
 
         return Dependencia::create([
             'unidad_administradora_id' => $unidad->id,
-            'codigo' => '1000100100',
+            'codigo' => '1001010000',
             'nombre' => 'Dependencia Test',
         ]);
     }
@@ -54,8 +54,8 @@ class BienesTypeCreationTest extends TestCase
 
         $payload = [
             'dependencia_id' => $dependencia->id,
-            'codigo_secuencial' => '01',
-            'codigo' => '1000100101',
+            'codigo_secuencial' => '0001',
+            'codigo' => '1001010001',
             'descripcion' => 'Test Electronico',
             'precio' => 100.00,
             'estado' => 'ACTIVO',
@@ -69,8 +69,8 @@ class BienesTypeCreationTest extends TestCase
         $resp = $this->post(route('bienes.store'), $payload);
         $resp->assertRedirect(route('bienes.index'));
 
-        $this->assertDatabaseHas('bienes', ['codigo' => '1000100101', 'descripcion' => 'Test Electronico']);
-        $bien = Bien::where('codigo', '1000100101')->first();
+        $this->assertDatabaseHas('bienes', ['codigo' => '1001010001', 'descripcion' => 'Test Electronico']);
+        $bien = Bien::where('codigo', '1001010001')->first();
         $this->assertDatabaseHas('bienes_electronicos', ['bien_id' => $bien->id, 'serial' => 'SN12345']);
     }
 
@@ -82,8 +82,8 @@ class BienesTypeCreationTest extends TestCase
 
         $payload = [
             'dependencia_id' => $dependencia->id,
-            'codigo_secuencial' => '02',
-            'codigo' => '1000100102',
+            'codigo_secuencial' => '0002',
+            'codigo' => '1001010002',
             'descripcion' => 'Test Vehiculo',
             'precio' => 5000.00,
             'estado' => 'ACTIVO',
@@ -98,8 +98,8 @@ class BienesTypeCreationTest extends TestCase
         $resp = $this->post(route('bienes.store'), $payload);
         $resp->assertRedirect(route('bienes.index'));
 
-        $this->assertDatabaseHas('bienes', ['codigo' => '1000100102']);
-        $bien = Bien::where('codigo', '1000100102')->first();
+        $this->assertDatabaseHas('bienes', ['codigo' => '1001010002']);
+        $bien = Bien::where('codigo', '1001010002')->first();
         $this->assertDatabaseHas('bienes_vehiculos', ['bien_id' => $bien->id, 'marca' => 'Toyota']);
     }
 
@@ -111,8 +111,8 @@ class BienesTypeCreationTest extends TestCase
 
         $payload = [
             'dependencia_id' => $dependencia->id,
-            'codigo_secuencial' => '03',
-            'codigo' => '1000100103',
+            'codigo_secuencial' => '0003',
+            'codigo' => '1001010003',
             'descripcion' => 'Test Mobiliario',
             'precio' => 200.00,
             'estado' => 'ACTIVO',
@@ -125,8 +125,8 @@ class BienesTypeCreationTest extends TestCase
         $resp = $this->post(route('bienes.store'), $payload);
         $resp->assertRedirect(route('bienes.index'));
 
-        $this->assertDatabaseHas('bienes', ['codigo' => '1000100103']);
-        $bien = Bien::where('codigo', '1000100103')->first();
+        $this->assertDatabaseHas('bienes', ['codigo' => '1001010003']);
+        $bien = Bien::where('codigo', '1001010003')->first();
         $this->assertDatabaseHas('bienes_mobiliarios', ['bien_id' => $bien->id, 'material' => 'Madera']);
     }
 
@@ -138,8 +138,8 @@ class BienesTypeCreationTest extends TestCase
 
         $payload = [
             'dependencia_id' => $dependencia->id,
-            'codigo_secuencial' => '04',
-            'codigo' => '1000100104',
+            'codigo_secuencial' => '0004',
+            'codigo' => '1001010004',
             'descripcion' => 'Test Otros',
             'precio' => 50.00,
             'estado' => 'ACTIVO',
@@ -152,8 +152,8 @@ class BienesTypeCreationTest extends TestCase
         $resp = $this->post(route('bienes.store'), $payload);
         $resp->assertRedirect(route('bienes.index'));
 
-        $this->assertDatabaseHas('bienes', ['codigo' => '1000100104']);
-        $bien = Bien::where('codigo', '1000100104')->first();
+        $this->assertDatabaseHas('bienes', ['codigo' => '1001010004']);
+        $bien = Bien::where('codigo', '1001010004')->first();
         $this->assertDatabaseHas('bienes_otros', ['bien_id' => $bien->id, 'cantidad' => 5]);
     }
 }

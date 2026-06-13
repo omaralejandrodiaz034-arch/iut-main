@@ -69,21 +69,21 @@
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Código del Bien</label>
                         <div class="flex items-center gap-1">
-                            <input type="text" value="{{ substr($bien->codigo, 0, 8) }}" readonly
-                                class="w-32 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
+                            <input type="text" value="{{ substr($bien->codigo, 0, 6) }}" readonly
+                                class="w-24 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                             <span class="text-gray-400 font-bold">-</span>
                             <input type="text" name="codigo_secuencial" id="codigo_secuencial"
-                                value="{{ old('codigo_secuencial', substr($bien->codigo, 8)) }}"
-                                maxlength="2" inputmode="numeric" pattern="\d{2}"
-                                placeholder="00"
-                                class="w-20 px-3 py-3 border @error('codigo_secuencial') border-red-500 @else border-gray-300 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase text-center">
+                                value="{{ old('codigo_secuencial', substr($bien->codigo, 6)) }}"
+                                maxlength="4" inputmode="numeric" pattern="\d{4}"
+                                placeholder="0000"
+                                class="w-24 px-3 py-3 border @error('codigo_secuencial') border-red-500 @else border-gray-300 @enderror rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase text-center">
                         </div>
                         <input type="hidden" name="codigo" id="codigo_completo" value="{{ $bien->codigo }}">
 
                         @error('codigo_secuencial')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
-                        <p class="text-[10px] text-gray-500 mt-1">Solo puede editar el secuencial del bien (últimos 2 dígitos). Formato: <span class="font-mono">XXXXXXXX-XX</span></p>
+                        <p class="text-[10px] text-gray-500 mt-1">Solo puede editar el secuencial del bien (últimos 4 dígitos). Formato: <span class="font-mono">XXXXXX-XXXX</span></p>
                     </div>
 
                     {{-- Tipo de Bien --}}
@@ -185,22 +185,22 @@
         });
     }
 
-    /* 2. Código: solo editar secuencial (últimos 2 dígitos) */
+    /* 2. Código: solo editar secuencial (últimos 4 dígitos) */
     const codigoCompleto = "{{ $bien->codigo }}";
-    const prefijoBien = codigoCompleto.substring(0, 8);
+    const prefijoBien = codigoCompleto.substring(0, 6);
     const secuencialInput = document.getElementById('codigo_secuencial');
     const codigoCompletoInput = document.getElementById('codigo_completo');
 
     if (secuencialInput && codigoCompletoInput) {
         secuencialInput.addEventListener('input', function (e) {
-            let cleaned = this.value.replace(/\D/g, '').slice(0, 2);
+            let cleaned = this.value.replace(/\D/g, '').slice(0, 4);
             this.value = cleaned;
             codigoCompletoInput.value = prefijoBien + cleaned;
         });
 
         secuencialInput.addEventListener('blur', function () {
-            if (this.value && this.value.length > 0 && this.value.length < 2) {
-                this.value = this.value.padStart(2, '0');
+            if (this.value && this.value.length > 0 && this.value.length < 4) {
+                this.value = this.value.padStart(4, '0');
                 codigoCompletoInput.value = prefijoBien + this.value;
             }
         });

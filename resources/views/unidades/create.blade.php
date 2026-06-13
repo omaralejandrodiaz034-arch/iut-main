@@ -52,12 +52,12 @@
                             class="w-12 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                         <span class="text-gray-400 font-bold">-</span>
                         <input type="text" name="codigo_unidad" id="codigo_unidad"
-                            value="" maxlength="4" inputmode="numeric" pattern="\d{4}"
-                            placeholder="0000"
-                            class="w-24 px-3 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center" required>
+                            value="" maxlength="2" inputmode="numeric" pattern="\d{2}"
+                            placeholder="00"
+                            class="w-16 px-3 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-center" required>
                         <span class="text-gray-400 font-bold">-</span>
-                        <input type="text" id="sufijo_unidad" value="00000" readonly
-                            class="w-16 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
+                        <input type="text" id="sufijo_unidad" value="0000000" readonly
+                            class="w-20 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
                     </div>
 
                     <input type="hidden" name="codigo" id="codigo_completo" value="">
@@ -81,7 +81,7 @@
                     <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                 @enderror
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic"></p>
-                <p class="text-gray-400 text-[11px] mt-2">Solo edite los 4 dígitos de la unidad (posiciones 2-5).</p>
+                <p class="text-gray-400 text-[11px] mt-2">Solo edite los 2 dígitos de la unidad (posiciones 2-3).</p>
             </div>
 
             {{-- Nombre de la Unidad --}}
@@ -120,8 +120,8 @@
 <script>
     function actualizarCamposDesdeCompleto(codigo) {
         document.getElementById('prefijo_unidad').value = codigo.substring(0, 1);
-        document.getElementById('codigo_unidad').value = codigo.substring(1, 5);
-        document.getElementById('sufijo_unidad').value = codigo.substring(5);
+        document.getElementById('codigo_unidad').value = codigo.substring(1, 3);
+        document.getElementById('sufijo_unidad').value = codigo.substring(3);
         document.getElementById('codigo_completo').value = codigo;
     }
 
@@ -170,8 +170,8 @@
                 let original = e.target.value;
                 let cleaned = original.replace(/\D/g, '');
 
-                if (cleaned.length > 4) {
-                    cleaned = cleaned.slice(0, 4);
+                if (cleaned.length > 2) {
+                    cleaned = cleaned.slice(0, 2);
                 }
 
                 if (original !== cleaned) {
@@ -199,8 +199,8 @@
             });
 
             unidadInput.addEventListener('blur', function() {
-                if (this.value && this.value.length > 0 && this.value.length < 4) {
-                    this.value = this.value.padStart(4, '0');
+                if (this.value && this.value.length > 0 && this.value.length < 2) {
+                    this.value = this.value.padStart(2, '0');
                     actualizarCodigoCompleto();
                 }
             });

@@ -52,14 +52,7 @@
             <span>Gráficas</span>
         </a>
 
-        <a href="{{ route('bienes.importar.form') }}"
-           title="Importar bienes desde Excel"
-           class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg shadow-sm transition-all active:scale-95">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            <span>Importar</span>
-        </a>
+        
 
         <a href="{{ route('bienes.exportar', request()->query()) }}"
            title="Exportar bienes a Excel"
