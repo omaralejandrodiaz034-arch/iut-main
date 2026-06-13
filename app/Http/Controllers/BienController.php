@@ -1342,7 +1342,35 @@ class BienController extends Controller
         DB::beginTransaction();
 
         try {
-            $bien->update(['dependencia_id' => $request->dependencia_id]);
+            $codigoAnterior = $bien->codigo;
+
+            // 1. Obtener prefijo de la dependencia destino
+            $prefijoDestino = CodigoJerarquicoService::buildPrefijoBien($dependenciaNueva);
+
+            // 2. Extraer secuencial actual del bien
+            $secuencialActual = substr($bien->codigo, -CodigoJerarquicoService::LONG_BIEN);
+
+            // 3. Verificar si el secuencial está disponible en la nueva dependencia
+            $codigoConPrefijo = $prefijoDestino.$secuencialActual;
+            $conflicto = Bien::where('codigo', $codigoConPrefijo)
+                ->where('id', '!=', $bien->id)
+                ->exists();
+
+            // 4. Determinar el nuevo secuencial
+            if ($conflicto) {
+                $nuevoSecuencial = CodigoJerarquicoService::getSiguienteSecuencialDisponible($dependenciaNueva->id);
+            } else {
+                $nuevoSecuencial = (int) $secuencialActual;
+            }
+
+            // 5. Construir nuevo código completo
+            $nuevoCodigo = $prefijoDestino.str_pad((string) $nuevoSecuencial, CodigoJerarquicoService::LONG_BIEN, '0', STR_PAD_LEFT);
+
+            // 6. Actualizar el bien con nuevo código y dependencia
+            $bien->update([
+                'dependencia_id' => $request->dependencia_id,
+                'codigo' => $nuevoCodigo,
+            ]);
 
             // Generar acta de traslado
             $service = new \App\Services\ActaTrasladoService;
@@ -1351,7 +1379,8 @@ class BienController extends Controller
                 motivo: $request->motivo,
                 usuario: auth()->user(),
                 dependenciaAnterior: $dependenciaAnterior->nombre,
-                dependenciaNueva: $dependenciaNueva->nombre
+                dependenciaNueva: $dependenciaNueva->nombre,
+                codigoAnterior: $codigoAnterior
             );
 
             // Registrar movimiento
@@ -1360,10 +1389,12 @@ class BienController extends Controller
                 'usuario_id' => auth()->id(),
                 'tipo' => 'TRASLADO',
                 'descripcion' => sprintf(
-                    'Traslado desde [%s] a [%s]. Motivo: %s',
+                    'Traslado desde [%s] a [%s]. Motivo: %s. Código anterior: %s, Código nuevo: %s',
                     $dependenciaAnterior->nombre,
                     $dependenciaNueva->nombre,
-                    $request->motivo
+                    $request->motivo,
+                    CodigoJerarquicoService::formatearCodigoLegible($codigoAnterior),
+                    CodigoJerarquicoService::formatearCodigoLegible($nuevoCodigo)
                 ),
                 'fecha' => now(),
                 'acta_path' => $actaPath,
@@ -1375,11 +1406,17 @@ class BienController extends Controller
                 'bien_id' => $bien->id,
                 'origen' => $dependenciaAnterior->id,
                 'destino' => $dependenciaNueva->id,
+                'codigo_anterior' => $codigoAnterior,
+                'codigo_nuevo' => $nuevoCodigo,
                 'usuario_id' => auth()->id(),
             ]);
 
             return redirect()->route('movimientos.show', $movimiento)
-                ->with('success', '✅ Traslado registrado exitosamente. El acta ha sido generada.');
+                ->with('success', sprintf(
+                    '✅ Traslado registrado exitosamente. Código actualizado de %s a %s.',
+                    CodigoJerarquicoService::formatearCodigoLegible($codigoAnterior),
+                    CodigoJerarquicoService::formatearCodigoLegible($nuevoCodigo)
+                ));
 
         } catch (\Exception $e) {
             DB::rollBack();

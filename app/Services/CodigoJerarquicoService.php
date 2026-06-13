@@ -416,8 +416,34 @@ class CodigoJerarquicoService
         return substr($codigoDependencia, 0, self::LONG_ORGANISMO + self::LONG_UNIDAD + self::LONG_DEPENDENCIA);
     }
 
-    private static function buildPrefijoBien(Dependencia $dependencia): string
+    public static function buildPrefijoBien(Dependencia $dependencia): string
     {
         return substr($dependencia->codigo, 0, self::LONG_PREFIJO_BIEN);
+    }
+
+    /**
+     * Verifica si un secuencial específico está disponible en una dependencia.
+     */
+    public static function isSecuencialDisponibleEnDependencia(int $dependenciaId, string $secuencial): bool
+    {
+        $dependencia = Dependencia::findOrFail($dependenciaId);
+        $prefijo = self::buildPrefijoBien($dependencia);
+        $codigo = $prefijo.str_pad($secuencial, self::LONG_BIEN, '0', STR_PAD_LEFT);
+
+        return ! Bien::where('codigo', $codigo)->exists();
+    }
+
+    /**
+     * Obtiene el siguiente secuencial disponible en una dependencia.
+     */
+    public static function getSiguienteSecuencialDisponible(int $dependenciaId): int
+    {
+        $dependencia = Dependencia::findOrFail($dependenciaId);
+        $prefijo = self::buildPrefijoBien($dependencia);
+
+        $maxNumero = Bien::where('codigo', 'LIKE', $prefijo.'%')
+            ->max(DB::raw('CAST(SUBSTR(codigo, -'.self::LONG_BIEN.') AS UNSIGNED)'));
+
+        return $maxNumero ? ((int) $maxNumero + 1) : 1;
     }
 }

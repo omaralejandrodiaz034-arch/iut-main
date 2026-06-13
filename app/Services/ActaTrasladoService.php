@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 
 class ActaTrasladoService
 {
-    public function generar(Bien $bien, string $motivo, $usuario, $dependenciaAnterior, $dependenciaNueva)
+    public function generar(Bien $bien, string $motivo, $usuario, $dependenciaAnterior, $dependenciaNueva, ?string $codigoAnterior = null)
     {
         if (! extension_loaded('gd')) {
             // lanzar excepción con instrucción clara para desarrolladores/administradores
@@ -28,6 +28,7 @@ class ActaTrasladoService
             'dependencia_anterior' => $dependenciaAnterior,
             'dependencia_nueva' => $dependenciaNueva,
             'folio' => $folio,
+            'codigo_anterior' => $codigoAnterior,
         ];
 
         $pdf = Pdf::loadView('bienes.pdf.acta-traslado', $data);

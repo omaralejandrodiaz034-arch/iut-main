@@ -125,11 +125,14 @@
         <p>Que en fecha de hoy, se ha realizado el traslado del siguiente bien mueble registrado en el inventario patrimonial de esta institución:</p>
 
         <div class="enumeracion">
-            <p><strong>1. Código del bien:</strong> <span class="destacado">{{ $bien->codigo ?? '—' }}</span></p>
-            <p><strong>2. Descripción detallada:</strong> {{ $bien->descripcion ?? '—' }}</p>
-            <p><strong>3. Tipo de bien / Clasificación:</strong> {{ $bien->tipo_bien?->label() ?? $bien->tipo ?? '—' }}</p>
-            <p><strong>4. Dependencia de Origen:</strong> {{ $dependencia_anterior ?? '—' }}</p>
-            <p><strong>5. Dependencia de Destino:</strong> <span class="destacado">{{ $dependencia_nueva ?? '—' }}</span></p>
+            @if(isset($codigo_anterior) && $codigo_anterior !== $bien->codigo)
+            <p><strong>1. Código anterior:</strong> <span class="destacado">{{ $codigo_anterior ?? '—' }}</span></p>
+            @endif
+            <p><strong>{{ isset($codigo_anterior) && $codigo_anterior !== $bien->codigo ? '2' : '1' }}. Código del bien:</strong> <span class="destacado">{{ $bien->codigo ?? '—' }}</span></p>
+            <p><strong>{{ isset($codigo_anterior) && $codigo_anterior !== $bien->codigo ? '3' : '2' }}. Descripción detallada:</strong> {{ $bien->descripcion ?? '—' }}</p>
+            <p><strong>{{ isset($codigo_anterior) && $codigo_anterior !== $bien->codigo ? '4' : '3' }}. Tipo de bien / Clasificación:</strong> {{ $bien->tipo_bien?->label() ?? $bien->tipo ?? '—' }}</p>
+            <p><strong>{{ isset($codigo_anterior) && $codigo_anterior !== $bien->codigo ? '5' : '4' }}. Dependencia de Origen:</strong> {{ $dependencia_anterior ?? '—' }}</p>
+            <p><strong>{{ isset($codigo_anterior) && $codigo_anterior !== $bien->codigo ? '6' : '5' }}. Dependencia de Destino:</strong> <span class="destacado">{{ $dependencia_nueva ?? '—' }}</span></p>
         </div>
 
         <p><strong>MOTIVO DEL TRASLADO:</strong></p>

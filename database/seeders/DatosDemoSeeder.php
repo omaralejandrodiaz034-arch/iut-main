@@ -14,11 +14,11 @@ class DatosDemoSeeder extends Seeder
     {
         $this->command->info('🌱 Insertando datos de demo...');
 
-        // 1. Organismos
+        // 1. Organismos - Formato: X.00.000.0000 (10 dígitos)
         $organismos = [
-            ['codigo' => 'MPPEU-001', 'nombre' => 'Ministerio del Poder Popular para la Educación Universitaria'],
-            ['codigo' => 'MPPEU-002', 'nombre' => 'SENIAT'],
-            ['codigo' => 'MPPET-001', 'nombre' => 'Ministerio del Poder Popular para la Educación'],
+            ['codigo' => '1000000000', 'nombre' => 'Ministerio del Poder Popular para la Educación Universitaria'],
+            ['codigo' => '2000000000', 'nombre' => 'SENIAT'],
+            ['codigo' => '3000000000', 'nombre' => 'Ministerio del Poder Popular para la Educación'],
         ];
 
         foreach ($organismos as $Org) {
@@ -26,16 +26,14 @@ class DatosDemoSeeder extends Seeder
         }
         $this->command->info('✓ Organismos creados');
 
-        // 2. Unidades Administradoras
-        $organismoIds = DB::table('organismos')->pluck('id', 'codigo');
-
+// 2. Unidades Administradoras - Formato: X.XX.000.0000 (10 dígitos)
         $unidades = [
-            ['organismo_id' => $organismoIds['MPPEU-001'], 'codigo' => '1430', 'nombre' => 'UPTOS "Clodosbaldo Russian"'],
-            ['organismo_id' => $organismoIds['MPPEU-001'], 'codigo' => 'MPPEU-001-U01', 'nombre' => 'Dirección de Planificación'],
-            ['organismo_id' => $organismoIds['MPPEU-001'], 'codigo' => 'MPPEU-001-U02', 'nombre' => 'Dirección de RRHH'],
-            ['organismo_id' => $organismoIds['MPPEU-001'], 'codigo' => 'MPPEU-001-U03', 'nombre' => 'Dirección de Servicios'],
-            ['organismo_id' => $organismoIds['MPPEU-002'], 'codigo' => 'SENIAT-001', 'nombre' => 'Gerencia de Bienes'],
-            ['organismo_id' => $organismoIds['MPPET-001'], 'codigo' => 'MPPET-001-U01', 'nombre' => 'Coordinación de Admisión'],
+            ['organismo_id' => $organismoIds['1000000000'], 'codigo' => '1010000000', 'nombre' => 'UPTOS "Clodosbaldo Russian"'],
+            ['organismo_id' => $organismoIds['1000000000'], 'codigo' => '1020000000', 'nombre' => 'Dirección de Planificación'],
+            ['organismo_id' => $organismoIds['1000000000'], 'codigo' => '1030000000', 'nombre' => 'Dirección de RRHH'],
+            ['organismo_id' => $organismoIds['1000000000'], 'codigo' => '1040000000', 'nombre' => 'Dirección de Servicios'],
+            ['organismo_id' => $organismoIds['2000000000'], 'codigo' => '2010000000', 'nombre' => 'Gerencia de Bienes'],
+            ['organismo_id' => $organismoIds['3000000000'], 'codigo' => '3010000000', 'nombre' => 'Coordinación de Admisión'],
         ];
 
         foreach ($unidades as $u) {
@@ -55,22 +53,20 @@ class DatosDemoSeeder extends Seeder
         }
         $this->command->info('✓ Tipos de responsable creados');
 
-        // 4. Dependencias (sin tipo_responsable_id en la tabla)
-        $unidadIds = DB::table('unidades_administradoras')->pluck('id', 'codigo');
-
+// 4. Dependencias - Formato: X.XX.XXX.0000 (10 dígitos)
         $dependencias = [
-            ['unidad_administradora_id' => $unidadIds['1430'], 'codigo' => 'D-001', 'nombre' => 'Decanato'],
-            ['unidad_administradora_id' => $unidadIds['1430'], 'codigo' => 'D-002', 'nombre' => 'Secretaría'],
-            ['unidad_administradora_id' => $unidadIds['1430'], 'codigo' => 'D-003', 'nombre' => 'Informática'],
-            ['unidad_administradora_id' => $unidadIds['1430'], 'codigo' => 'D-004', 'nombre' => 'Contabilidad'],
-            ['unidad_administradora_id' => $unidadIds['1430'], 'codigo' => 'D-005', 'nombre' => 'Biblioteca'],
-            ['unidad_administradora_id' => $unidadIds['1430'], 'codigo' => 'D-006', 'nombre' => 'Lab. Física'],
-            ['unidad_administradora_id' => $unidadIds['1430'], 'codigo' => 'D-007', 'nombre' => 'Lab. Química'],
-            ['unidad_administradora_id' => $unidadIds['1430'], 'codigo' => 'D-008', 'nombre' => 'Aula Magna'],
-            ['unidad_administradora_id' => $unidadIds['1430'], 'codigo' => 'D-009', 'nombre' => 'Personal'],
-            ['unidad_administradora_id' => $unidadIds['1430'], 'codigo' => 'D-010', 'nombre' => 'Mantenimiento'],
-            ['unidad_administradora_id' => $unidadIds['MPPEU-001-U01'], 'codigo' => 'D-011', 'nombre' => 'Planificación'],
-            ['unidad_administradora_id' => $unidadIds['MPPEU-001-U02'], 'codigo' => 'D-012', 'nombre' => 'Nómina'],
+            ['unidad_administradora_id' => $unidadIds['1010000000'], 'codigo' => '1010010000', 'nombre' => 'Decanato'],
+            ['unidad_administradora_id' => $unidadIds['1010000000'], 'codigo' => '1010020000', 'nombre' => 'Secretaría'],
+            ['unidad_administradora_id' => $unidadIds['1010000000'], 'codigo' => '1010030000', 'nombre' => 'Informática'],
+            ['unidad_administradora_id' => $unidadIds['1010000000'], 'codigo' => '1010040000', 'nombre' => 'Contabilidad'],
+            ['unidad_administradora_id' => $unidadIds['1010000000'], 'codigo' => '1010050000', 'nombre' => 'Biblioteca'],
+            ['unidad_administradora_id' => $unidadIds['1010000000'], 'codigo' => '1010060000', 'nombre' => 'Lab. Física'],
+            ['unidad_administradora_id' => $unidadIds['1010000000'], 'codigo' => '1010070000', 'nombre' => 'Lab. Química'],
+            ['unidad_administradora_id' => $unidadIds['1010000000'], 'codigo' => '1010080000', 'nombre' => 'Aula Magna'],
+            ['unidad_administradora_id' => $unidadIds['1010000000'], 'codigo' => '1010090000', 'nombre' => 'Personal'],
+            ['unidad_administradora_id' => $unidadIds['1010000000'], 'codigo' => '1010100000', 'nombre' => 'Mantenimiento'],
+            ['unidad_administradora_id' => $unidadIds['1020000000'], 'codigo' => '1020010000', 'nombre' => 'Planificación'],
+            ['unidad_administradora_id' => $unidadIds['1030000000'], 'codigo' => '1030010000', 'nombre' => 'Nómina'],
         ];
 
         foreach ($dependencias as $d) {
@@ -123,47 +119,47 @@ class DatosDemoSeeder extends Seeder
         }
         $this->command->info('✓ Usuarios del sistema creados');
 
-        // 7. Bienes
+        // 7. Bienes - Los códigos se generan automáticamente basados en la dependencia
         $usuarioIds = DB::table('usuarios')->pluck('id', 'cedula');
 
         $bienes = [
             // Electrónicos
-            ['codigo' => 'ELE-001', 'descripcion' => 'Computadora Desktop Dell OptiPlex', 'precio' => 850.00, 'ubicacion' => 'D-001', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['D-001']],
-            ['codigo' => 'ELE-002', 'descripcion' => 'Laptop HP ProBook 450', 'precio' => 920.00, 'ubicacion' => 'D-002', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['D-002']],
-            ['codigo' => 'ELE-003', 'descripcion' => 'Monitor Samsung 24"', 'precio' => 180.00, 'ubicacion' => 'D-003', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['D-003']],
-            ['codigo' => 'ELE-004', 'descripcion' => 'Impresora Laser HP', 'precio' => 350.00, 'ubicacion' => 'D-004', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['D-004']],
-            ['codigo' => 'ELE-005', 'descripcion' => 'Proyector Epson', 'precio' => 650.00, 'ubicacion' => 'D-008', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['D-008']],
-            ['codigo' => 'ELE-006', 'descripcion' => 'Servidor Dell PowerEdge', 'precio' => 8500.00, 'ubicacion' => 'D-003', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['D-003']],
-            ['codigo' => 'ELE-007', 'descripcion' => 'Router Cisco', 'precio' => 1200.00, 'ubicacion' => 'D-003', 'estado' => EstadoBien::DANADO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['D-003']],
-            ['codigo' => 'ELE-008', 'descripcion' => 'Tablet Samsung', 'precio' => 250.00, 'ubicacion' => 'D-005', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['D-005']],
-            ['codigo' => 'ELE-009', 'descripcion' => 'Cámara IP Hikvision', 'precio' => 180.00, 'ubicacion' => 'D-001', 'estado' => EstadoBien::EN_MANTENIMIENTO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['D-001']],
-            ['codigo' => 'ELE-010', 'descripcion' => 'Escáner Fujitsu', 'precio' => 450.00, 'ubicacion' => 'D-004', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['D-004']],
+            ['descripcion' => 'Computadora Desktop Dell OptiPlex', 'precio' => 850.00, 'ubicacion' => 'Decanato', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['1010010000']],
+            ['descripcion' => 'Laptop HP ProBook 450', 'precio' => 920.00, 'ubicacion' => 'Secretaría', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['1010020000']],
+            ['descripcion' => 'Monitor Samsung 24"', 'precio' => 180.00, 'ubicacion' => 'Informática', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['1010030000']],
+            ['descripcion' => 'Impresora Laser HP', 'precio' => 350.00, 'ubicacion' => 'Contabilidad', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['1010040000']],
+            ['descripcion' => 'Proyector Epson', 'precio' => 650.00, 'ubicacion' => 'Aula Magna', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['1010080000']],
+            ['descripcion' => 'Servidor Dell PowerEdge', 'precio' => 8500.00, 'ubicacion' => 'Informática', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['1010030000']],
+            ['descripcion' => 'Router Cisco', 'precio' => 1200.00, 'ubicacion' => 'Informática', 'estado' => EstadoBien::DANADO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['1010030000']],
+            ['descripcion' => 'Tablet Samsung', 'precio' => 250.00, 'ubicacion' => 'Biblioteca', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['1010050000']],
+            ['descripcion' => 'Cámara IP Hikvision', 'precio' => 180.00, 'ubicacion' => 'Decanato', 'estado' => EstadoBien::EN_MANTENIMIENTO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['1010010000']],
+            ['descripcion' => 'Escáner Fujitsu', 'precio' => 450.00, 'ubicacion' => 'Contabilidad', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::ELECTRONICO, 'dependencia_id' => $dependenciaIds['1010040000']],
 
             // Mobiliarios
-            ['codigo' => 'MOB-001', 'descripcion' => 'Escritorio Ejecutivo', 'precio' => 350.00, 'ubicacion' => 'D-001', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['D-001']],
-            ['codigo' => 'MOB-002', 'descripcion' => 'Silla Ejecutiva', 'precio' => 180.00, 'ubicacion' => 'D-001', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['D-001']],
-            ['codigo' => 'MOB-003', 'descripcion' => 'Estantería Metálica', 'precio' => 220.00, 'ubicacion' => 'D-005', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['D-005']],
-            ['codigo' => 'MOB-004', 'descripcion' => 'Mesa de Reuniones', 'precio' => 450.00, 'ubicacion' => 'D-002', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['D-002']],
-            ['codigo' => 'MOB-005', 'descripcion' => 'Archivador 4 gavetas', 'precio' => 280.00, 'ubicacion' => 'D-004', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['D-004']],
-            ['codigo' => 'MOB-006', 'descripcion' => 'Pizarra Acrílica', 'precio' => 85.00, 'ubicacion' => 'D-006', 'estado' => EstadoBien::DANADO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['D-006']],
-            ['codigo' => 'MOB-007', 'descripcion' => 'Sofá de 3 puestos', 'precio' => 550.00, 'ubicacion' => 'D-001', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['D-001']],
-            ['codigo' => 'MOB-008', 'descripcion' => 'Mesa de Computación', 'precio' => 195.00, 'ubicacion' => 'D-003', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['D-003']],
+            ['descripcion' => 'Escritorio Ejecutivo', 'precio' => 350.00, 'ubicacion' => 'Decanato', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['1010010000']],
+            ['descripcion' => 'Silla Ejecutiva', 'precio' => 180.00, 'ubicacion' => 'Decanato', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['1010010000']],
+            ['descripcion' => 'Estantería Metálica', 'precio' => 220.00, 'ubicacion' => 'Biblioteca', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['1010050000']],
+            ['descripcion' => 'Mesa de Reuniones', 'precio' => 450.00, 'ubicacion' => 'Secretaría', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['1010020000']],
+            ['descripcion' => 'Archivador 4 gavetas', 'precio' => 280.00, 'ubicacion' => 'Contabilidad', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['1010040000']],
+            ['descripcion' => 'Pizarra Acrílica', 'precio' => 85.00, 'ubicacion' => 'Lab. Física', 'estado' => EstadoBien::DANADO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['1010060000']],
+            ['descripcion' => 'Sofá de 3 puestos', 'precio' => 550.00, 'ubicacion' => 'Decanato', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['1010010000']],
+            ['descripcion' => 'Mesa de Computación', 'precio' => 195.00, 'ubicacion' => 'Informática', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::MOBILIARIO, 'dependencia_id' => $dependenciaIds['1010030000']],
 
             // Vehículos
-            ['codigo' => 'VEH-001', 'descripcion' => 'Toyota Corolla 2022', 'precio' => 25000.00, 'ubicacion' => 'Estacionamiento', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::VEHICULO, 'dependencia_id' => $dependenciaIds['D-001']],
-            ['codigo' => 'VEH-002', 'descripcion' => 'Ford Explorer 2021', 'precio' => 35000.00, 'ubicacion' => 'Estacionamiento', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::VEHICULO, 'dependencia_id' => $dependenciaIds['D-001']],
-            ['codigo' => 'VEH-003', 'descripcion' => 'Camioneta Chevrolet', 'precio' => 28000.00, 'ubicacion' => 'Estacionamiento', 'estado' => EstadoBien::EN_MANTENIMIENTO, 'tipo_bien' => TB::VEHICULO, 'dependencia_id' => $dependenciaIds['D-010']],
-            ['codigo' => 'VEH-004', 'descripcion' => 'Motocicleta Yamaha', 'precio' => 4500.00, 'ubicacion' => 'Estacionamiento', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::VEHICULO, 'dependencia_id' => $dependenciaIds['D-010']],
+            ['descripcion' => 'Toyota Corolla 2022', 'precio' => 25000.00, 'ubicacion' => 'Estacionamiento', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::VEHICULO, 'dependencia_id' => $dependenciaIds['1010010000']],
+            ['descripcion' => 'Ford Explorer 2021', 'precio' => 35000.00, 'ubicacion' => 'Estacionamiento', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::VEHICULO, 'dependencia_id' => $dependenciaIds['1010010000']],
+            ['descripcion' => 'Camioneta Chevrolet', 'precio' => 28000.00, 'ubicacion' => 'Estacionamiento', 'estado' => EstadoBien::EN_MANTENIMIENTO, 'tipo_bien' => TB::VEHICULO, 'dependencia_id' => $dependenciaIds['1010100000']],
+            ['descripcion' => 'Motocicleta Yamaha', 'precio' => 4500.00, 'ubicacion' => 'Estacionamiento', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::VEHICULO, 'dependencia_id' => $dependenciaIds['1010100000']],
 
             // Otros
-            ['codigo' => 'OTR-001', 'descripcion' => 'Aire Acondicionado 24000 BTU', 'precio' => 680.00, 'ubicacion' => 'D-001', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['D-001']],
-            ['codigo' => 'OTR-002', 'descripcion' => 'Equipo de Sonido Sony', 'precio' => 320.00, 'ubicacion' => 'D-008', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['D-008']],
-            ['codigo' => 'OTR-003', 'descripcion' => 'Generador 5000W', 'precio' => 1200.00, 'ubicacion' => 'D-010', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['D-010']],
-            ['codigo' => 'OTR-004', 'descripcion' => 'Cortina de aluminio', 'precio' => 150.00, 'ubicacion' => 'D-002', 'estado' => EstadoBien::DANADO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['D-002']],
-            ['codigo' => 'OTR-005', 'descripcion' => 'Reflector LED 100W', 'precio' => 45.00, 'ubicacion' => 'Estacionamiento', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['D-010']],
-            ['codigo' => 'OTR-006', 'descripcion' => 'Bomba de Agua 2HP', 'precio' => 180.00, 'ubicacion' => 'D-010', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['D-010']],
-            ['codigo' => 'OTR-007', 'descripcion' => 'Tanque de Agua 1000L', 'precio' => 250.00, 'ubicacion' => 'Terraza', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['D-010']],
-            ['codigo' => 'OTR-008', 'descripcion' => 'Extinguidor 10kg', 'precio' => 85.00, 'ubicacion' => 'D-001', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['D-001']],
+            ['descripcion' => 'Aire Acondicionado 24000 BTU', 'precio' => 680.00, 'ubicacion' => 'Decanato', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['1010010000']],
+            ['descripcion' => 'Equipo de Sonido Sony', 'precio' => 320.00, 'ubicacion' => 'Aula Magna', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['1010080000']],
+            ['descripcion' => 'Generador 5000W', 'precio' => 1200.00, 'ubicacion' => 'Mantenimiento', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['1010100000']],
+            ['descripcion' => 'Cortina de aluminio', 'precio' => 150.00, 'ubicacion' => 'Secretaría', 'estado' => EstadoBien::DANADO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['1010020000']],
+            ['descripcion' => 'Reflector LED 100W', 'precio' => 45.00, 'ubicacion' => 'Estacionamiento', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['1010100000']],
+            ['descripcion' => 'Bomba de Agua 2HP', 'precio' => 180.00, 'ubicacion' => 'Mantenimiento', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['1010100000']],
+            ['descripcion' => 'Tanque de Agua 1000L', 'precio' => 250.00, 'ubicacion' => 'Terraza', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['1010100000']],
+            ['descripcion' => 'Extinguidor 10kg', 'precio' => 85.00, 'ubicacion' => 'Decanato', 'estado' => EstadoBien::ACTIVO, 'tipo_bien' => TB::OTROS, 'dependencia_id' => $dependenciaIds['1010010000']],
         ];
 
         $bienIds = [];
@@ -181,6 +177,12 @@ class DatosDemoSeeder extends Seeder
             $bien['dependencia_id'] = $depId;
             $bien['fecha_registro'] = now()->subDays(rand(1, 365));
             $bien['caracteristicas'] = json_encode(['color' => 'Negro']);
+
+            // Generate hierarchical code based on dependencia
+            $dep = DB::table('dependencias')->where('id', $depId)->first();
+            $prefijo = substr($dep->codigo, 0, 6);
+            $existingCount = DB::table('bienes')->where('dependencia_id', $depId)->where('codigo', 'like', $prefijo.'%')->count() + 1;
+            $bien['codigo'] = $prefijo . str_pad((string) $existingCount, 4, '0', STR_PAD_LEFT);
 
             DB::table('bienes')->updateOrInsert(['codigo' => $bien['codigo']], $bien);
             $bienIds[] = DB::table('bienes')->where('codigo', $bien['codigo'])->first()->id;
