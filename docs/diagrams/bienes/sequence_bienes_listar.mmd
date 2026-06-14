@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Usuario
+    participant BienController
+    participant Bien
+    participant Dependencia
+    participant DB
+
+    note right of Usuario: Listar Bienes con Filtros
+    Usuario->>BienController: GET /bienes (index)
+    BienController->>BienController: Validar filtros (search, estado, dependencias, etc.)
+    BienController->>Bien: Query con relaciones (dependencia, responsable)
+    Bien->>DB: Aplicar filtros y ordenamiento
+    DB-->>Bien: Resultados paginados
+    Bien-->>BienController: Collection de bienes
+    BienController->>Dependencia: Cargar organismos, unidades, dependencias
+    Dependencia-->>BienController: Datos relacionados
+    BienController-->>Usuario: Vista bienes.index con datos filtrados

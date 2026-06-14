@@ -1,0 +1,46 @@
+sequenceDiagram
+    participant Usuario as Usuario Admin
+    participant UsuarioController
+    participant Usuario as Model Usuario
+    participant Rol
+    participant Hash
+    participant DB
+
+    note right of Usuario: Editar Usuario Existente
+    Usuario->>UsuarioController: GET /usuarios/{id}/edit (edit)
+    UsuarioController->>Usuario: Buscar usuario por ID
+    Usuario->>DB: SELECT FROM usuarios WHERE id = ?
+    DB-->>Usuario: Datos del usuario
+    UsuarioController->>Rol: Cargar roles (excluir obsoletos)
+    Rol->>DB: SELECT WHERE nombre != 'Gerente de Bienes'
+    DB-->>Rol: Roles disponibles
+    UsuarioController-->>Usuario: Vista usuarios.edit con datos
+
+    Usuario->>UsuarioController: PUT /usuarios/{id} (update)
+    UsuarioController->>Usuario: Verificar permisos (canDeleteData)
+
+    alt No tiene permisos
+        UsuarioController-->>Usuario: Error 403
+    else Tiene permisos
+        UsuarioController->>Usuario: normalizeCedula(cedula) si está presente
+        Usuario-->>UsuarioController: Cédula normalizada
+        UsuarioController->>UsuarioController: Validar datos (con unique ignore)
+
+        alt Cambió rol_id
+            UsuarioController->>Rol: Verificar si nuevo rol es Admin
+            Rol->>DB: SELECT FROM roles WHERE nombre = 'Administrador'
+            DB-->>Rol: Rol Admin
+            Rol-->>UsuarioController: Actualizar is_admin
+        end
+
+        alt Cambió password
+            UsuarioController->>Hash: make(nuevo_password)
+            Hash-->>UsuarioController: Password hasheado
+        end
+
+        UsuarioController->>Usuario: Update con datos validados
+        Usuario->>DB: UPDATE usuarios SET ...
+        DB-->>Usuario: Usuario actualizado
+        Usuario-->>UsuarioController: Usuario actualizado
+        UsuarioController-->>Usuario: Redirect a usuarios.show con mensaje de éxito
+    end

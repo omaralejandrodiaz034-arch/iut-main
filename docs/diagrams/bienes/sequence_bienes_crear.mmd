@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant Usuario
+    participant BienController
+    participant Bien
+    participant Dependencia
+    participant CodigoUnicoService
+    participant Storage
+    participant DB
+
+    note right of Usuario: Crear Nuevo Bien
+    Usuario->>BienController: GET /bienes/create (create)
+    BienController->>Bien: Obtener último código secuencial
+    Bien->>DB: SELECT MAX(codigo) WHERE codigo REGEXP '^[0-9]+$'
+    DB-->>Bien: Último código numérico
+    Bien-->>BienController: Código siguiente sugerido (8 dígitos)
+    BienController->>Dependencia: Cargar dependencias con responsables
+    Dependencia-->>BienController: Lista de dependencias
+    BienController-->>Usuario: Vista bienes.create con código sugerido
+
+    Usuario->>BienController: POST /bienes (store)
+    BienController->>BienController: Validar datos (código, descripción, precio, foto, etc.)
+
+    alt Tiene fotografía
+        BienController->>BienController: procesarFotografia()
+        BienController->>Storage: Guardar archivo en storage/bienes
+        Storage-->>BienController: Path de la foto
+    end
+
+    BienController->>Bien: Create con datos validados
+    Bien->>DB: INSERT INTO bienes
+    DB-->>Bien: Bien creado
+    Bien->>Bien: setAttribute('_observaciones', 'Registro inicial...')
+    Bien-->>BienController: Bien guardado
+    BienController-->>Usuario: Redirect a bienes.index con mensaje de éxito

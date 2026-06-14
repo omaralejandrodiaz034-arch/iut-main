@@ -1,0 +1,39 @@
+sequenceDiagram
+    participant Usuario as Usuario
+    participant OrganismoController
+    participant Organismo
+    participant CodigoUnicoService
+    participant DB
+
+    note right of Usuario: Editar Organismo Existente
+    Usuario->>OrganismoController: GET /organismos/{id}/edit (edit)
+    OrganismoController->>Organismo: Buscar organismo por ID
+    Organismo->>DB: SELECT FROM organismos WHERE id = ?
+    DB-->>Organismo: Datos del organismo
+    OrganismoController-->>Usuario: Vista organismos.edit con datos
+
+    Usuario->>OrganismoController: PUT /organismos/{id} (update)
+    OrganismoController->>OrganismoController: Validar datos (con unique ignore)
+
+    alt Cambió código
+        OrganismoController->>CodigoUnicoService: codigoExiste(codigo, 'organismos', id)
+        CodigoUnicoService->>DB: Verificar código en todas las tablas (ignorando ID actual)
+        DB-->>CodigoUnicoService: Código disponible/no disponible
+        CodigoUnicoService-->>OrganismoController: Resultado verificación
+
+        alt Código no disponible
+            OrganismoController-->>Usuario: Error de validación (código duplicado)
+        else Código disponible
+            OrganismoController->>Organismo: Update con datos validados
+            Organismo->>DB: UPDATE organismos SET ...
+            DB-->>Organismo: Organismo actualizado
+            Organismo-->>OrganismoController: Organismo actualizado
+            OrganismoController-->>Usuario: Redirect con mensaje de éxito
+        end
+    else No cambió código
+        OrganismoController->>Organismo: Update con datos validados
+        Organismo->>DB: UPDATE organismos SET ...
+        DB-->>Organismo: Organismo actualizado
+        Organismo-->>OrganismoController: Organismo actualizado
+        OrganismoController-->>Usuario: Redirect con mensaje de éxito
+    end

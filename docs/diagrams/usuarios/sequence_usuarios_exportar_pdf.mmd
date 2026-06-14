@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Usuario as Usuario Admin
+    participant UsuarioController
+    participant Usuario as Model Usuario
+    participant Pdf
+    participant DB
+
+    note right of Usuario: Exportar Usuario a PDF
+    Usuario->>UsuarioController: GET /usuarios/{id}/pdf (exportPdf)
+    UsuarioController->>Usuario: Cargar usuario con relaciones
+    Usuario->>DB: SELECT con rol, reportes, movimientos
+    DB-->>Usuario: Usuario completo
+    UsuarioController->>Pdf: loadView('usuarios.pdf', usuario)
+    Pdf-->>UsuarioController: PDF generado
+    UsuarioController-->>Usuario: Descargar usuario_{cedula}_{nombre}.pdf

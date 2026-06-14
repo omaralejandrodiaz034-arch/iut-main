@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Usuario
+    participant UnidadAdministradoraController
+    participant UnidadAdministradora
+    participant Pdf
+    participant DB
+
+    note right of Usuario: Exportar Unidad Administradora a PDF
+    Usuario->>UnidadAdministradoraController: GET /unidades/{id}/pdf (exportPdf)
+    UnidadAdministradoraController->>UnidadAdministradora: Cargar unidad con relaciones
+    UnidadAdministradora->>DB: SELECT con organismo, dependencias
+    DB-->>UnidadAdministradora: Unidad completa
+    UnidadAdministradoraController->>Pdf: loadView('unidades.pdf', unidad)
+    Pdf-->>UnidadAdministradoraController: PDF generado
+    UnidadAdministradoraController-->>Usuario: Descargar unidad_{codigo}_{nombre}.pdf

@@ -135,6 +135,28 @@ use Illuminate\Support\Str;
         </div>
         @endif
 
+        {{-- Acta de Donación --}}
+        @if($bien->es_donacion && $bien->acta_donacion)
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-amber-800">Acta de Donación</h3>
+                    <p class="text-sm text-amber-600">
+                        Bien donado por: {{ $bien->donante_nombre ?? '—' }}
+                        @if($bien->donante_documento)
+                            ({{ $bien->donante_documento }})
+                        @endif
+                    </p>
+                </div>
+                <a href="{{ Storage::disk('public')->url($bien->acta_donacion) }}" target="_blank"
+                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-lg hover:bg-amber-700 transition focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1">
+                    <x-heroicon-o-document-text class="w-5 h-5 mr-2" />
+                    Ver Acta de Donación
+                </a>
+            </div>
+        </div>
+        @endif
+
         {{-- Último Acta de Traslado --}}
         @php
             $ultimoTraslado = $bien->movimientos->where('tipo', 'TRASLADO')->sortByDesc('fecha')->first();

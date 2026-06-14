@@ -161,8 +161,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Precio (Bs.)</label>
-                        <input type="number" name="precio" step="0.01" min="0" value="{{ old('precio', '0.00') }}"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-900">
+                        <input type="text" inputmode="numeric" name="precio" id="precio"
+                               value="{{ old('precio', '0.00') }}"
+                               placeholder="Ej: 1500,00"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-900">
+                        <p class="text-[10px] text-gray-500 mt-1">Use punto o coma para decimales. Ej: 2500 o 2500,50</p>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Adquisición</label>
@@ -175,6 +178,43 @@
                         <label class="block text-sm font-bold text-gray-700 mb-2">Fotografía</label>
                         <input type="file" name="fotografia" accept="image/*"
                             class="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+                </div>
+
+                {{-- Sección Donación --}}
+                <div class="border border-amber-200 bg-amber-50/60 rounded-xl p-5 space-y-4">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" name="es_donacion" id="es_donacion" value="1"
+                               class="w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                               {{ old('es_donacion') ? 'checked' : '' }}>
+                        <label for="es_donacion" class="text-sm font-bold text-gray-800">Registrar como bien donado</label>
+                    </div>
+
+                    <div id="campos-donacion" class="grid grid-cols-1 md:grid-cols-2 gap-4 {{ old('es_donacion') ? '' : 'hidden' }}">
+                        <div>
+                            <label class="block text-xs font-bold text-amber-800 mb-1">Tipo de Donante</label>
+                            <select name="tipo_donante" id="tipo_donante"
+                                    class="w-full px-4 py-2.5 border border-amber-200 rounded-lg bg-white text-sm">
+                                <option value="">Seleccione...</option>
+                                <option value="PERSONA" {{ old('tipo_donante') == 'PERSONA' ? 'selected' : '' }}>Persona Natural</option>
+                                <option value="INSTITUCION" {{ old('tipo_donante') == 'INSTITUCION' ? 'selected' : '' }}>Institución / Empresa</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-amber-800 mb-1">Nombre del Donante <span class="text-red-500">*</span></label>
+                            <input type="text" name="donante_nombre" value="{{ old('donante_nombre') }}"
+                                   class="w-full px-4 py-2.5 border border-amber-200 rounded-lg bg-white text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-amber-800 mb-1">Documento / RIF</label>
+                            <input type="text" name="donante_documento" value="{{ old('donante_documento') }}"
+                                   class="w-full px-4 py-2.5 border border-amber-200 rounded-lg bg-white text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-amber-800 mb-1">Dirección <span class="text-red-500">*</span></label>
+                            <input type="text" name="donante_direccion" value="{{ old('donante_direccion') }}"
+                                   class="w-full px-4 py-2.5 border border-amber-200 rounded-lg bg-white text-sm">
+                        </div>
                     </div>
                 </div>
 
@@ -489,7 +529,51 @@
                 }
             }
 
-            /* 5. Validación antes de enviar */
+                /* 4. Formato de precio tipo Pago Móvil (sin step nativo) */
+            const precioInput = document.getElementById('precio');
+            if (precioInput) {
+                const formatearPrecio = (valor) => {
+                    const limpio = String(valor).replace(/[^0-9.,]/g, '').replace(',', '.');
+                    if (limpio === '' || isNaN(limpio)) return '';
+                    const num = parseFloat(limpio);
+                    return isNaN(num) ? '' : num.toFixed(2);
+                };
+
+                precioInput.addEventListener('blur', () => {
+                    if (precioInput.value !== '') {
+                        precioInput.value = formatearPrecio(precioInput.value);
+                    }
+                });
+
+                precioInput.addEventListener('input', () => {
+                    const val = precioInput.value;
+                    if (val && !/^\d+(\.\d{0,2})?$/.test(val)) {
+                        precioInput.value = val.slice(0, -1);
+                    }
+                });
+            }
+
+            /* 5. Lógica de Donación */
+            const donacionCheckbox = document.getElementById('es_donacion');
+            const camposDonacion = document.getElementById('campos-donacion');
+
+            if (donacionCheckbox && camposDonacion && precioInput) {
+                const toggleDonacion = () => {
+                    const activo = donacionCheckbox.checked;
+                    camposDonacion.classList.toggle('hidden', !activo);
+                    precioInput.value = activo ? '0.00' : precioInput.defaultValue || '';
+                    precioInput.readOnly = activo;
+
+                    if (!activo && precioInput.readOnly) {
+                        precioInput.readOnly = false;
+                    }
+                };
+
+                donacionCheckbox.addEventListener('change', toggleDonacion);
+                toggleDonacion();
+            }
+
+            /* 6. Validación antes de enviar */
             const form = document.querySelector('form[action*="bienes"]');
             if (form) {
                 form.addEventListener('submit', function (e) {

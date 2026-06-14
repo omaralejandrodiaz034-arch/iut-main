@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Usuario
+    participant DependenciaController
+    participant Dependencia
+    participant DB
+
+    note right of Usuario: Exportar Dependencia a PDF
+    Usuario->>DependenciaController: GET /dependencias/{id}/pdf (exportPdf)
+    DependenciaController->>Dependencia: Cargar dependencia con relaciones
+    Dependencia->>DB: SELECT con unidadAdministradora, bienes, responsable
+    DB-->>Dependencia: Dependencia completa
+    DependenciaController->>DependenciaController: Generar vista PDF
+    DependenciaController-->>Usuario: Descargar dependencia_{codigo}_{nombre}.pdf

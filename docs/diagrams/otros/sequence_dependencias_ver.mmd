@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Usuario
+    participant DependenciaController
+    participant Dependencia
+    participant DB
+
+    note right of Usuario: Ver Detalle de Dependencia
+    Usuario->>DependenciaController: GET /dependencias/{id} (show)
+    DependenciaController->>Dependencia: Cargar dependencia con relaciones
+    Dependencia->>DB: SELECT con unidadAdministradora, bienes, responsable
+    DB-->>Dependencia: Datos completos de la dependencia
+    Dependencia-->>DependenciaController: Dependencia con relaciones
+    DependenciaController-->>Usuario: Vista dependencias.show con detalles

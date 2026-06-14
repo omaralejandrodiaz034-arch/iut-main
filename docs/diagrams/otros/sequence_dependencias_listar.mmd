@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Usuario
+    participant DependenciaController
+    participant Dependencia
+    participant UnidadAdministradora
+    participant Responsable
+    participant DB
+
+    note right of Usuario: Listar Dependencias con Filtros
+    Usuario->>DependenciaController: GET /dependencias (index)
+    DependenciaController->>DependenciaController: Validar filtros (search, unidad_id, responsable_id)
+    DependenciaController->>Dependencia: Query con relaciones (unidadAdministradora, responsable)
+    Dependencia->>DB: Aplicar filtros y ordenamiento
+    DB-->>Dependencia: Resultados paginados
+    Dependencia-->>DependenciaController: Collection de dependencias
+    DependenciaController->>UnidadAdministradora: Cargar todas las unidades
+    UnidadAdministradora->>DB: SELECT FROM unidades_administradoras
+    DB-->>UnidadAdministradora: Lista de unidades
+    UnidadAdministradora-->>DependenciaController: Unidades disponibles
+    DependenciaController->>Responsable: Cargar todos los responsables
+    Responsable->>DB: SELECT FROM responsables
+    DB-->>Responsable: Lista de responsables
+    Responsable-->>DependenciaController: Responsables disponibles
+    DependenciaController-->>Usuario: Vista dependencias.index con datos filtrados

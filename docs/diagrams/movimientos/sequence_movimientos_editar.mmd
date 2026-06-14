@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant Usuario as Usuario
+    participant MovimientoController
+    participant Movimiento
+    participant DB
+
+    note right of Usuario: Editar Movimiento Existente
+    Usuario->>MovimientoController: PUT /movimientos/{id} (update)
+    MovimientoController->>MovimientoController: Validar datos (con sometimes)
+
+    alt Tiene subject_type
+        MovimientoController->>MovimientoController: Verificar subject_type permitido
+        alt Subject type no permitido
+            MovimientoController-->>Usuario: Error de validación (tipo de sujeto no permitido)
+        else Subject type permitido
+            MovimientoController->>DB: Verificar si subject existe
+            DB-->>MovimientoController: Subject existe/no existe
+            alt Subject no existe
+                MovimientoController-->>Usuario: Error de validación (sujeto no existe)
+            else Subject existe
+                alt Subject es Bien y bien_id está vacío
+                    MovimientoController->>MovimientoController: Asignar subject_id a bien_id
+                end
+                MovimientoController->>Movimiento: Update con datos validados
+                Movimiento->>DB: UPDATE movimientos SET ...
+                DB-->>Movimiento: Movimiento actualizado
+                Movimiento-->>MovimientoController: Movimiento actualizado
+                MovimientoController-->>Usuario: JSON response con movimiento actualizado
+            end
+        end
+    else No tiene subject_type
+        MovimientoController->>Movimiento: Update con datos validados
+        Movimiento->>DB: UPDATE movimientos SET ...
+        DB-->>Movimiento: Movimiento actualizado
+        Movimiento-->>MovimientoController: Movimiento actualizado
+        MovimientoController-->>Usuario: JSON response con movimiento actualizado
+    end

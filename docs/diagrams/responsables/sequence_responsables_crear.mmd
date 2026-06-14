@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Usuario
+    participant ResponsableController
+    participant Responsable
+    participant TipoResponsable
+    participant DB
+
+    note right of Usuario: Crear Nuevo Responsable
+    Usuario->>ResponsableController: GET /responsables/create (create)
+    ResponsableController->>TipoResponsable: Cargar todos los tipos
+    TipoResponsable->>DB: SELECT FROM tipos_responsables
+    DB-->>TipoResponsable: Lista de tipos
+    TipoResponsable-->>ResponsableController: Tipos disponibles
+    ResponsableController-->>Usuario: Vista responsables.create con tipos
+
+    Usuario->>ResponsableController: POST /responsables (store)
+    ResponsableController->>ResponsableController: Validar datos (cedula, nombre, correo, telefono, tipo_id)
+
+    ResponsableController->>Responsable: Verificar cédula única
+    Responsable->>DB: SELECT FROM responsables WHERE cedula = ?
+    DB-->>Responsable: Cédula existe/no existe
+
+    alt Cédula ya existe
+        ResponsableController-->>Usuario: Error de validación (cédula duplicada)
+    else Cédula disponible
+        ResponsableController->>Responsable: Create con datos validados
+        Responsable->>DB: INSERT INTO responsables
+        DB-->>Responsable: Responsable creado
+        Responsable-->>ResponsableController: Responsable guardado
+        ResponsableController-->>Usuario: Redirect a responsables.index con mensaje de éxito
+    end

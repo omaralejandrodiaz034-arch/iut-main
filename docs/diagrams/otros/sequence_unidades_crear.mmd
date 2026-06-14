@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant Usuario
+    participant UnidadAdministradoraController
+    participant UnidadAdministradora
+    participant Organismo
+    participant CodigoUnicoService
+    participant DB
+
+    note right of Usuario: Crear Nueva Unidad Administradora
+    Usuario->>UnidadAdministradoraController: GET /unidades/create (create)
+    UnidadAdministradoraController->>Organismo: Cargar todos los organismos
+    Organismo->>DB: SELECT FROM organismos
+    DB-->>Organismo: Lista de organismos
+    Organismo-->>UnidadAdministradoraController: Organismos disponibles
+    UnidadAdministradoraController->>CodigoUnicoService: obtenerSiguienteCodigo()
+    CodigoUnicoService->>DB: SELECT MAX(codigo) FROM todas_las_tablas
+    DB-->>CodigoUnicoService: Último código global
+    CodigoUnicoService-->>UnidadAdministradoraController: Código siguiente sugerido (8 dígitos)
+    UnidadAdministradoraController-->>Usuario: Vista unidades.create con código sugerido
+
+    Usuario->>UnidadAdministradoraController: POST /unidades (store)
+    UnidadAdministradoraController->>UnidadAdministradoraController: Validar datos (organismo_id, codigo, nombre)
+
+    UnidadAdministradoraController->>CodigoUnicoService: codigoExiste(codigo)
+    CodigoUnicoService->>DB: Verificar código en todas las tablas
+    DB-->>CodigoUnicoService: Código disponible/no disponible
+    CodigoUnicoService-->>UnidadAdministradoraController: Resultado verificación
+
+    alt Código ya existe
+        UnidadAdministradoraController-->>Usuario: Error de validación (código duplicado)
+    else Código disponible
+        UnidadAdministradoraController->>UnidadAdministradora: Create con datos validados
+        UnidadAdministradora->>DB: INSERT INTO unidades_administradoras
+        DB-->>UnidadAdministradora: Unidad creada
+        UnidadAdministradora-->>UnidadAdministradoraController: Unidad guardada
+        UnidadAdministradoraController-->>Usuario: Redirect a unidades.index con mensaje de éxito
+    end

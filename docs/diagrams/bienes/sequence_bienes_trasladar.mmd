@@ -1,0 +1,61 @@
+sequenceDiagram
+    participant Usuario as Usuario Admin
+    participant BienController
+    participant Bien
+    participant Dependencia
+    participant Organismo
+    participant CodigoJerarquicoService
+    participant ActaTrasladoService
+    participant Movimiento
+    participant DB
+    participant Storage
+
+    note right of Usuario: Trasladar Bien entre Dependencias
+    Usuario->>BienController: GET /bienes/{id}/transferir (create)
+    BienController->>Dependencia: Cargar todas las dependencias con responsables
+    Dependencia-->>BienController: Lista de dependencias
+
+    Usuario->>BienController: POST /bienes/{id}/transferir (transferir)
+    BienController->>Bien: Buscar bien por ID
+    Bien->>DB: SELECT FROM bienes WHERE id = ?
+    DB-->>Bien: Datos del bien
+
+    BienController->>Bien: Obtener dependencia actual
+    BienController->>BienController: Validar nueva dependencia_id
+
+    BienController->>CodigoJerarquicoService: buildPrefijoBien(dependencia_nueva)
+    CodigoJerarquicoService->>Dependencia: obtener código
+    Dependencia-->>CodigoJerarquicoService: Código de dependencia destino
+
+    BienController->>CodigoJerarquicoService: validarJerarquia(codigoBien, codigoDependencia)
+    CodigoJerarquicoService-->>BienController: Validación de jerarquía
+
+    alt Conflicto de código (secuencial existe)
+        BienController->>CodigoJerarquicoService: getSiguienteSecuencialDisponible(dependenciaNueva)
+        CodigoJerarquicoService->>Bien: max secuencial en LIKE prefijo
+        Bien-->>CodigoJerarquicoService: Máximo secuencial
+        CodigoJerarquicoService-->>BienController: Nuevo secuencial disponible
+    else Sin conflicto
+        BienController->>Bien: Extraer secuencial actual (últimos 4 dígitos)
+    end
+
+    BienController->>CodigoJerarquicoService: formatearCodigoLegible(nuevoCodigo)
+    CodigoJerarquicoService-->>BienController: Código legible (X.XX.XXX.XXXX)
+
+    BienController->>Bien: update(dependencia_id, codigo, observaciones)
+    Bien->>DB: UPDATE bienes SET ...
+    DB-->>Bien: Bien actualizado
+
+    BienController->>ActaTrasladoService: generar(bien, motivo, usuario, dependencias)
+    ActaTrasladoService->>ActaTrasladoService: Generar folio TRAS-YYYY-XXXXXX
+    ActaTrasladoService->>ActaTrasladoService: Cargar vista acta-traslado
+    ActaTrasladoService->>Storage: makeDirectory(actas/traslado)
+    ActaTrasladoService->>Storage: put(acta.pdf)
+    Storage-->>ActaTrasladoService: Path del acta
+    ActaTrasladoService-->>BienController: Ruta del acta
+
+    BienController->>Movimiento: create(TRASLADO, descripcion, acta_path)
+    Movimiento->>DB: INSERT INTO movimientos
+    DB-->>Movimiento: Movimiento creado
+
+    BienController-->>Usuario: Redirect a movimientos.show con mensaje de éxito

@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant Usuario as Usuario Admin
+    participant UsuarioController
+    participant Usuario as Model Usuario
+    participant Rol
+    participant Hash
+    participant DB
+
+    note right of Usuario: Importar Usuario desde API Externo
+    Usuario->>UsuarioController: POST /usuarios/importar (importarPorCedula)
+    UsuarioController->>Usuario: normalizeCedula(cedula)
+    Usuario-->>UsuarioController: Cédula normalizada
+
+    UsuarioController->>UsuarioController: Leer storage/app/respuesta.json
+    UsuarioController->>UsuarioController: Buscar persona por PIN (cédula)
+
+    alt Cédula no encontrada en JSON
+        UsuarioController-->>Usuario: Redirect con error 'Cédula no existe en API'
+    else Cédula encontrada
+        UsuarioController->>Rol: Buscar rol 'Usuario Normal'
+        Rol->>DB: SELECT FROM roles WHERE nombre = 'Usuario Normal'
+        DB-->>Rol: Rol encontrado
+        Rol-->>UsuarioController: rol_id
+
+        UsuarioController->>Hash: make(cedula sin formato como password)
+        Hash-->>UsuarioController: Password hasheado
+
+        UsuarioController->>Usuario: updateOrCreate(cedula, datos_api)
+        Usuario->>DB: INSERT/UPDATE INTO usuarios
+        DB-->>Usuario: Usuario creado/actualizado
+        Usuario-->>UsuarioController: Usuario procesado
+
+        UsuarioController-->>Usuario: Redirect con mensaje 'Usuario registrado/actualizado'
+    end

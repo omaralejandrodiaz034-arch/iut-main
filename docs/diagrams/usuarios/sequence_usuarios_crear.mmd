@@ -1,0 +1,45 @@
+sequenceDiagram
+    participant Usuario as Usuario Admin
+    participant UsuarioController
+    participant Usuario as Model Usuario
+    participant Rol
+    participant Hash
+    participant DB
+
+    note right of Usuario: Crear Nuevo Usuario
+    Usuario->>UsuarioController: GET /usuarios/create (create)
+    UsuarioController->>Rol: Cargar roles (excluir obsoletos)
+    Rol->>DB: SELECT WHERE nombre != 'Gerente de Bienes'
+    DB-->>Rol: Roles disponibles
+    Rol-->>UsuarioController: Lista de roles
+    UsuarioController-->>Usuario: Vista usuarios.create con roles
+
+    Usuario->>UsuarioController: POST /usuarios (store)
+    UsuarioController->>Usuario: Verificar si es Admin (isAdmin)
+
+    alt No es Admin
+        UsuarioController-->>Usuario: Error 403 (Acceso denegado)
+    else Es Admin
+        UsuarioController->>Usuario: normalizeCedula(cedula)
+        Usuario-->>UsuarioController: Cédula normalizada (V-XX.XXX.XXX)
+        UsuarioController->>UsuarioController: Validar datos (rol_id, cedula, nombre, apellido, correo, password)
+
+        UsuarioController->>Rol: Verificar si rol es Administrador
+        Rol->>DB: SELECT FROM roles WHERE nombre = 'Administrador'
+        DB-->>Rol: Rol Admin
+        Rol-->>UsuarioController: Determinar is_admin
+
+        UsuarioController->>Hash: make(password)
+        Hash-->>UsuarioController: Password hasheado
+
+        UsuarioController->>Usuario: Create con datos validados
+        Usuario->>DB: INSERT INTO usuarios
+        DB-->>Usuario: Usuario creado
+        Usuario-->>UsuarioController: Usuario guardado
+
+        alt Request espera JSON
+            UsuarioController-->>Usuario: JSON response con usuario creado (201)
+        else Request desde navegador
+            UsuarioController-->>Usuario: Redirect a usuarios.index con mensaje de éxito
+        end
+    end

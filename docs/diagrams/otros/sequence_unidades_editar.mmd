@@ -1,0 +1,44 @@
+sequenceDiagram
+    participant Usuario as Usuario
+    participant UnidadAdministradoraController
+    participant UnidadAdministradora
+    participant Organismo
+    participant CodigoUnicoService
+    participant DB
+
+    note right of Usuario: Editar Unidad Administradora Existente
+    Usuario->>UnidadAdministradoraController: GET /unidades/{id}/edit (edit)
+    UnidadAdministradoraController->>UnidadAdministradora: Buscar unidad por ID
+    UnidadAdministradora->>DB: SELECT FROM unidades_administradoras WHERE id = ?
+    DB-->>UnidadAdministradora: Datos de la unidad
+    UnidadAdministradoraController->>Organismo: Cargar todos los organismos
+    Organismo->>DB: SELECT FROM organismos
+    DB-->>Organismo: Lista de organismos
+    Organismo-->>UnidadAdministradoraController: Organismos disponibles
+    UnidadAdministradoraController-->>Usuario: Vista unidades.edit con datos
+
+    Usuario->>UnidadAdministradoraController: PUT /unidades/{id} (update)
+    UnidadAdministradoraController->>UnidadAdministradoraController: Validar datos (con unique ignore)
+
+    alt Cambió código
+        UnidadAdministradoraController->>CodigoUnicoService: codigoExiste(codigo, 'unidades', id)
+        CodigoUnicoService->>DB: Verificar código en todas las tablas (ignorando ID actual)
+        DB-->>CodigoUnicoService: Código disponible/no disponible
+        CodigoUnicoService-->>UnidadAdministradoraController: Resultado verificación
+
+        alt Código no disponible
+            UnidadAdministradoraController-->>Usuario: Error de validación (código duplicado)
+        else Código disponible
+            UnidadAdministradoraController->>UnidadAdministradora: Update con datos validados
+            UnidadAdministradora->>DB: UPDATE unidades_administradoras SET ...
+            DB-->>UnidadAdministradora: Unidad actualizada
+            UnidadAdministradora-->>UnidadAdministradoraController: Unidad actualizada
+            UnidadAdministradoraController-->>Usuario: Redirect con mensaje de éxito
+        end
+    else No cambió código
+        UnidadAdministradoraController->>UnidadAdministradora: Update con datos validados
+        UnidadAdministradora->>DB: UPDATE unidades_administradoras SET ...
+        DB-->>UnidadAdministradora: Unidad actualizada
+        UnidadAdministradora-->>UnidadAdministradoraController: Unidad actualizada
+        UnidadAdministradoraController-->>Usuario: Redirect con mensaje de éxito
+    end

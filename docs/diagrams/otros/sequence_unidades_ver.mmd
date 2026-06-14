@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Usuario
+    participant UnidadAdministradoraController
+    participant UnidadAdministradora
+    participant DB
+
+    note right of Usuario: Ver Detalle de Unidad Administradora
+    Usuario->>UnidadAdministradoraController: GET /unidades/{id} (show)
+    UnidadAdministradoraController->>UnidadAdministradora: Cargar unidad con relaciones
+    UnidadAdministradora->>DB: SELECT con organismo, dependencias
+    DB-->>UnidadAdministradora: Datos completos de la unidad
+    UnidadAdministradora-->>UnidadAdministradoraController: Unidad con relaciones
+    UnidadAdministradoraController-->>Usuario: Vista unidades.show con detalles

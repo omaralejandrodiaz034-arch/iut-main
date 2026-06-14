@@ -367,6 +367,23 @@
                         Solo Desincorporados
                     </span>
                 </label>
+
+                <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+                {{-- Donación - Toggle --}}
+                <label class="inline-flex items-center text-sm cursor-pointer group bg-amber-50 hover:bg-amber-100 
+                              px-3 py-1.5 rounded-lg transition-all duration-200 border border-amber-200 hover:border-amber-300">
+                    <input type="checkbox" name="es_donacion" value="1"
+                           class="w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-2 focus:ring-amber-500/20 
+                                  transition-all duration-200 filtro-auto"
+                           {{ request('es_donacion') ? 'checked' : '' }}>
+                    <span class="ml-2 text-amber-700 font-medium flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14v5a2 2 0 01-2 2h-4a2 2 0 01-2-2v-5z"/>
+                        </svg>
+                        Solo Donados
+                    </span>
+                </label>
             </div>
 
             <div class="flex items-center gap-3 w-full sm:w-auto">
@@ -410,6 +427,12 @@ function clearAllFilters() {
     const desincorporadoCheckbox = document.querySelector('input[name="solo_desincorporados"]');
     if (desincorporadoCheckbox) {
         desincorporadoCheckbox.checked = false;
+    }
+    
+    // Limpiar checkbox de donación
+    const donacionCheckbox = document.querySelector('input[name=\"es_donacion\"]');
+    if (donacionCheckbox) {
+        donacionCheckbox.checked = false;
     }
     
     // Limpiar selects múltiples tradicionales si existen

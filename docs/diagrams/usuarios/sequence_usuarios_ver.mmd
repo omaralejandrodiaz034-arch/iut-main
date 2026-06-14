@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Usuario
+    participant UsuarioController
+    participant Usuario as Model Usuario
+    participant DB
+
+    note right of Usuario: Ver Detalle de Usuario
+    Usuario->>UsuarioController: GET /usuarios/{id} (show)
+    UsuarioController->>Usuario: Cargar usuario con relaciones
+    Usuario->>DB: SELECT con rol, reportes, movimientos
+    DB-->>Usuario: Datos completos del usuario
+    Usuario-->>UsuarioController: Usuario con relaciones
+
+    alt Request espera JSON
+        UsuarioController-->>Usuario: JSON response con usuario
+    else Request desde navegador
+        UsuarioController-->>Usuario: Vista usuarios.show con detalles
+    end

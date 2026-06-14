@@ -1,0 +1,42 @@
+sequenceDiagram
+    participant Usuario as Usuario
+    participant ResponsableController
+    participant Responsable
+    participant TipoResponsable
+    participant DB
+
+    note right of Usuario: Editar Responsable Existente
+    Usuario->>ResponsableController: GET /responsables/{id}/edit (edit)
+    ResponsableController->>Responsable: Buscar responsable por ID
+    Responsable->>DB: SELECT FROM responsables WHERE id = ?
+    DB-->>Responsable: Datos del responsable
+    ResponsableController->>TipoResponsable: Cargar todos los tipos
+    TipoResponsable->>DB: SELECT FROM tipos_responsables
+    DB-->>TipoResponsable: Lista de tipos
+    TipoResponsable-->>ResponsableController: Tipos disponibles
+    ResponsableController-->>Usuario: Vista responsables.edit con datos
+
+    Usuario->>ResponsableController: PUT /responsables/{id} (update)
+    ResponsableController->>ResponsableController: Validar datos (con unique ignore para cédula)
+
+    alt Cambió cédula
+        ResponsableController->>Responsable: Verificar cédula única (ignorando ID actual)
+        Responsable->>DB: SELECT FROM responsables WHERE cedula = ? AND id != ?
+        DB-->>Responsable: Cédula existe/no existe
+
+        alt Cédula no disponible
+            ResponsableController-->>Usuario: Error de validación (cédula duplicada)
+        else Cédula disponible
+            ResponsableController->>Responsable: Update con datos validados
+            Responsable->>DB: UPDATE responsables SET ...
+            DB-->>Responsable: Responsable actualizado
+            Responsable-->>ResponsableController: Responsable actualizado
+            ResponsableController-->>Usuario: Redirect con mensaje de éxito
+        end
+    else No cambió cédula
+        ResponsableController->>Responsable: Update con datos validados
+        Responsable->>DB: UPDATE responsables SET ...
+        DB-->>Responsable: Responsable actualizado
+        Responsable-->>ResponsableController: Responsable actualizado
+        ResponsableController-->>Usuario: Redirect con mensaje de éxito
+    end

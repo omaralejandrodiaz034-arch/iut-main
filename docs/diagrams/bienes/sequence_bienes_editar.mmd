@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant Usuario as Usuario
+    participant BienController
+    participant Bien
+    participant Dependencia
+    participant Storage
+    participant DB
+
+    note right of Usuario: Editar Bien Existente
+    Usuario->>BienController: GET /bienes/{id}/edit (edit)
+    BienController->>Bien: Buscar bien por ID
+    Bien->>DB: SELECT FROM bienes WHERE id = ?
+    DB-->>Bien: Datos del bien
+    BienController->>Dependencia: Cargar dependencias
+    Dependencia-->>BienController: Lista de dependencias
+    BienController-->>Usuario: Vista bienes.edit con datos
+
+    Usuario->>BienController: PUT /bienes/{id} (update)
+    BienController->>BienController: Validar datos (con unique ignore)
+    BienController->>Bien: Obtener dependencia_id y estado originales
+
+    alt Tiene nueva fotografía
+        BienController->>Storage: Eliminar foto anterior (si existe)
+        BienController->>Storage: Guardar nueva foto
+        Storage-->>BienController: Path de nueva foto
+    end
+
+    BienController->>Bien: Update con datos validados
+    Bien->>DB: UPDATE bienes SET ...
+    DB-->>Bien: Bien actualizado
+
+    alt Cambió dependencia o estado
+        BienController->>Bien: setAttribute('_observaciones', cambios detectados)
+    end
+
+    Bien-->>BienController: Bien actualizado
+    BienController-->>Usuario: Redirect con mensaje de éxito

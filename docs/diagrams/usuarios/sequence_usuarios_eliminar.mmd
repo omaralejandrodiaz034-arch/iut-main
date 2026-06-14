@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Usuario as Usuario Admin
+    participant UsuarioController
+    participant Usuario as Model Usuario
+    participant EliminadosService
+    participant DB
+
+    note right of Usuario: Eliminar Usuario
+    Usuario->>UsuarioController: DELETE /usuarios/{id} (destroy)
+    UsuarioController->>Usuario: Verificar permisos (canDeleteUser)
+
+    alt No puede eliminar (no es admin, es el mismo usuario, o el objetivo es admin)
+        UsuarioController-->>Usuario: Error 403
+    else Puede eliminar
+        UsuarioController->>EliminadosService: archiveModel(usuario, auth_id)
+        EliminadosService->>DB: INSERT INTO eliminados (registro del usuario)
+        DB-->>EliminadosService: Registro archivado
+        UsuarioController->>Usuario: delete()
+        Usuario->>DB: DELETE FROM usuarios WHERE id = ?
+        DB-->>Usuario: Usuario eliminado
+        Usuario-->>UsuarioController: Usuario eliminado
+        UsuarioController-->>Usuario: Response 204 (sin contenido)
+    end

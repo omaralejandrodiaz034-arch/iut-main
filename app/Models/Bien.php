@@ -31,6 +31,12 @@ class Bien extends Model
         'fecha_registro',
         'tipo_bien',
         'caracteristicas',
+        'es_donacion',
+        'tipo_donante',
+        'donante_nombre',
+        'donante_documento',
+        'donante_direccion',
+        'acta_donacion',
 
     ];
 
@@ -52,6 +58,7 @@ class Bien extends Model
         'tipo_bien' => TipoBien::class, // Enum PHP 8.1+
         'precio' => 'decimal:2',
         'caracteristicas' => 'array',
+        'es_donacion' => 'boolean',
     ];
 
     // Relaciones

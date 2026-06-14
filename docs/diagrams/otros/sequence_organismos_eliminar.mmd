@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Usuario
+    participant OrganismoController
+    participant Organismo
+    participant Usuario as UsuarioModel
+
+    note right of Usuario: Intentar Eliminar Organismo
+    Usuario->>OrganismoController: DELETE /organismos/{id} (destroy)
+    OrganismoController-->>Usuario: Error 403 (No está permitido eliminar organismos)

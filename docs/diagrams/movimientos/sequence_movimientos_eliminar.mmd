@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Usuario
+    participant MovimientoController
+    participant Movimiento
+    participant EliminadosService
+    participant DB
+
+    note right of Usuario: Eliminar Movimiento
+    Usuario->>MovimientoController: DELETE /movimientos/{id} (destroy)
+    MovimientoController->>MovimientoController: Obtener ID del usuario autenticado
+    MovimientoController->>EliminadosService: archiveModel(movimiento, deletedBy)
+    EliminadosService->>DB: INSERT INTO eliminados (registro del movimiento)
+    DB-->>EliminadosService: Registro archivado
+    MovimientoController->>Movimiento: delete()
+    Movimiento->>DB: DELETE FROM movimientos WHERE id = ?
+    DB-->>Movimiento: Movimiento eliminado
+    Movimiento-->>MovimientoController: Movimiento eliminado
+    MovimientoController-->>Usuario: JSON response 204 (sin contenido)

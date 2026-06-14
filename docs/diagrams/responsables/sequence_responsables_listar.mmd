@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Usuario
+    participant ResponsableController
+    participant Responsable
+    participant TipoResponsable
+    participant DB
+
+    note right of Usuario: Listar Responsables con Filtros
+    Usuario->>ResponsableController: GET /responsables (index)
+    ResponsableController->>ResponsableController: Validar filtros (search)
+    ResponsableController->>Responsable: Query con relaciones (tipo, dependencias)
+    Responsable->>DB: Aplicar filtros y ordenamiento
+    DB-->>Responsable: Resultados paginados
+    Responsable-->>ResponsableController: Collection de responsables
+    ResponsableController-->>Usuario: Vista responsables.index con datos filtrados

@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Usuario
+    participant MovimientoController
+    participant EliminadosService
+    participant DB
+
+    note right of Usuario: Restaurar Registro Eliminado
+    Usuario->>MovimientoController: POST /movimientos/eliminados/{id}/restaurar (restoreEliminado)
+    MovimientoController->>Usuario: Verificar permisos (isAdmin)
+
+    alt No es Admin
+        MovimientoController-->>Usuario: Error 403 (Solo administradores)
+    else Es Admin
+        MovimientoController->>EliminadosService: restoreEliminado(eliminado)
+        EliminadosService->>DB: Restaurar registro desde eliminados
+        DB-->>EliminadosService: Registro restaurado
+        EliminadosService-->>MovimientoController: Resultado (éxito/fallo)
+        alt Restauración exitosa
+            MovimientoController-->>Usuario: Redirect con mensaje de éxito
+        else Restauración falló
+            MovimientoController-->>Usuario: Redirect con mensaje de error
+        end
+    end

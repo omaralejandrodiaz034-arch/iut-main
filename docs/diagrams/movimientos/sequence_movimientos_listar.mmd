@@ -1,0 +1,35 @@
+sequenceDiagram
+    participant Usuario
+    participant MovimientoController
+    participant Movimiento
+    participant Eliminado
+    participant Usuario as UsuarioModel
+    participant DB
+
+    note right of Usuario: Listar Movimientos con Filtros
+    Usuario->>MovimientoController: GET /movimientos (index)
+    MovimientoController->>MovimientoController: Validar filtros (tipo, usuario, entidad, fecha_desde, fecha_hasta)
+    MovimientoController->>Movimiento: Query con relaciones (bien, usuario, subject)
+    Movimiento->>DB: Aplicar filtros y ordenamiento por fecha DESC
+    DB-->>Movimiento: Resultados paginados
+    Movimiento-->>MovimientoController: Collection de movimientos
+
+    alt Es Admin
+        MovimientoController->>Eliminado: Obtener registros eliminados
+        Eliminado->>DB: SELECT FROM eliminados ORDER BY deleted_at DESC LIMIT 10
+        DB-->>Eliminado: Registros eliminados
+        Eliminado-->>MovimientoController: eliminados
+
+        MovimientoController->>UsuarioModel: Obtener usuarios que eliminaron
+        UsuarioModel->>DB: SELECT FROM usuarios WHERE id IN (deleted_by)
+        DB-->>UsuarioModel: Usuarios
+        UsuarioModel-->>MovimientoController: Usuarios por ID
+    end
+
+    alt Request AJAX
+        MovimientoController-->>Usuario: HTML renderizado de movimientos.index
+    else Request JSON
+        MovimientoController-->>Usuario: JSON response con movimientos y eliminados
+    else Request normal
+        MovimientoController-->>Usuario: Vista movimientos.index con datos
+    end

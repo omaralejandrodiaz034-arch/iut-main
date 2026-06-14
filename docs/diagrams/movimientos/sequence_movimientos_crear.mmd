@@ -1,0 +1,52 @@
+sequenceDiagram
+    participant Usuario
+    participant MovimientoController
+    participant Movimiento
+    participant Usuario as UsuarioModel
+    participant DB
+
+    note right of Usuario: Crear Nuevo Movimiento
+    Usuario->>MovimientoController: POST /movimientos (store)
+    MovimientoController->>Usuario: Verificar permisos (isAdmin para requests no JSON)
+
+    alt No es Admin y request no es JSON
+        MovimientoController-->>Usuario: Error 403 (Solo administradores)
+    else Tiene permisos
+        MovimientoController->>MovimientoController: Validar datos (bien_id, subject_type, subject_id, tipo, fecha, observaciones, usuario_id)
+
+        alt Tiene subject_type
+            MovimientoController->>MovimientoController: Verificar subject_type permitido
+            alt Subject type no permitido
+                MovimientoController-->>Usuario: Error de validación (tipo de sujeto no permitido)
+            else Subject type permitido
+                MovimientoController->>DB: Verificar si subject existe
+                DB-->>MovimientoController: Subject existe/no existe
+                alt Subject no existe
+                    MovimientoController-->>Usuario: Error de validación (sujeto no existe)
+                else Subject existe
+                    alt Subject es Bien y bien_id está vacío
+                        MovimientoController->>MovimientoController: Asignar subject_id a bien_id
+                    end
+                    MovimientoController->>Movimiento: Create con datos validados
+                    Movimiento->>DB: INSERT INTO movimientos
+                    DB-->>Movimiento: Movimiento creado
+                    Movimiento-->>MovimientoController: Movimiento guardado
+                    alt Request JSON
+                        MovimientoController-->>Usuario: JSON response con movimiento creado (201)
+                    else Request normal
+                        MovimientoController-->>Usuario: Redirect a movimientos.index con mensaje de éxito
+                    end
+                end
+            end
+        else No tiene subject_type
+            MovimientoController->>Movimiento: Create con datos validados
+            Movimiento->>DB: INSERT INTO movimientos
+            DB-->>Movimiento: Movimiento creado
+            Movimiento-->>MovimientoController: Movimiento guardado
+            alt Request JSON
+                MovimientoController-->>Usuario: JSON response con movimiento creado (201)
+            else Request normal
+                MovimientoController-->>Usuario: Redirect a movimientos.index con mensaje de éxito
+            end
+        end
+    end

@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Usuario
+    participant UnidadAdministradoraController
+    participant UnidadAdministradora
+    participant Organismo
+    participant DB
+
+    note right of Usuario: Listar Unidades Administradoras con Filtros
+    Usuario->>UnidadAdministradoraController: GET /unidades (index)
+    UnidadAdministradoraController->>UnidadAdministradoraController: Validar filtros (search, organismo_id)
+    UnidadAdministradoraController->>UnidadAdministradora: Query con relaciones (organismo, dependencias)
+    UnidadAdministradora->>DB: Aplicar filtros y ordenamiento
+    DB-->>UnidadAdministradora: Resultados paginados
+    UnidadAdministradora-->>UnidadAdministradoraController: Collection de unidades
+    UnidadAdministradoraController->>Organismo: Cargar todos los organismos
+    Organismo->>DB: SELECT FROM organismos ORDER BY nombre
+    DB-->>Organismo: Lista de organismos
+    Organismo-->>UnidadAdministradoraController: Organismos disponibles
+    UnidadAdministradoraController-->>Usuario: Vista unidades.index con datos filtrados

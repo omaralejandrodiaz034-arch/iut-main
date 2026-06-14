@@ -61,6 +61,7 @@ class BienController extends Controller
             'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
 
             'solo_desincorporados' => ['nullable', 'boolean'],
+            'es_donacion' => ['nullable', 'boolean'],
             'descripcion' => ['nullable', 'string', 'max:255'],
 
         ], [
@@ -140,11 +141,14 @@ class BienController extends Controller
         if ($soloDesincorporados) {
             $query->where('estado', 'DESINCORPORADO');
         } elseif (! $filtroEstadoExplicito && empty($validated['estado'])) {
-            // Solo excluir desincorporados si no hay filtro de estado activo
             $query->where('estado', '!=', 'DESINCORPORADO');
         }
 
-        // ⚡️ Ordenamiento y Paginación
+        if (isset($validated['es_donacion'])) {
+            $esDonacion = filter_var($validated['es_donacion'], FILTER_VALIDATE_BOOLEAN);
+            $query->where('es_donacion', $esDonacion);
+        }
+
         $sort = $validated['sort'] ?? 'fecha_registro';
         $direction = $validated['direction'] ?? 'desc';
 
@@ -153,7 +157,7 @@ class BienController extends Controller
             ->appends($request->only([
                 'search', 'descripcion', 'organismo_id', 'unidad_id', 'dependencias',
                 'estado', 'tipo_bien', 'fecha_desde', 'fecha_hasta',
-                'precio_desde', 'precio_hasta', 'sort', 'direction', 'solo_desincorporados',
+                'precio_desde', 'precio_hasta', 'sort', 'direction', 'solo_desincorporados', 'es_donacion',
             ]));
 
         // 3. Respuesta AJAX
@@ -238,6 +242,10 @@ class BienController extends Controller
             'codigo_secuencial' => ['required', 'string', 'regex:/^\d{4}$/'],
         ]);
 
+        if ($request->filled('precio')) {
+            $request->merge(['precio' => str_replace([' ', ','], ['', '.'], $request->input('precio'))]);
+        }
+
         $dependenciaId = $request->input('dependencia_id');
         $dependencia = Dependencia::findOrFail($dependenciaId);
         $prefijoDependencia = substr($dependencia->codigo, 0, CodigoJerarquicoService::LONG_PREFIJO_BIEN);
@@ -266,6 +274,10 @@ class BienController extends Controller
                 $validated['fotografia'] = $this->procesarFotografia($request);
             }
 
+            if (! empty($validated['es_donacion'])) {
+                $validated['precio'] = 0;
+            }
+
             $datosBien = $this->extractBienData($validated);
 
             $bien = Bien::create($datosBien);
@@ -280,6 +292,17 @@ class BienController extends Controller
                     'motivo_desincorporacion' => $validated['motivo_desincorporacion'] ?? 'Sin motivo especificado',
                     'acta_desincorporacion' => $actaPath,
                 ]);
+            }
+
+            if (! empty($bien->es_donacion)) {
+                $actaPath = app(\App\Services\ActaDonacionService::class)->generar($bien, [
+                    'tipo_donante' => $validated['tipo_donante'] ?? null,
+                    'donante_nombre' => $validated['donante_nombre'] ?? null,
+                    'donante_documento' => $validated['donante_documento'] ?? null,
+                    'donante_direccion' => $validated['donante_direccion'] ?? null,
+                ], auth()->user());
+
+                $bien->update(['acta_donacion' => $actaPath]);
             }
 
             DB::commit();
@@ -415,6 +438,10 @@ class BienController extends Controller
             'codigo' => $request->input('codigo', $bien->codigo),
         ]);
 
+        if ($request->filled('precio')) {
+            $request->merge(['precio' => str_replace([' ', ','], ['', '.'], $request->input('precio'))]);
+        }
+
         $rules = $this->getUpdateValidationRules($bien);
 
         $tipo = $request->input('tipo_bien', $bien->tipo_bien?->value);
@@ -436,6 +463,10 @@ class BienController extends Controller
                 $validated['fotografia'] = $this->procesarFotografia($request, $bien);
             }
 
+            if (! empty($validated['es_donacion'])) {
+                $validated['precio'] = 0;
+            }
+
             $datosBien = $this->extractBienData($validated);
 
             $tipoAnterior = $bien->tipo_bien?->value;
@@ -444,6 +475,17 @@ class BienController extends Controller
             }
 
             $bien->update($datosBien);
+
+            if (! empty($bien->es_donacion) && empty($bien->acta_donacion)) {
+                $actaPath = app(\App\Services\ActaDonacionService::class)->generar($bien, [
+                    'tipo_donante' => $validated['tipo_donante'] ?? null,
+                    'donante_nombre' => $validated['donante_nombre'] ?? null,
+                    'donante_documento' => $validated['donante_documento'] ?? null,
+                    'donante_direccion' => $validated['donante_direccion'] ?? null,
+                ], auth()->user());
+
+                $bien->update(['acta_donacion' => $actaPath]);
+            }
 
             if ($tipo) {
                 $this->bienTypeService->sync($bien, $tipo, $validated);
@@ -688,6 +730,7 @@ class BienController extends Controller
                 'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde'],
                 'precio_desde' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
                 'precio_hasta' => ['nullable', 'numeric', 'min:0', 'max:999999999.99', 'gte:precio_desde'],
+                'es_donacion' => ['nullable', 'boolean'],
                 'solo_desincorporados' => ['nullable', 'boolean'],
             ]);
 
@@ -818,6 +861,11 @@ class BienController extends Controller
             $query->where('estado', '!=', 'DESINCORPORADO');
         }
 
+        if (isset($filtros['es_donacion'])) {
+            $esDonacion = filter_var($filtros['es_donacion'], FILTER_VALIDATE_BOOLEAN);
+            $query->where('es_donacion', $esDonacion);
+        }
+
         // Tipo de bien (soporta array o valor simple)
         if (! empty($filtros['tipo_bien'])) {
             if (is_array($filtros['tipo_bien'])) {
@@ -914,6 +962,11 @@ class BienController extends Controller
         // Búsqueda
         if (! empty($filtros['search'])) {
             $query->search($filtros['search']);
+        }
+
+        if (isset($filtros['es_donacion'])) {
+            $esDonacion = filter_var($filtros['es_donacion'], FILTER_VALIDATE_BOOLEAN);
+            $query->where('es_donacion', $esDonacion);
         }
 
         // Estado (array)
@@ -1138,6 +1191,28 @@ class BienController extends Controller
         // Búsqueda rápida
         if (! empty($filtros['search'])) {
             $query->search($filtros['search']);
+        }
+
+        // Estado (array)
+        if (! empty($filtros['estado']) && is_array($filtros['estado'])) {
+            $estadosValidos = array_filter($filtros['estado']);
+            if (! empty($estadosValidos)) {
+                $query->whereIn('estado', $estadosValidos);
+            }
+        } elseif (! empty($filtros['solo_desincorporados'])) {
+            $query->where('estado', 'DESINCORPORADO');
+        } elseif (empty($filtros['estado']) && empty($filtros['solo_desincorporados'])) {
+            $query->where('estado', '!=', 'DESINCORPORADO');
+        }
+
+        if (isset($filtros['es_donacion'])) {
+            $esDonacion = filter_var($filtros['es_donacion'], FILTER_VALIDATE_BOOLEAN);
+            $query->where('es_donacion', $esDonacion);
+        }
+
+        // Tipo de bien (string simple)
+        if (! empty($filtros['tipo_bien'])) {
+            $query->where('tipo_bien', $filtros['tipo_bien']);
         }
 
         // 🔥 CORRECCIÓN PRINCIPAL: Estado (manejo de arrays)
@@ -1441,23 +1516,28 @@ class BienController extends Controller
             'codigo' => [
                 'required',
                 'string',
-                'size:'.CodigoJerarquicoService::TOTAL_BIEN, // 10 dígitos
-                'regex:/^[0-9]+$/', // Solo números, sin guiones en BD
+                'size:'.CodigoJerarquicoService::TOTAL_BIEN,
+                'regex:/^[0-9]+$/',
                 function ($attribute, $value, $fail) {
                     if (CodigoJerarquicoService::codigoExiste($value)) {
                         $fail("El código '{$value}' ya está asignado a otro bien.");
                     }
                 },
-                // Nota: el sistema ahora usa códigos planos de longitud fija (ver CodigoJerarquicoService::TOTAL_BIEN)
             ],
             'descripcion' => ['required', 'string', 'max:255'],
-            'precio' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
+            'precio' => ['required', 'numeric', 'min:0', 'max:999999999.99', 'regex:/^\d+(\.\d{1,2})?$/'],
             'fotografia' => ['nullable', 'image', 'max:2048', 'mimes:jpeg,png,jpg,gif,webp'],
             'estado' => ['required', Rule::enum(EstadoBien::class)],
             'tipo_bien' => ['required', Rule::enum(TipoBien::class)],
             'fecha_registro' => ['required', 'date', 'before_or_equal:today', 'after:2000-01-01'],
             'acta_desincorporacion' => ['nullable', 'required_if:estado,DESINCORPORADO', 'file', 'mimes:pdf', 'max:2048'],
             'motivo_desincorporacion' => ['nullable', 'required_if:estado,DESINCORPORADO', 'string', 'max:500'],
+            'es_donacion' => ['nullable', 'boolean'],
+            'tipo_donante' => ['nullable', 'required_if:es_donacion,1', 'string', 'in:PERSONA,INSTITUCION'],
+            'donante_nombre' => ['nullable', 'required_if:es_donacion,1', 'string', 'max:255'],
+            'donante_documento' => ['nullable', 'string', 'max:50'],
+            'donante_direccion' => ['nullable', 'required_if:es_donacion,1', 'string', 'max:500'],
+            'acta_donacion' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -1480,11 +1560,27 @@ class BienController extends Controller
                 },
             ],
             'descripcion' => ['sometimes', 'string', 'max:255'],
-            'precio' => ['sometimes', 'numeric', 'min:0', 'max:999999999.99'],
+            'precio' => ['sometimes', 'numeric', 'min:0', 'max:999999999.99', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) use ($bien, $request) {
+                $esDonacion = filter_var($request->input('es_donacion') ?? (bool) ($bien->es_donacion ?? false), FILTER_VALIDATE_BOOLEAN);
+
+                if ($esDonacion && (float) $value !== 0.0) {
+                    $fail('El precio de un bien donado debe ser 0,00 Bs.');
+                }
+
+                if (! $esDonacion && (float) $value === 0.0) {
+                    $fail('El precio de un bien no donado no puede ser 0,00 Bs.');
+                }
+            }],
             'fotografia' => ['nullable', 'image', 'max:2048', 'mimes:jpeg,png,jpg,gif,webp'],
             'estado' => ['sometimes', Rule::enum(EstadoBien::class)],
             'tipo_bien' => ['sometimes', Rule::enum(TipoBien::class)],
             'fecha_registro' => ['sometimes', 'date', 'before_or_equal:today', 'after:2000-01-01'],
+            'es_donacion' => ['nullable', 'boolean'],
+            'tipo_donante' => ['nullable', 'required_if:es_donacion,1', 'string', 'in:PERSONA,INSTITUCION'],
+            'donante_nombre' => ['nullable', 'required_if:es_donacion,1', 'string', 'max:255'],
+            'donante_documento' => ['nullable', 'string', 'max:50'],
+            'donante_direccion' => ['nullable', 'required_if:es_donacion,1', 'string', 'max:500'],
+            'acta_donacion' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -1540,6 +1636,7 @@ class BienController extends Controller
     {
         $camposExcluir = [
             'acta_desincorporacion', 'motivo_desincorporacion',
+            'acta_donacion',
             'subtipo', 'serial', 'modelo', 'procesador', 'memoria',
             'almacenamiento', 'pantalla', 'garantia',
             'placa', 'marca', 'anio', 'motor', 'chasis', 'combustible', 'kilometraje',
@@ -1950,6 +2047,12 @@ class BienController extends Controller
         // Solo desincorporados
         if (! empty($filtros['solo_desincorporados'])) {
             $descripciones[] = 'Solo bienes desincorporados';
+        }
+
+        // Donación
+        if (isset($filtros['es_donacion'])) {
+            $esDonacion = filter_var($filtros['es_donacion'], FILTER_VALIDATE_BOOLEAN);
+            $descripciones[] = 'Donación: '.($esDonacion ? 'Sí' : 'No');
         }
 
         if (empty($descripciones)) {

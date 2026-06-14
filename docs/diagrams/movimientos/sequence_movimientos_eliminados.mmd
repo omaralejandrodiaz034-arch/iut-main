@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Usuario
+    participant MovimientoController
+    participant Bien
+    participant DB
+
+    note right of Usuario: Ver Bienes Eliminados
+    Usuario->>MovimientoController: GET /movimientos/eliminados (eliminados)
+    MovimientoController->>Bien: Obtener bienes con estado desincorporado
+    Bien->>DB: SELECT FROM bienes WHERE estado = 'desincorporado' WITH movimiento
+    DB-->>Bien: Bienes desincorporados
+    Bien-->>MovimientoController: Bienes desincorporados
+    MovimientoController-->>Usuario: Vista movimientos.eliminados con bienes

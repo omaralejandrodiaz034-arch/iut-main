@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Usuario
+    participant ResponsableController
+    participant Responsable
+    participant EliminadosService
+    participant DB
+
+    note right of Usuario: Eliminar Responsable
+    Usuario->>ResponsableController: DELETE /responsables/{id} (destroy)
+    ResponsableController->>Usuario: Verificar permisos (canDeleteData)
+
+    alt No tiene permisos
+        ResponsableController-->>Usuario: Error 403 (sin permisos)
+    else Tiene permisos
+        ResponsableController->>Responsable: Verificar dependencias asignadas
+        Responsable->>DB: COUNT(dependencias) WHERE responsable_id = ?
+        DB-->>Responsable: Cantidad de dependencias
+
+        alt Tiene dependencias asignadas
+            ResponsableController-->>Usuario: Error (no se puede eliminar, tiene dependencias)
+        else No tiene dependencias
+            ResponsableController->>EliminadosService: archiveModel(responsable, auth_id)
+            EliminadosService->>DB: INSERT INTO eliminados (registro del responsable)
+            DB-->>EliminadosService: Registro archivado
+            ResponsableController->>Responsable: delete()
+            Responsable->>DB: DELETE FROM responsables WHERE id = ?
+            DB-->>Responsable: Responsable eliminado
+            Responsable-->>ResponsableController: Responsable eliminado
+            ResponsableController-->>Usuario: Redirect con mensaje de éxito
+        end
+    end

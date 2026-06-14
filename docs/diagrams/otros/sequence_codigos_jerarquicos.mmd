@@ -1,0 +1,60 @@
+sequenceDiagram
+    participant Usuario as Usuario Admin
+    participant BienController
+    participant CodigoJerarquicoService
+    participant Organismo
+    participant UnidadAdministradora
+    participant Dependencia
+    participant Bien
+    participant DB
+
+    note right of Usuario: Generar Código Jerárquico para Bien
+    Usuario->>BienController: GET /bienes/create (create)
+    BienController->>Bien: Obtener último código secuencial
+    Bien->>DB: SELECT MAX(codigo) WHERE codigo REGEXP '^[0-9]+$'
+
+    alt No hay códigos previos
+        Bien-->>BienController: Comienza desde 1
+    else Existen códigos
+        DB-->>Bien: Último código numérico
+    end
+
+    Bien-->>BienController: Código siguiente sugerido (8 dígitos)
+    BienController-->>Usuario: Vista bienes.create con código sugerido
+
+    note right of Usuario: Generar Código Jerárquico para Organismo
+    Usuario->>OrganismoController: GET /organismos/create (create)
+    OrganismoController->>CodigoJerarquicoService: generarCodigoOrganismo()
+    CodigoJerarquicoService->>Organismo: max('codigo')
+    Organismo-->>CodigoJerarquicoService: Último código de organismo
+    CodigoJerarquicoService-->>OrganismoController: Código 1 dígito + 9 zeros
+
+    note right of Usuario: Generar Código Jerárquico para Unidad
+    Usuario->>UnidadController: GET /unidades/create (create)
+    UnidadController->>CodigoJerarquicoService: generarCodigoUnidad(organismoId)
+    CodigoJerarquicoService->>Organismo: lockForUpdate()->findOrFail(organismoId)
+    Organismo-->>CodigoJerarquicoService: Organismo con código
+    CodigoJerarquicoService->>UnidadAdministradora: max secuencial en SUBSTRING
+    UnidadAdministradora-->>CodigoJerarquicoService: Máximo secuencial
+    CodigoJerarquicoService->>CodigoJerarquicoService: buildCodigoUnidad()
+    CodigoJerarquicoService-->>UnidadController: Código unidad (3 dígitos + 7 zeros)
+
+    note right of Usuario: Generar Código Jerárquico para Dependencia
+    Usuario->>DependenciaController: GET /dependencias/create (edit)
+    DependenciaController->>CodigoJerarquicoService: generarCodigoDependencia(unidadId)
+    CodigoJerarquicoService->>UnidadAdministradora: lockForUpdate()->findOrFail(unidadId)
+    UnidadAdministradora-->>CodigoJerarquicoService: Unidad con código
+    CodigoJerarquicoService->>Dependencia: max secuencial en SUBSTRING
+    Dependencia-->>CodigoJerarquicoService: Máximo secuencial
+    CodigoJerarquicoService->>CodigoJerarquicoService: buildCodigoDependencia()
+    CodigoJerarquicoService-->>DependenciaController: Código dependencia (6 dígitos + 4 zeros)
+
+    note right of Usuario: Generar Código Jerárquico para Bien
+    Usuario->>BienController: GET /bienes/create (create)
+    BienController->>CodigoJerarquicoService: recomendarSiguienteBien(dependenciaId)
+    CodigoJerarquicoService->>Dependencia: findOrFail(dependenciaId)
+    Dependencia-->>CodigoJerarquicoService: Dependencia con código
+    CodigoJerarquicoService->>Bien: max secuencial en LIKE prefijo
+    Bien-->>CodigoJerarquicoService: Máximo secuencial
+    CodigoJerarquicoService->>CodigoJerarquicoService: buildPrefijoBien() + formatearCodigoLegible()
+    CodigoJerarquicoService-->>BienController: Código bien 10 dígitos con estructura legible

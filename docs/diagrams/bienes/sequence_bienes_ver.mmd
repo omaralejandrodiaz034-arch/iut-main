@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Usuario
+    participant BienController
+    participant Bien
+    participant DB
+
+    note right of Usuario: Ver Detalle de Bien
+    Usuario->>BienController: GET /bienes/{id} (show)
+    BienController->>Bien: Cargar bien con relaciones
+    Bien->>DB: SELECT con dependencia, responsable, movimientos
+    DB-->>Bien: Datos completos del bien
+    Bien-->>BienController: Bien con relaciones
+    BienController-->>Usuario: Vista bienes.show con detalles

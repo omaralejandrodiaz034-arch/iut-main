@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant Usuario as Usuario Admin
+    participant UsuarioController
+    participant Usuario as Model Usuario
+    participant Rol
+    participant DB
+
+    note right of Usuario: Listar Usuarios con Filtros
+    Usuario->>UsuarioController: GET /usuarios (index)
+    UsuarioController->>UsuarioController: Validar filtros (buscar, cedula, nombre, correo, rol_id, activo)
+    UsuarioController->>Usuario: Query con relación 'rol'
+
+    alt Búsqueda general
+        Usuario->>DB: WHERE nombre/apellido/cedula/correo LIKE '%term%'
+    end
+
+    alt Filtros específicos
+        Usuario->>DB: WHERE cedula/nombre/correo LIKE '%filter%'
+        Usuario->>DB: WHERE rol_id = ? OR activo = ?
+    end
+
+    DB-->>Usuario: Resultados filtrados
+    Usuario-->>UsuarioController: Collection paginada de usuarios
+    UsuarioController->>Rol: Cargar todos los roles
+    Rol->>DB: SELECT FROM roles ORDER BY nombre
+    DB-->>Rol: Lista de roles
+    Rol-->>UsuarioController: Roles disponibles
+    UsuarioController-->>Usuario: Vista usuarios.index con datos

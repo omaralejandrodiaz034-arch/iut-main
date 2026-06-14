@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Usuario
+    participant BienController
+    participant Bien
+    participant FpdfReportService
+    participant DB
+
+    note right of Usuario: Exportar Bien a PDF
+    Usuario->>BienController: GET /bienes/{id}/pdf (exportPdf)
+    BienController->>Bien: Cargar bien con movimientos ordenados
+    Bien->>DB: SELECT con relaciones
+    DB-->>Bien: Bien completo
+    BienController->>FpdfReportService: loadView('bienes.pdf')
+    FpdfReportService-->>BienController: PDF generado
+    BienController-->>Usuario: Descargar archivo PDF

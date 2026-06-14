@@ -1,0 +1,32 @@
+sequenceDiagram
+    participant Usuario
+    participant OrganismoController
+    participant Organismo
+    participant CodigoUnicoService
+    participant DB
+
+    note right of Usuario: Crear Nuevo Organismo
+    Usuario->>OrganismoController: GET /organismos/create (create)
+    OrganismoController->>CodigoUnicoService: obtenerSiguienteCodigo()
+    CodigoUnicoService->>DB: SELECT MAX(codigo) FROM todas_las_tablas
+    DB-->>CodigoUnicoService: Último código global
+    CodigoUnicoService-->>OrganismoController: Código siguiente sugerido (8 dígitos)
+    OrganismoController-->>Usuario: Vista organismos.create con código sugerido
+
+    Usuario->>OrganismoController: POST /organismos (store)
+    OrganismoController->>OrganismoController: Validar datos (codigo, nombre)
+
+    OrganismoController->>CodigoUnicoService: codigoExiste(codigo)
+    CodigoUnicoService->>DB: Verificar código en todas las tablas
+    DB-->>CodigoUnicoService: Código disponible/no disponible
+    CodigoUnicoService-->>OrganismoController: Resultado verificación
+
+    alt Código ya existe
+        OrganismoController-->>Usuario: Error de validación (código duplicado)
+    else Código disponible
+        OrganismoController->>Organismo: Create con datos validados
+        Organismo->>DB: INSERT INTO organismos
+        DB-->>Organismo: Organismo creado
+        Organismo-->>OrganismoController: Organismo guardado
+        OrganismoController-->>Usuario: Redirect a organismos.index con mensaje de éxito
+    end

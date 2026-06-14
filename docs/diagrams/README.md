@@ -2,34 +2,91 @@
 
 Esta carpeta contiene diagramas en formato Mermaid para documentar la arquitectura y el modelo de datos del sistema.
 
-Archivos:
+## Estructura de carpetas
+
+### Arquitectura y Modelo
 - `architecture.mmd` — Diagrama de arquitectura general (web, app, queue, DB, storage).
 - `er_diagram.mmd` — Diagrama ER simplificado con las entidades principales.
-- `er_detailed.mmd` — Diagrama ER detallado generado desde las migrations (campos y tipos principales).
+- `er_detailed.mmd` — Diagrama ER detallado generado desde las migrations.
 - `class_diagram.mmd` — Diagrama de clases (modelo simplificado).
+- `class_diagram_full.mmd` — Diagrama de clases completo.
 - `components.mmd` — Diagrama de componentes (visión de alto nivel).
 - `layers.mmd` — Diagrama de capas (Presentation, Application, Domain, Infrastructure).
-- `sequence_movimiento.mmd` — Secuencia para el flujo de movimiento de un bien.
-- `flow_responsable.mmd` — Flujo de creación de un Bien y asignación de responsable.
- - `deployment.mmd` — Diagrama de despliegue (entornos, servidores, CI/CD).
- - `user_journey.mmd` — User Journey / Story Map para el flujo de movimiento de bienes.
- - `state_bien.mmd` — Diagrama de estados para la entidad `Bien`.
- - `sequence_login.mmd` — Secuencia del proceso de login / autenticación.
- - `api/openapi_stub.yaml` — Stub OpenAPI para el recurso `Bien` (CRUD) y contrato para frontend.
+- `deployment.mmd` — Diagrama de despliegue (entornos, servidores, CI/CD).
+- `deployment_diagram.mmd` — Diagrama de despliegue alternativo.
+- `state_bien.mmd` — Diagrama de estados para la entidad `Bien`.
+- `architecture_components.mmd` — Componentes de arquitectura.
 
-### Diagramas de Secuencia (Nuevos)
-- `sequence_bienes.mmd` — Secuencia completa para operaciones CRUD de Bienes (listar, crear, ver, editar, eliminar, exportar PDF, galería, reportes).
-- `sequence_usuarios_api.mmd` — Secuencia completa para operaciones CRUD de Usuarios (listar, crear, ver, editar, eliminar, exportar PDF, importar desde API).
-- `sequence_dependencias.mmd` — Secuencia completa para operaciones CRUD de Dependencias (listar, crear, ver, editar, exportar PDF).
-- `sequence_organismos.mmd` — Secuencia completa para operaciones CRUD de Organismos (listar, crear, ver, editar, exportar PDF).
-- `sequence_unidades_administradoras.mmd` — Secuencia completa para operaciones CRUD de Unidades Administradoras (listar, crear, ver, editar, exportar PDF).
-- `sequence_responsables.mmd` — Secuencia completa para operaciones CRUD de Responsables (listar, crear, ver, editar, eliminar).
-- `sequence_reportes.mmd` — Secuencia para generación de reportes y gráficas (listar tipos, generar gráficas, exportar PDF).
-- `sequence_dashboard.mmd` — Secuencia para carga del dashboard principal con KPIs y métricas.
-- `sequence_perfil.mmd` — Secuencia para gestión de perfil de usuario (ver perfil, actualizar contraseña, actualizar datos, gestionar foto).
-- `sequence_auditoria.mmd` — Secuencia para visualización de registros de auditoría.
-- `sequence_busqueda.mmd` — Secuencia para búsqueda global en el sistema.
-- `sequence_movimientos_detallado.mmd` — Secuencia detallada para operaciones de Movimientos (listar, crear, ver, editar, eliminar, restaurar, exportar PDF, reintegrar bienes).
+### Autenticación
+- `sequence_login.mmd` — Secuencia del proceso de login / autenticación.
+
+### Diagramas por entidad
+
+#### usuarios/
+- `sequence_usuarios_listar.mmd` — Listar usuarios con filtros.
+- `sequence_usuarios_crear.mmd` — Crear nuevo usuario.
+- `sequence_usuarios_ver.mmd` — Ver detalle de usuario.
+- `sequence_usuarios_editar.mmd` — Editar usuario existente.
+- `sequence_usuarios_eliminar.mmd` — Eliminar usuario.
+- `sequence_usuarios_exportar_pdf.mmd` — Exportar usuario a PDF.
+- `sequence_usuarios_importar_api.mmd` — Importar usuario desde API externa.
+
+#### responsables/
+- `sequence_responsables_listar.mmd` — Listar responsables con filtros.
+- `sequence_responsables_crear.mmd` — Crear nuevo responsable.
+- `sequence_responsables_ver.mmd` — Ver detalle de responsable.
+- `sequence_responsables_editar.mmd` — Editar responsable existente.
+- `sequence_responsables_eliminar.mmd` — Eliminar responsable.
+
+#### bienes/
+- `sequence_bienes_listar.mmd` — Listar bienes con filtros.
+- `sequence_bienes_crear.mmd` — Crear nuevo bien.
+- `sequence_bienes_ver.mmd` — Ver detalle de bien.
+- `sequence_bienes_editar.mmd` — Editar bien existente.
+- `sequence_bienes_eliminar.mmd` — Desincorporar bien (eliminación lógica).
+- `sequence_bienes_galeria.mmd` — Ver galería de bienes.
+- `sequence_bienes_trasladar.mmd` — Trasladar bien entre dependencias.
+
+#### otros/
+- `sequence_codigos_jerarquicos.mmd` — Generación de códigos jerárquicos (organismo → unidad → dependencia → bien).
+
+#### movimientos/
+- `sequence_movimientos_listar.mmd` — Listar movimientos con filtros.
+- `sequence_movimientos_crear.mmd` — Crear nuevo movimiento.
+- `sequence_movimientos_ver.mmd` — Ver detalle de movimiento.
+- `sequence_movimientos_editar.mmd` — Editar movimiento existente.
+- `sequence_movimientos_eliminar.mmd` — Eliminar movimiento.
+- `sequence_movimientos_restaurar.mmd` — Restaurar registro eliminado.
+- `sequence_movimientos_reintegrar.mmd` — Reintegrar bien desincorporado.
+- `sequence_movimientos_eliminados.mmd` — Ver bienes desincorporados.
+
+#### formatos/
+- `sequence_formato_bien_pdf.mmd` — Exportar bien a PDF.
+- `sequence_formato_movimiento_pdf.mmd` — Exportar movimiento a PDF.
+- `sequence_formato_dependencia_pdf.mmd` — Exportar dependencia a PDF.
+- `sequence_formato_reporte_bienes.mmd` — Generar reporte de bienes.
+- `sequence_formato_unidad_pdf.mmd` — Exportar unidad a PDF.
+- `sequence_formato_acta_traslado.mmd` — Generar acta de traslado (traslado de bienes).
+
+#### otros/
+- `sequence_organismos_listar.mmd` — Listar organismos con filtros.
+- `sequence_organismos_crear.mmd` — Crear nuevo organismo.
+- `sequence_organismos_ver.mmd` — Ver detalle de organismo.
+- `sequence_organismos_editar.mmd` — Editar organismo existente.
+- `sequence_organismos_eliminar.mmd` — Eliminar organismo (no permitido).
+- `sequence_organismos_exportar_pdf.mmd` — Exportar organismo a PDF.
+- `sequence_unidades_listar.mmd` — Listar unidades con filtros.
+- `sequence_unidades_crear.mmd` — Crear nueva unidad.
+- `sequence_unidades_ver.mmd` — Ver detalle de unidad.
+- `sequence_unidades_editar.mmd` — Editar unidad existente.
+- `sequence_unidades_eliminar.mmd` — Eliminar unidad (no permitido).
+- `sequence_unidades_exportar_pdf.mmd` — Exportar unidad a PDF.
+- `sequence_dependencias_listar.mmd` — Listar dependencias con filtros.
+- `sequence_dependencias_crear.mmd` — Crear nueva dependencia.
+- `sequence_dependencias_ver.mmd` — Ver detalle de dependencia.
+- `sequence_dependencias_editar.mmd` — Editar dependencia existente.
+- `sequence_dependencias_eliminar.mmd` — Eliminar dependencia (no permitido).
+- `sequence_dependencias_exportar_pdf.mmd` — Exportar dependencia a PDF.
 
 Cómo previsualizar
 - En VS Code instale una extensión de Mermaid (por ejemplo: "Markdown Preview Enhanced" o "Mermaid Preview").

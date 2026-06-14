@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Usuario
+    participant BienController
+    participant Bien
+    participant FpdfReportService
+    participant DB
+
+    note right of Usuario: Generar Reporte de Bienes
+    Usuario->>BienController: GET /bienes/reporte (generarReporte)
+    BienController->>BienController: Validar filtros (search, estado, dependencias, etc.)
+    BienController->>Bien: Query con filtros aplicados
+    Bien->>DB: SELECT con relaciones
+    DB-->>Bien: Bienes filtrados
+    Bien-->>BienController: Collection de bienes
+    BienController->>FpdfReportService: downloadBienesListado()
+    FpdfReportService-->>BienController: PDF de reporte
+    BienController-->>Usuario: Descargar reporte_bienes.pdf

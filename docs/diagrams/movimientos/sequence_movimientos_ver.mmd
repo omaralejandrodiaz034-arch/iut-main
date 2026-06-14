@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Usuario
+    participant MovimientoController
+    participant Movimiento
+    participant DB
+
+    note right of Usuario: Ver Detalle de Movimiento
+    Usuario->>MovimientoController: GET /movimientos/{id} (show)
+    MovimientoController->>Movimiento: Cargar movimiento con relaciones
+    Movimiento->>DB: SELECT con usuario, bien, subject, historialMovimientos
+    DB-->>Movimiento: Datos completos del movimiento
+    Movimiento-->>MovimientoController: Movimiento con relaciones
+    MovimientoController-->>Usuario: Vista movimientos.show con detalles

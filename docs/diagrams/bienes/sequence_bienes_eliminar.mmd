@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Usuario
+    participant BienController
+    participant Movimiento
+    participant EliminadosService
+    participant Bien
+    participant DB
+
+    note right of Usuario: Desincorporar Bien
+    Usuario->>BienController: DELETE /bienes/{id} (destroy)
+    BienController->>Usuario: Verificar permisos (canDeleteData)
+
+    alt No tiene permisos
+        BienController-->>Usuario: Error 403 (sin permisos)
+    else Tiene permisos
+        BienController->>DB: Crear movimiento de desincorporación
+        DB-->>BienController: Movimiento registrado
+        BienController->>Bien: Update estado a EXTRAVIADO
+        Bien->>DB: UPDATE bienes SET estado = 'extraviado'
+        DB-->>Bien: Estado actualizado
+        BienController->>EliminadosService: archiveModel(bien, auth_id)
+        EliminadosService->>DB: INSERT INTO eliminados (registro del bien)
+        DB-->>EliminadosService: Registro archivado
+        BienController-->>Usuario: Redirect con mensaje de éxito
+    end

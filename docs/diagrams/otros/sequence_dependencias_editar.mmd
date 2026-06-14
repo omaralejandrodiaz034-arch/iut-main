@@ -1,0 +1,49 @@
+sequenceDiagram
+    participant Usuario as Usuario
+    participant DependenciaController
+    participant Dependencia
+    participant UnidadAdministradora
+    participant Responsable
+    participant CodigoUnicoService
+    participant DB
+
+    note right of Usuario: Editar Dependencia Existente
+    Usuario->>DependenciaController: GET /dependencias/{id}/edit (edit)
+    DependenciaController->>Dependencia: Buscar dependencia por ID
+    Dependencia->>DB: SELECT FROM dependencias WHERE id = ?
+    DB-->>Dependencia: Datos de la dependencia
+    DependenciaController->>UnidadAdministradora: Cargar todas las unidades
+    UnidadAdministradora->>DB: SELECT FROM unidades_administradoras
+    DB-->>UnidadAdministradora: Lista de unidades
+    UnidadAdministradora-->>DependenciaController: Unidades disponibles
+    DependenciaController->>Responsable: Cargar todos los responsables
+    Responsable->>DB: SELECT FROM responsables
+    DB-->>Responsable: Lista de responsables
+    Responsable-->>DependenciaController: Responsables disponibles
+    DependenciaController-->>Usuario: Vista dependencias.edit con datos
+
+    Usuario->>DependenciaController: PUT /dependencias/{id} (update)
+    DependenciaController->>DependenciaController: Validar datos (con unique ignore)
+
+    alt Cambió código
+        DependenciaController->>CodigoUnicoService: codigoExiste(codigo, 'dependencias', id)
+        CodigoUnicoService->>DB: Verificar código en todas las tablas (ignorando ID actual)
+        DB-->>CodigoUnicoService: Código disponible/no disponible
+        CodigoUnicoService-->>DependenciaController: Resultado verificación
+
+        alt Código no disponible
+            DependenciaController-->>Usuario: Error de validación (código duplicado)
+        else Código disponible
+            DependenciaController->>Dependencia: Update con datos validados
+            Dependencia->>DB: UPDATE dependencias SET ...
+            DB-->>Dependencia: Dependencia actualizada
+            Dependencia-->>DependenciaController: Dependencia actualizada
+            DependenciaController-->>Usuario: Redirect con mensaje de éxito
+        end
+    else No cambió código
+        DependenciaController->>Dependencia: Update con datos validados
+        Dependencia->>DB: UPDATE dependencias SET ...
+        DB-->>Dependencia: Dependencia actualizada
+        Dependencia-->>DependenciaController: Dependencia actualizada
+        DependenciaController-->>Usuario: Redirect con mensaje de éxito
+    end

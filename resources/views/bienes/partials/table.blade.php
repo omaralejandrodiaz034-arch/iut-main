@@ -11,6 +11,7 @@
                     <th class="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase tracking-widest">Dependencia</th>
                     <th class="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase tracking-widest">Responsable</th>
                     <th class="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase tracking-widest">Tipo de Bien</th>
+                    <th class="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase tracking-widest">Donación</th>
                     <th class="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase tracking-widest">Precio</th>
                     <th class="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase tracking-widest">Foto</th>
                     <th class="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase tracking-widest">Estado</th>
@@ -55,6 +56,15 @@
                             <span class="inline-flex px-3 py-1 text-xs font-bold rounded-full {{ $tipoBienColor }}">
                                 {{ $tipoBienLabel }}
                             </span>
+                        </td>
+                        <td class="px-6 py-5 text-sm">
+                            @if($bien->es_donacion)
+                                <span class="inline-flex px-3 py-1 text-xs font-bold rounded-full bg-amber-50 text-amber-800 border border-amber-200/70">
+                                    DONADO
+                                </span>
+                            @else
+                                <span class="text-slate-400 italic text-sm font-medium">No</span>
+                            @endif
                         </td>
                         <td class="px-6 py-5 text-sm font-bold text-slate-900">
                             {{ number_format((float) $bien->precio, 2, ',', '.') }} Bs.

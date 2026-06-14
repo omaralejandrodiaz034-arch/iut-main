@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant Usuario as Usuario Admin
+    participant BienController
+    participant ActaTrasladoService
+    participant Bien
+    participant Pdf
+    participant Storage
+
+    note right of Usuario: Generar Acta de Traslado (PDF)
+    BienController->>ActaTrasladoService: generar(bien, motivo, usuario, dependencias)
+    ActaTrasladoService->>ActaTrasladoService: Generar folio TRAS-YYYY-XXXXXX
+    ActaTrasladoService->>ActaTrasladoService: Preparar datos (fecha, hora, usuario)
+
+    ActaTrasladoService->>Pdf: loadView('bienes.pdf.acta-traslado', data)
+    Pdf-->>ActaTrasladoService: PDF renderizado
+
+    ActaTrasladoService->>Storage: makeDirectory(actas/traslado)
+    Storage-->>ActaTrasladoService: Directorio creado
+
+    ActaTrasladoService->>Storage: put(acta_path, pdf_output)
+    Storage-->>ActaTrasladoService: Acta guardada
+    ActaTrasladoService-->>BienController: Ruta del archivo
+
+    note right of Usuario: Descargar Acta de Traslado
+    Usuario->>ActaTrasladoService: descargar(bien, motivo, usuario, dependencias)
+    ActaTrasladoService->>Pdf: loadView('bienes.pdf.acta-traslado', data)
+    Pdf-->>ActaTrasladoService: PDF renderizado
+    ActaTrasladoService-->>Usuario: Descargar acta-traslado-{codigo}.pdf

@@ -1,0 +1,42 @@
+sequenceDiagram
+    participant Usuario
+    participant DependenciaController
+    participant Dependencia
+    participant UnidadAdministradora
+    participant Responsable
+    participant CodigoUnicoService
+    participant DB
+
+    note right of Usuario: Crear Nueva Dependencia
+    Usuario->>DependenciaController: GET /dependencias/create (create)
+    DependenciaController->>UnidadAdministradora: Cargar todas las unidades
+    UnidadAdministradora->>DB: SELECT FROM unidades_administradoras
+    DB-->>UnidadAdministradora: Lista de unidades
+    UnidadAdministradora-->>DependenciaController: Unidades disponibles
+    DependenciaController->>Responsable: Cargar todos los responsables
+    Responsable->>DB: SELECT FROM responsables
+    DB-->>Responsable: Lista de responsables
+    Responsable-->>DependenciaController: Responsables disponibles
+    DependenciaController->>CodigoUnicoService: obtenerSiguienteCodigo()
+    CodigoUnicoService->>DB: SELECT MAX(codigo) FROM todas_las_tablas
+    DB-->>CodigoUnicoService: Último código global
+    CodigoUnicoService-->>DependenciaController: Código siguiente sugerido (8 dígitos)
+    DependenciaController-->>Usuario: Vista dependencias.create con código sugerido
+
+    Usuario->>DependenciaController: POST /dependencias (store)
+    DependenciaController->>DependenciaController: Validar datos (unidad_administradora_id, codigo, nombre, responsable_id)
+
+    DependenciaController->>CodigoUnicoService: codigoExiste(codigo)
+    CodigoUnicoService->>DB: Verificar código en todas las tablas
+    DB-->>CodigoUnicoService: Código disponible/no disponible
+    CodigoUnicoService-->>DependenciaController: Resultado verificación
+
+    alt Código ya existe
+        DependenciaController-->>Usuario: Error de validación (código duplicado)
+    else Código disponible
+        DependenciaController->>Dependencia: Create con datos validados
+        Dependencia->>DB: INSERT INTO dependencias
+        DB-->>Dependencia: Dependencia creada
+        Dependencia-->>DependenciaController: Dependencia guardada
+        DependenciaController-->>Usuario: Redirect a dependencias.index con mensaje de éxito
+    end

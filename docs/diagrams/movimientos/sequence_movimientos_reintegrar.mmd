@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Usuario
+    participant MovimientoController
+    participant Bien
+    participant Movimiento
+    participant DB
+
+    note right of Usuario: Reintegrar Bien Desincorporado
+    Usuario->>MovimientoController: POST /movimientos/eliminar/{id}/reintegrar (reintegrar)
+    MovimientoController->>Bien: Update estado a activo
+    Bien->>DB: UPDATE bienes SET estado = 'activo' WHERE id = ?
+    DB-->>Bien: Estado actualizado
+    MovimientoController->>Movimiento: Create movimiento de reintegración
+    Movimiento->>DB: INSERT INTO movimientos (tipo: 'reintegración', descripcion: 'Bien reintegrado')
+    DB-->>Movimiento: Movimiento creado
+    Movimiento-->>MovimientoController: Movimiento creado
+    MovimientoController-->>Usuario: Redirect con mensaje de éxito

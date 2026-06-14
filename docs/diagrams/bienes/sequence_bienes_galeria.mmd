@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Usuario
+    participant BienController
+    participant Bien
+    participant Storage
+    participant DB
+
+    note right of Usuario: Ver Galería de Bienes
+    Usuario->>BienController: GET /bienes/galeria-completa (galeriaCompleta)
+    BienController->>Bien: Query WHERE fotografia IS NOT NULL
+    Bien->>DB: SELECT id, codigo, descripcion, fotografia
+    DB-->>Bien: Bienes con fotos
+    Bien-->>BienController: Collection de bienes
+    BienController->>Storage: Generar URLs públicas
+    Storage-->>BienController: URLs de imágenes
+    BienController-->>Usuario: Vista bienes.galeria-completa

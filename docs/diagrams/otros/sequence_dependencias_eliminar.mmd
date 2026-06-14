@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Usuario
+    participant DependenciaController
+    participant Usuario as UsuarioModel
+
+    note right of Usuario: Intentar Eliminar Dependencia
+    Usuario->>DependenciaController: DELETE /dependencias/{id} (destroy)
+    DependenciaController-->>Usuario: Error 403 (No se pueden eliminar dependencias)

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Usuario
+    participant MovimientoController
+    participant Movimiento
+    participant Pdf
+    participant DB
+
+    note right of Usuario: Exportar Movimiento a PDF
+    Usuario->>MovimientoController: GET /movimientos/{id}/pdf (pdf)
+    MovimientoController->>Movimiento: Cargar movimiento con relaciones
+    Movimiento->>DB: SELECT con usuario, subject, bien, historialMovimientos
+    DB-->>Movimiento: Movimiento completo
+    MovimientoController->>Pdf: loadView('movimientos.pdf', movimiento)
+    Pdf-->>MovimientoController: PDF generado
+    MovimientoController-->>Usuario: Descargar movimiento_{id}.pdf

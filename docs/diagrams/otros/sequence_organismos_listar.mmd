@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Usuario
+    participant OrganismoController
+    participant Organismo
+    participant CodigoUnicoService
+    participant DB
+
+    note right of Usuario: Listar Organismos con Filtros
+    Usuario->>OrganismoController: GET /organismos (index)
+    OrganismoController->>OrganismoController: Validar filtros (buscar, codigo, nombre)
+    OrganismoController->>Organismo: Query con filtros
+    Organismo->>DB: Aplicar filtros y ordenamiento
+    DB-->>Organismo: Resultados paginados
+    Organismo-->>OrganismoController: Collection de organismos
+    OrganismoController-->>Usuario: Vista organismos.index con datos filtrados

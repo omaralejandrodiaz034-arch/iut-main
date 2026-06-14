@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Usuario
+    participant ResponsableController
+    participant Responsable
+    participant DB
+
+    note right of Usuario: Ver Detalle de Responsable
+    Usuario->>ResponsableController: GET /responsables/{id} (show)
+    ResponsableController->>Responsable: Cargar responsable con relaciones
+    Responsable->>DB: SELECT con tipo, dependencias.unidadAdministradora.organismo, bienes
+    DB-->>Responsable: Datos completos del responsable
+    Responsable-->>ResponsableController: Responsable con relaciones
+    ResponsableController-->>Usuario: Vista responsables.show con detalles
