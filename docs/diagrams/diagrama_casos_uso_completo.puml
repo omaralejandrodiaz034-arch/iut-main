@@ -1,0 +1,242 @@
+@startuml diagrama_casos_uso_completo
+' Diagrama de Casos de Uso - Sistema de Gestión de Inventario de Bienes
+' Archivo: docs/diagrams/diagrama_casos_uso_completo.puml
+' Actualizado: Junio 2026 - Incluye todos los casos de uso identificados en routes/web.php y controllers
+
+!theme plain
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+title Sistema de Gestión de Inventario de Bienes\nDiagrama de Casos de Uso Completo
+
+left to right direction
+
+' ==================== CONFIGURACIÓN ====================
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam usecase {
+    BackgroundColor #DDF
+    BorderColor #333333
+    ArrowColor #333333
+}
+skinparam actor {
+    BackgroundColor #BBF
+    BorderColor #333333
+}
+skinparam package {
+    BackgroundColor #F9F9F9
+    BorderColor #666666
+}
+
+' ==================== ATORES ====================
+actor "Administrador" as Admin #FF6B6B
+actor "Usuario Normal" as UserNormal #4ECDC4
+
+' ==================== PAQUETES ====================
+
+package "Autenticación" {
+    usecase "Iniciar Sesión" as UC_Login
+    usecase "Cerrar Sesión" as UC_Logout
+    usecase "Ver Perfil" as UC_Perfil
+    usecase "Cambiar Contraseña" as UC_CambiarPassword
+    usecase "Configurar Contraseña\n(Primer ingreso)" as UC_ConfigurarPassword
+}
+
+package "Gestión Organizacional" {
+    usecase "Gestionar Organismos" as UC_Organismo
+    usecase "Gestionar Unidades\nAdministradoras" as UC_Unidad
+    usecase "Gestionar Dependencias" as UC_Dependencia
+    usecase "Gestionar Responsables" as UC_Responsable
+}
+
+package "Gestión de Bienes" {
+    usecase "Registrar Bien" as UC_RegistrarBien
+    usecase "Editar Bien" as UC_EditarBien
+    usecase "Ver Detalle de Bien" as UC_DetalleBien
+    usecase "Consultar Bienes" as UC_ConsultarBienes
+    usecase "Ver Galería\nde Bienes" as UC_GaleriaCompleta
+    usecase "Importar Bienes\n(Excel)" as UC_ImportarBienes
+    usecase "Exportar Bienes\n(Excel)" as UC_ExportarBienes
+    usecase "Descargar Template\nExcel" as UC_DescargarTemplate
+    usecase "Transferir Bien\nentre Dependencias" as UC_TransferirBien
+    usecase "Desincorporar Bien\ncon Acta" as UC_DesincorporarBien
+    usecase "Reincorporar Bien" as UC_ReincorporarBien
+    usecase "Exportar Bien\na PDF" as UC_PdfBien
+}
+
+package "Gestión de Movimientos" {
+    usecase "Registrar Movimiento" as UC_RegistrarMovimiento
+    usecase "Ver Historial de\nMovimientos" as UC_HistorialMovimientos
+    usecase "Ver Movimientos\nEliminados" as UC_MovimientosEliminados
+    usecase "Restaurar Movimiento\nEliminado" as UC_RestaurarMovimiento
+    usecase "Reintegrar Bien" as UC_Reintegrar
+    usecase "Generar Acta de\nTraslado" as UC_ActaTraslado
+    usecase "Generar Acta de\nDesincorporación" as UC_ActaDesincorporacion
+    usecase "Exportar Movimiento\na PDF" as UC_PdfMovimiento
+}
+
+package "Gestión de Usuarios" {
+    usecase "Gestionar Usuarios\n(CRUD)" as UC_GestionarUsuarios
+    usecase "Importar Usuario\ndesde API" as UC_ImportarUsuario
+    usecase "Exportar Usuario\na PDF" as UC_PdfUsuario
+}
+
+package "Reportes y Consultas" {
+    usecase "Ver Dashboard\nde Métricas" as UC_Dashboard
+    usecase "Ver Gráficas" as UC_Graficas
+    usecase "Generar Reportes\nPDF Específicos" as UC_Reportes
+    usecase "Filtrar por Estado" as UC_FiltroEstado
+    usecase "Filtrar por Tipo" as UC_FiltroTipo
+    usecase "Filtrar por Fechas" as UC_FiltroFechas
+    usecase "Filtrar por\nOrganismo" as UC_FiltroOrganismo
+    usecase "Filtrar por Unidad\nAdministradora" as UC_FiltroUnidad
+    usecase "Filtrar por\nDependencia" as UC_FiltroDependencia
+    usecase "Listar/Consultar\nBienes" as UC_ListarBienes
+    usecase "Reporte por\nDependencia" as UC_ReporteDependencia
+    usecase "Reporte por\nUnidad" as UC_ReporteUnidad
+    usecase "Reporte por\nOrganismo" as UC_ReporteOrganismo
+    usecase "Exportar Gráficas\na PDF" as UC_GraficasPdf
+}
+
+package "Auditoría" {
+    usecase "Ver Registro de\nAuditoría" as UC_Auditoria
+    usecase "Ver Historial de\nEliminados" as UC_HistorialEliminados
+}
+
+package "Búsqueda" {
+    usecase "Búsqueda Global" as UC_BusquedaGlobal
+}
+
+' ==================== RELACIONES ACTOR - CASO DE USO ====================
+
+' Administrador - Acceso completo
+Admin --> UC_Login
+Admin --> UC_Logout
+Admin --> UC_Perfil
+Admin --> UC_CambiarPassword
+Admin --> UC_Organismo
+Admin --> UC_Unidad
+Admin --> UC_Dependencia
+Admin --> UC_Responsable
+Admin --> UC_RegistrarBien
+Admin --> UC_EditarBien
+Admin --> UC_DetalleBien
+Admin --> UC_ConsultarBienes
+Admin --> UC_GaleriaCompleta
+Admin --> UC_ImportarBienes
+Admin --> UC_ExportarBienes
+Admin --> UC_DescargarTemplate
+Admin --> UC_TransferirBien
+Admin --> UC_DesincorporarBien
+Admin --> UC_ReincorporarBien
+Admin --> UC_PdfBien
+Admin --> UC_RegistrarMovimiento
+Admin --> UC_HistorialMovimientos
+Admin --> UC_MovimientosEliminados
+Admin --> UC_RestaurarMovimiento
+Admin --> UC_Reintegrar
+Admin --> UC_ActaTraslado
+Admin --> UC_ActaDesincorporacion
+Admin --> UC_PdfMovimiento
+Admin --> UC_GestionarUsuarios
+Admin --> UC_ImportarUsuario
+Admin --> UC_PdfUsuario
+Admin --> UC_Dashboard
+Admin --> UC_Graficas
+Admin --> UC_Reportes
+Admin --> UC_FiltroEstado
+Admin --> UC_FiltroTipo
+Admin --> UC_FiltroFechas
+Admin --> UC_FiltroOrganismo
+Admin --> UC_FiltroUnidad
+Admin --> UC_FiltroDependencia
+Admin --> UC_ListarBienes
+Admin --> UC_ReporteDependencia
+Admin --> UC_ReporteUnidad
+Admin --> UC_ReporteOrganismo
+Admin --> UC_GraficasPdf
+Admin --> UC_Auditoria
+Admin --> UC_HistorialEliminados
+Admin --> UC_BusquedaGlobal
+
+' Usuario Normal - Acceso limitado (solo consulta y perfil)
+UserNormal --> UC_Login
+UserNormal --> UC_Logout
+UserNormal --> UC_Perfil
+UserNormal --> UC_CambiarPassword
+UserNormal --> UC_ConsultarBienes
+UserNormal --> UC_DetalleBien
+UserNormal --> UC_ListarBienes
+UserNormal --> UC_ExportarBienes
+UserNormal --> UC_HistorialMovimientos
+UserNormal --> UC_Reportes
+UserNormal --> UC_FiltroEstado
+UserNormal --> UC_FiltroTipo
+UserNormal --> UC_FiltroFechas
+UserNormal --> UC_FiltroOrganismo
+UserNormal --> UC_FiltroUnidad
+UserNormal --> UC_FiltroDependencia
+
+' ==================== RELACIONES ENTRE CASOS DE USO ====================
+
+' Herencia/Include - Filtros
+UC_FiltroEstado ..> UC_Reportes : <<include>>
+UC_FiltroTipo ..> UC_Reportes : <<include>>
+UC_FiltroFechas ..> UC_Reportes : <<include>>
+UC_FiltroOrganismo ..> UC_Reportes : <<include>>
+UC_FiltroUnidad ..> UC_Reportes : <<include>>
+UC_FiltroDependencia ..> UC_Reportes : <<include>>
+
+' Reportes compuestos
+UC_ReporteDependencia ..> UC_Reportes : <<include>>
+UC_ReporteUnidad ..> UC_Reportes : <<include>>
+UC_ReporteOrganismo ..> UC_Reportes : <<include>>
+UC_ActaDesincorporacion ..> UC_Reportes : <<include>>
+UC_Graficas ..> UC_Reportes : <<include>>
+UC_GraficasPdf ..> UC_Reportes : <<include>>
+
+' Desincorporar/Reincorporar incluyen generación de acta
+UC_DesincorporarBien --> UC_ActaDesincorporacion : <<include>>
+UC_ReincorporarBien ..> UC_ActaDesincorporacion : <<include>>
+
+' Transferencia incluye acta
+UC_TransferirBien ..> UC_ActaTraslado : <<include>>
+
+' Consultar implica listar y detalle
+UC_DetalleBien ..> UC_ConsultarBienes : <<include>>
+UC_EditarBien ..> UC_ConsultarBienes : <<include>>
+
+' Reincorporar movimiento
+UC_MovimientosEliminados ..> UC_HistorialEliminados : <<extend>>
+UC_RestaurarMovimiento ..> UC_HistorialEliminados : <<extend>>
+
+' Configurar contraseña extiende login (primer ingreso)
+UC_Login ..> UC_ConfigurarPassword : <<extend>>
+
+' ==================== NOTAS ====================
+
+note right of Admin
+  Acceso completo al sistema:
+  - CRUD completo de todas las entidades
+  - Gestión de usuarios y roles
+  - Auditoría del sistema
+  - Import/Export de datos
+  - Desincorporación/Reincorporación
+  - Traslado de bienes
+end note
+
+note right of UserNormal
+  Acceso limitado:
+  - Solo consulta de bienes
+  - No puede eliminar datos
+  - No puede gestionar usuarios
+  - No tiene acceso a auditoría
+  - No puede crear/editar bienes
+end note
+
+note bottom of UC_HistorialEliminados
+  Acceso: Administrador
+  y Auditor Externo
+end note
+
+@enduml

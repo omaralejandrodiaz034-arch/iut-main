@@ -1,0 +1,218 @@
+%%{init: {'theme':'neutral', 'flowchart': {'curve': 'basis', 'useMaxWidth': false}}}%%
+%% Diagrama de Casos de Uso - Sistema de Gestión de Inventario de Bienes
+%% Generado con sintaxis moderna Mermaid (graph TD)
+%% Archivo: docs/diagrams/diagrama_casos_uso_completo.mmd
+%% Actualizado: Junio 2026
+
+graph TD
+    %% ==================== ACTORES ====================
+    Admin((Administrador))
+    User((Usuario Normal))
+
+    %% Note: "Responsable de Dependencia" es un modelo de datos, no un actor con login.
+    %% Se gestiona dentro de "Gestionar Dependencias" mediante dropdown.
+
+    %% ==================== PAQUETES ====================
+
+    %% Autenticación
+    subgraph Auth["Autenticación"]
+        UC_Login[Iniciar Sesión]
+        UC_Logout[Cerrar Sesión]
+        UC_Perfil[Ver Perfil]
+        UC_CambiarPassword[Cambiar Contraseña]
+        UC_ConfigurarPassword[Configurar Contraseña<br/>(Primer ingreso)]
+    end
+
+    %% Estructura Organizacional
+    subgraph Org["Gestión Organizacional"]
+        UC_Organismo[Gestionar Organismos]
+        UC_Unidad[Gestionar Unidades<br/>Administradoras]
+        UC_Dependencia[Gestionar Dependencias]
+        UC_Responsable[Gestionar Responsables]
+    end
+
+    %% Gestión de Bienes
+    subgraph Bienes["Gestión de Bienes"]
+        UC_RegistrarBien[Registrar Bien]
+        UC_EditarBien[Editar Bien]
+        UC_DetalleBien[Ver Detalle de Bien]
+        UC_ConsultarBienes[Consultar Bienes]
+        UC_ListarBienes[Listar/Consultar<br/>Bienes]
+        UC_Galeria[Ver Galería<br/>de Bienes]
+        UC_ImportarBien[Importar Bienes<br/>desde Excel]
+        UC_ExportarBien[Exportar Bienes<br/>a Excel]
+        UC_Template[Descargar Template<br/>Excel]
+        UC_Transferir[Transferir Bien<br/>entre Dependencias]
+        UC_Desincorporar[Desincorporar Bien<br/>con Acta]
+        UC_Reincorporar[Reincorporar Bien]
+        UC_PdfBien[Exportar Bien<br/>a PDF]
+    end
+
+    %% Movimientos
+    subgraph Movimientos["Gestión de Movimientos"]
+        UC_RegistrarMov[Registrar Movimiento]
+        UC_HistorialMov[Ver Historial de<br/>Movimientos]
+        UC_Eliminados[Ver Movimientos<br/>Eliminados]
+        UC_Restaurar[Restaurar Movimiento<br/>Eliminado]
+        UC_ReintegrarBien[Reintegrar Bien]
+        UC_ActaTraslado[Generar Acta de<br/>Traslado]
+        UC_ActaDesinc[Generar Acta de<br/>Desincorporación]
+        UC_PdfMov[Exportar Movimiento<br/>a PDF]
+    end
+
+    %% Usuarios
+    subgraph Usuarios["Gestión de Usuarios"]
+        UC_GestionarUsuarios[Gestionar Usuarios<br/>(CRUD)]
+        UC_ImportarUsuario[Importar Usuario<br/>desde API]
+        UC_PdfUsuario[Exportar Usuario<br/>a PDF]
+    end
+
+    %% Reportes
+    subgraph Reportes["Reportes y Consultas"]
+        UC_Dashboard[Ver Dashboard<br/>de Métricas]
+        UC_Graficas[Ver Gráficas]
+        UC_Reportes[Generar Reportes<br/>PDF Específicos]
+        UC_FiltroEstado[Filtrar por Estado]
+        UC_FiltroTipo[Filtrar por Tipo]
+        UC_FiltroFechas[Filtrar por Fechas]
+        UC_FiltroOrganismo[Filtrar por<br/>Organismo]
+        UC_FiltroUnidad[Filtrar por Unidad<br/>Administradora]
+        UC_FiltroDependencia[Filtrar por<br/>Dependencia]
+        UC_ReporteDep[Reporte por<br/>Dependencia]
+        UC_ReporteUni[Reporte por<br/>Unidad]
+        UC_ReporteOrg[Reporte por<br/>Organismo]
+        UC_GraficasPdf[Exportar Gráficas<br/>a PDF]
+    end
+
+    %% Auditoría
+    subgraph Auditoria["Auditoría"]
+        UC_Auditoria[Ver Registro de<br/>Auditoría]
+        UC_HistorialEliminados[Ver Historial de<br/>Eliminados]
+    end
+
+    %% Búsqueda
+    subgraph Busqueda["Búsqueda"]
+        UC_BusquedaGlobal[Búsqueda Global]
+    end
+
+    %% ==================== RELACIONES ACTORES ====================
+
+    %% Administrador - Acceso completo
+    Admin --- UC_Login
+    Admin --- UC_Logout
+    Admin --- UC_Perfil
+    Admin --- UC_CambiarPassword
+    Admin --- UC_Organismo
+    Admin --- UC_Unidad
+    Admin --- UC_Dependencia
+    Admin --- UC_Responsable
+    Admin --- UC_RegistrarBien
+    Admin --- UC_EditarBien
+    Admin --- UC_DetalleBien
+    Admin --- UC_ConsultarBienes
+    Admin --- UC_Galeria
+    Admin --- UC_ImportarBien
+    Admin --- UC_ExportarBien
+    Admin --- UC_Template
+    Admin --- UC_Transferir
+    Admin --- UC_Desincorporar
+    Admin --- UC_Reincorporar
+    Admin --- UC_PdfBien
+    Admin --- UC_RegistrarMov
+    Admin --- UC_HistorialMov
+    Admin --- UC_Eliminados
+    Admin --- UC_Restaurar
+    Admin --- UC_ReintegrarBien
+    Admin --- UC_ActaTraslado
+    Admin --- UC_ActaDesinc
+    Admin --- UC_PdfMov
+    Admin --- UC_GestionarUsuarios
+    Admin --- UC_ImportarUsuario
+    Admin --- UC_PdfUsuario
+    Admin --- UC_Dashboard
+    Admin --- UC_Graficas
+    Admin --- UC_Reportes
+    Admin --- UC_FiltroEstado
+    Admin --- UC_FiltroTipo
+    Admin --- UC_FiltroFechas
+    Admin --- UC_FiltroOrganismo
+    Admin --- UC_FiltroUnidad
+    Admin --- UC_FiltroDependencia
+    Admin --- UC_ListarBienes
+    Admin --- UC_ReporteDep
+    Admin --- UC_ReporteUni
+    Admin --- UC_ReporteOrg
+    Admin --- UC_GraficasPdf
+    Admin --- UC_Auditoria
+    Admin --- UC_HistorialEliminados
+    Admin --- UC_BusquedaGlobal
+
+    %% Usuario Normal - Acceso limitado (solo consulta y perfil)
+    User --- UC_Login
+    User --- UC_Logout
+    User --- UC_Perfil
+    User --- UC_CambiarPassword
+    User --- UC_ConsultarBienes
+    User --- UC_DetalleBien
+    User --- UC_ListarBienes
+    User --- UC_ExportarBien
+    User --- UC_HistorialMov
+    User --- UC_Reportes
+    User --- UC_FiltroEstado
+    User --- UC_FiltroTipo
+    User --- UC_FiltroFechas
+    User --- UC_FiltroOrganismo
+    User --- UC_FiltroUnidad
+    User --- UC_FiltroDependencia
+
+    %% ==================== RELACIONES DE INCLUSIÓN ====================
+
+    %% Filtros incluyen en reportes
+    UC_FiltroEstado -.->|"«include»"| UC_Reportes
+    UC_FiltroTipo -.->|"«include»"| UC_Reportes
+    UC_FiltroFechas -.->|"«include»"| UC_Reportes
+    UC_FiltroOrganismo -.->|"«include»"| UC_Reportes
+    UC_FiltroUnidad -.->|"«include»"| UC_Reportes
+    UC_FiltroDependencia -.->|"«include»"| UC_Reportes
+
+    %% Reportes compuestos
+    UC_ReporteDep -.->|"«include»"| UC_Reportes
+    UC_ReporteUni -.->|"«include»"| UC_Reportes
+    UC_ReporteOrg -.->|"«include»"| UC_Reportes
+    UC_ActaDesinc -.->|"«include»"| UC_Reportes
+    UC_Graficas -.->|"«include»"| UC_Reportes
+    UC_GraficasPdf -.->|"«include»"| UC_Reportes
+
+    %% Desincorporar/Reincorporar incluyen generación de acta
+    UC_Desincorporar ==>|"«include»"| UC_ActaDesinc
+    UC_Reincorporar -.->|"«include»"| UC_ActaDesinc
+
+    %% Transferencia incluye acta
+    UC_Transferir -.->|"«include»"| UC_ActaTraslado
+
+    %% Consultar implica listar y detalle
+    UC_DetalleBien -.->|"«include»"| UC_ConsultarBienes
+    UC_EditarBien -.->|"«include»"| UC_ConsultarBienes
+
+    %% Movimientos eliminados
+    UC_Eliminados -.->|"«extend»"| UC_HistorialEliminados
+    UC_Restaurar -.->|"«extend»"| UC_HistorialEliminados
+
+    %% Configurar contraseña extiende login
+    UC_Login -.->|"«extend»"| UC_ConfigurarPassword
+
+    %% ==================== ESTILOS ====================
+    classDef actorStyle fill:#FF6B6B,stroke:#333,stroke-width:2px,color:#fff
+    classDef userStyle fill:#4ECDC4,stroke:#333,stroke-width:2px,color:#fff
+    classDef usecaseStyle fill:#DDF,stroke:#333,stroke-width:1px,color:#333
+    classDef adminOnly fill:#DDF,stroke:#f66,stroke-width:2px,stroke-dasharray: 5 5
+
+    class Admin actorStyle
+    class User userStyle
+    class UC_Login,UC_Logout,UC_Perfil,UC_CambiarPassword,UC_ConfigurarPassword,UC_Organismo,UC_Unidad,UC_Dependencia,UC_Responsable,UC_RegistrarBien,UC_EditarBien,UC_DetalleBien,UC_ConsultarBienes,UC_Galeria,UC_ImportarBien,UC_ExportarBien,UC_Template,UC_Transferir,UC_Desincorporar,UC_Reincorporar,UC_PdfBien,UC_RegistrarMov,UC_HistorialMov,UC_Eliminados,UC_Restaurar,UC_ReintegrarBien,UC_ActaTraslado,UC_ActaDesinc,UC_PdfMov,UC_GestionarUsuarios,UC_ImportarUsuario,UC_PdfUsuario,UC_Dashboard,UC_Graficas,UC_Reportes,UC_FiltroEstado,UC_FiltroTipo,UC_FiltroFechas,UC_FiltroOrganismo,UC_FiltroUnidad,UC_FiltroDependencia,UC_ListarBienes,UC_ReporteDep,UC_ReporteUni,UC_ReporteOrg,UC_GraficasPdf,UC_Auditoria,UC_HistorialEliminados,UC_BusquedaGlobal usecaseStyle
+
+    class UC_Organismo,UC_Unidad,UC_Dependencia,UC_Responsable adminOnly
+    class UC_RegistrarBien,UC_EditarBien,UC_Galeria,UC_Transferir,UC_Desincorporar,UC_Reincorporar adminOnly
+    class UC_ImportarBien,UC_Eliminados,UC_Restaurar,UC_ReincorporarBien adminOnly
+    class UC_GestionarUsuarios,UC_ImportarUsuario adminOnly
+    class UC_Auditoria,UC_HistorialEliminados adminOnly
