@@ -258,12 +258,12 @@ class BienController extends Controller
             'dependencia_id' => $dependenciaId,
         ]);
 
-        $rules = $this->getBaseValidationRules();
+        $rules = $this->getBaseValidationRules($request);
 
         $tipo = $request->input('tipo_bien');
         $rules = array_merge($rules, $this->getSpecificValidationRules($tipo));
 
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, $this->getValidationMessages());
 
         $this->validarCodigoEnRango($validated['codigo'], $validated['dependencia_id']);
 
@@ -442,12 +442,12 @@ class BienController extends Controller
             $request->merge(['precio' => str_replace([' ', ','], ['', '.'], $request->input('precio'))]);
         }
 
-        $rules = $this->getUpdateValidationRules($bien);
+        $rules = $this->getUpdateValidationRules($bien, $request);
 
         $tipo = $request->input('tipo_bien', $bien->tipo_bien?->value);
-        $rules = array_merge($rules, $this->getSpecificValidationRules($tipo));
+        $rules = array_merge($rules, $this->getSpecificValidationRules($tipo, $bien));
 
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, $this->getValidationMessages());
 
         $dependenciaId = $validated['dependencia_id'] ?? $bien->dependencia_id;
         $codigoAVerificar = $validated['codigo'] ?? $bien->codigo;
@@ -1509,7 +1509,7 @@ class BienController extends Controller
     /**
      * Reglas de validación base.
      */
-    private function getBaseValidationRules(): array
+    private function getBaseValidationRules(Request $request): array
     {
         return [
             'dependencia_id' => ['required', 'exists:dependencias,id'],
@@ -1535,7 +1535,13 @@ class BienController extends Controller
             'es_donacion' => ['nullable', 'boolean'],
             'tipo_donante' => ['nullable', 'required_if:es_donacion,1', 'string', 'in:PERSONA,INSTITUCION'],
             'donante_nombre' => ['nullable', 'required_if:es_donacion,1', 'string', 'max:255'],
-            'donante_documento' => ['nullable', 'string', 'max:50'],
+            'donante_documento' => [
+                'nullable',
+                'required_if:es_donacion,1',
+                'string',
+                'max:50',
+                Rule::regex('/^(?:[VEP]-\d{7,8}|[JGP]-\d{8,9})$/'),
+            ],
             'donante_direccion' => ['nullable', 'required_if:es_donacion,1', 'string', 'max:500'],
             'acta_donacion' => ['nullable', 'string', 'max:255'],
         ];
@@ -1544,7 +1550,7 @@ class BienController extends Controller
     /**
      * Reglas de validación para actualización.
      */
-    private function getUpdateValidationRules(Bien $bien): array
+    private function getUpdateValidationRules(Bien $bien, Request $request): array
     {
         return [
             'dependencia_id' => ['required', 'exists:dependencias,id'],
@@ -1578,7 +1584,13 @@ class BienController extends Controller
             'es_donacion' => ['nullable', 'boolean'],
             'tipo_donante' => ['nullable', 'required_if:es_donacion,1', 'string', 'in:PERSONA,INSTITUCION'],
             'donante_nombre' => ['nullable', 'required_if:es_donacion,1', 'string', 'max:255'],
-            'donante_documento' => ['nullable', 'string', 'max:50'],
+            'donante_documento' => [
+                'nullable',
+                'required_if:es_donacion,1',
+                'string',
+                'max:50',
+                Rule::regex('/^(?:[VEP]-\d{7,8}|[JGP]-\d{8,9})$/'),
+            ],
             'donante_direccion' => ['nullable', 'required_if:es_donacion,1', 'string', 'max:500'],
             'acta_donacion' => ['nullable', 'string', 'max:255'],
         ];
@@ -1587,14 +1599,104 @@ class BienController extends Controller
     /**
      * Reglas de validación específicas por tipo de bien.
      */
-    private function getSpecificValidationRules(?string $tipo): array
+    private function getValidationMessages(): array
+    {
+        return [
+            'codigo_secuencial.required' => 'El secuencial del código es obligatorio.',
+            'codigo_secuencial.regex' => 'El secuencial del código debe tener 4 dígitos numéricos.',
+            'dependencia_id.required' => 'La dependencia es obligatoria.',
+            'dependencia_id.exists' => 'La dependencia seleccionada no es válida.',
+            'tipo_bien.required' => 'Debe seleccionar el tipo de bien.',
+            'tipo_bien.enum' => 'El tipo de bien seleccionado no es válido.',
+            'estado.required' => 'Debe seleccionar el estado del bien.',
+            'estado.enum' => 'El estado seleccionado no es válido.',
+            'descripcion.required' => 'La descripción es obligatoria.',
+            'descripcion.max' => 'La descripción no puede exceder 255 caracteres.',
+            'precio.required' => 'El precio es obligatorio.',
+            'precio.numeric' => 'El precio debe ser un número válido.',
+            'precio.min' => 'El precio no puede ser negativo.',
+            'precio.max' => 'El precio no puede exceder 999999999,99 Bs.',
+            'precio.regex' => 'El precio debe tener máximo 2 decimales.',
+            'fecha_registro.required' => 'La fecha de adquisición es obligatoria.',
+            'fecha_registro.date' => 'La fecha de adquisición debe ser válida.',
+            'fecha_registro.before_or_equal' => 'La fecha de adquisición no puede ser futura.',
+            'fecha_registro.after' => 'La fecha de adquisición debe ser posterior a 2000-01-01.',
+            'fotografia.image' => 'La fotografía debe ser una imagen válida.',
+            'fotografia.max' => 'La fotografía no puede exceder 2 MB.',
+            'fotografia.mimes' => 'La fotografía solo puede ser jpeg, png, jpg, gif o webp.',
+            'tipo_donante.required_if' => 'El tipo de donante es obligatorio para bienes donados.',
+            'tipo_donante.in' => 'El tipo de donante seleccionado no es válido.',
+            'donante_nombre.required_if' => 'El nombre del donante es obligatorio para bienes donados.',
+            'donante_nombre.max' => 'El nombre del donante no puede exceder 255 caracteres.',
+            'donante_documento.required_if' => 'El documento del donante es obligatorio para bienes donados.',
+            'donante_documento.regex' => 'El documento del donante debe tener formato V-12345678, E-12345678, P-12345678, J-123456789, G-123456789 o P-123456789.',
+            'donante_documento.max' => 'El documento del donante no puede exceder 50 caracteres.',
+            'donante_direccion.required_if' => 'La dirección del donante es obligatoria para bienes donados.',
+            'donante_direccion.max' => 'La dirección del donante no puede exceder 500 caracteres.',
+            'subtipo.required_if' => 'El subtipo es obligatorio para bienes electrónicos.',
+            'subtipo.in' => 'El subtipo seleccionado no es válido.',
+            'serial.required_if' => 'El número de serie es obligatorio para bienes electrónicos.',
+            'serial.required' => 'El número de serie es obligatorio para bienes electrónicos.',
+            'serial.max' => 'El número de serie no debe exceder 50 caracteres.',
+            'serial.regex' => 'El número de serie solo puede contener dígitos.',
+            'serial.unique' => 'El número de serie ya está registrado.',
+            'modelo.required_if' => 'El modelo es obligatorio para este tipo de bien.',
+            'modelo.max' => 'El modelo no puede exceder 255 caracteres.',
+            'anio.required_if' => 'El año es obligatorio para vehículos.',
+            'anio.required' => 'El año es obligatorio para vehículos.',
+            'anio.digits' => 'El año debe tener exactamente 4 dígitos.',
+            'anio.integer' => 'El año debe ser un número válido.',
+            'anio.min' => 'El año mínimo permitido es 1900.',
+            'anio.max' => 'El año no puede ser mayor al año actual.',
+            'placa.required_if' => 'La placa es obligatoria para vehículos.',
+            'placa.required' => 'La placa es obligatoria para vehículos.',
+            'placa.max' => 'La placa no puede exceder 20 caracteres.',
+            'placa.unique' => 'La placa ya está registrada.',
+            'marca.required_if' => 'La marca es obligatoria para vehículos.',
+            'marca.required' => 'La marca es obligatoria para vehículos.',
+            'marca.max' => 'La marca no puede exceder 100 caracteres.',
+            'motor.max' => 'El serial de motor no puede exceder 100 caracteres.',
+            'motor.unique' => 'El serial de motor ya está registrado.',
+            'chasis.max' => 'El serial de chasis no puede exceder 100 caracteres.',
+            'chasis.unique' => 'El serial de chasis ya está registrado.',
+            'combustible.in' => 'El tipo de combustible seleccionado no es válido.',
+            'kilometraje.numeric' => 'El kilometraje debe ser un número válido.',
+            'kilometraje.min' => 'El kilometraje no puede ser negativo.',
+            'material.max' => 'El material no puede exceder 255 caracteres.',
+            'dimensiones.max' => 'Las dimensiones no pueden exceder 255 caracteres.',
+            'color.max' => 'El color no puede exceder 100 caracteres.',
+            'capacidad.max' => 'La capacidad no puede exceder 100 caracteres.',
+            'cantidad_piezas.integer' => 'La cantidad de piezas debe ser un número entero.',
+            'cantidad_piezas.min' => 'La cantidad de piezas debe ser al menos 1.',
+            'acabado.max' => 'El acabado no puede exceder 100 caracteres.',
+            'especificaciones.max' => 'Las especificaciones no pueden exceder 1000 caracteres.',
+            'cantidad.integer' => 'La cantidad debe ser un número entero.',
+            'cantidad.min' => 'La cantidad debe ser al menos 1.',
+            'presentacion.max' => 'La presentación no puede exceder 255 caracteres.',
+            'procesador.max' => 'El procesador no puede exceder 255 caracteres.',
+            'memoria.max' => 'La memoria no puede exceder 255 caracteres.',
+            'almacenamiento.max' => 'El almacenamiento no puede exceder 255 caracteres.',
+            'pantalla.max' => 'El tamaño de pantalla no puede exceder 50 caracteres.',
+            'garantia.date' => 'La garantía debe ser una fecha válida.',
+            'garantia.after' => 'La garantía debe ser posterior a la fecha de adquisición.',
+        ];
+    }
+
+    private function uniqueFor(?Bien $bien, string $table, string $column): Rule
+    {
+        $rule = Rule::unique($table, $column);
+
+        return $bien ? $rule->ignore($bien->id) : $rule;
+    }
+
+    private function getSpecificValidationRules(?string $tipo, ?Bien $bien = null): array
     {
         $tipo = strtoupper($tipo ?? '');
 
         return match ($tipo) {
             'ELECTRONICO' => [
-                'subtipo' => ['nullable', 'string', 'max:50', Rule::in(['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR', 'LAPTOP', 'TABLET', 'OTRO'])],
-                'serial' => ['required', 'string', 'max:255', 'unique:bienes_electronicos,serial'],
+                'subtipo' => ['required_if:tipo_bien,ELECTRONICO', 'string', 'max:50', Rule::in(['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR', 'LAPTOP', 'TABLET', 'OTRO'])],
+                'serial' => ['required_if:tipo_bien,ELECTRONICO', 'string', 'max:50', 'regex:/^[0-9]+$/', $this->uniqueFor($bien, 'bienes_electronicos', 'serial')],
                 'modelo' => ['nullable', 'string', 'max:255'],
                 'procesador' => ['nullable', 'string', 'max:255'],
                 'memoria' => ['nullable', 'string', 'max:255'],
@@ -1603,14 +1705,14 @@ class BienController extends Controller
                 'garantia' => ['nullable', 'date', 'after:fecha_registro'],
             ],
             'VEHICULO' => [
-                'placa' => ['required', 'string', 'max:20', 'unique:bienes_vehiculos,placa'],
-                'marca' => ['required', 'string', 'max:100'],
-                'modelo' => ['required', 'string', 'max:100'],
-                'anio' => ['required', 'string', 'max:10', 'regex:/^\d{4}$/'],
-                'motor' => ['nullable', 'string', 'max:100', 'unique:bienes_vehiculos,motor'],
-                'chasis' => ['nullable', 'string', 'max:100', 'unique:bienes_vehiculos,chasis'],
+                'placa' => ['required_if:tipo_bien,VEHICULO', 'string', 'max:20', $this->uniqueFor($bien, 'bienes_vehiculos', 'placa')],
+                'marca' => ['required_if:tipo_bien,VEHICULO', 'string', 'max:100'],
+                'modelo' => ['required_if:tipo_bien,VEHICULO', 'string', 'max:100'],
+                'anio' => ['required_if:tipo_bien,VEHICULO', 'string', 'digits:4', 'integer', 'min:1900', 'max:'.date('Y')],
+                'motor' => ['nullable', 'string', 'max:100', $this->uniqueFor($bien, 'bienes_vehiculos', 'motor')],
+                'chasis' => ['nullable', 'string', 'max:100', $this->uniqueFor($bien, 'bienes_vehiculos', 'chasis')],
                 'combustible' => ['nullable', 'string', 'max:50', Rule::in(['GASOLINA', 'DIESEL', 'ELECTRICO', 'HIBRIDO', 'GNV'])],
-                'kilometraje' => ['nullable', 'integer', 'min:0'],
+                'kilometraje' => ['nullable', 'numeric', 'min:0'],
             ],
             'MOBILIARIO' => [
                 'material' => ['nullable', 'string', 'max:255'],
@@ -1790,24 +1892,8 @@ class BienController extends Controller
     }
 
     /**
-     * Elimina todos los subtipos asociados a un bien.
+     * Reglas de validación específicas por tipo de bien.
      */
-    private function eliminarTodosSubtipos(Bien $bien): void
-    {
-        if ($bien->electronico) {
-            $bien->electronico->delete();
-        }
-        if ($bien->mobiliario) {
-            $bien->mobiliario->delete();
-        }
-        if ($bien->vehiculo) {
-            $bien->vehiculo->delete();
-        }
-        if ($bien->otro) {
-            $bien->otro->delete();
-        }
-    }
-
     /**
      * Aplica filtros a la consulta de reporte.
      */

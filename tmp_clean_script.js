@@ -1,283 +1,10 @@
-@extends('layouts.base')
 
-@section('title', 'Registrar Bien')
-
-@section('content')
-@push('breadcrumbs')
-<x-breadcrumbs :items="[['label' => 'Bienes', 'url' => route('bienes.index')], ['label' => 'Nuevo Bien']]" />
-@endpush
-    <div class="max-w-4xl mx-auto">
-        <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200">
-            {{-- Encabezado --}}
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-5">
-                <h1 class="text-xl font-bold text-white flex items-center gap-2">
-                    <svg class="w-5 h-5 text-blue-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                    </svg>
-                    Registrar Nuevo Bien
-                </h1>
-                <p class="text-blue-100 text-xs mt-1 opacity-90">
-                    Complete la información técnica y administrativa del activo patrimonial.
-                </p>
-            </div>
-
-            <form action="{{ route('bienes.store') }}" method="POST" enctype="multipart/form-data" class="p-8 space-y-8">
-                @csrf
-
-                {{-- Resumen de errores de validación --}}
-                @if($errors->any())
-                    <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-600 text-red-700 rounded-lg">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                            </svg>
-                            <span class="font-bold">Por favor corrige los siguientes errores:</span>
-                        </div>
-                        <ul class="text-sm list-disc list-inside space-y-1">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-
-                {{-- Sección 1: Ubicación Administrativa --}}
-                <div class="space-y-4">
-                    <h2 class="text-lg font-bold text-gray-800 border-b border-gray-200 pb-2 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                        </svg>
-                        Asignación Administrativa
-                    </h2>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="dependencia_id" class="block text-sm font-bold text-gray-700 mb-2">Dependencia <span class="text-red-500">*</span></label>
-                            <select name="dependencia_id" id="dependencia_id" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-gray-900">
-                                <option value="" disabled {{ old('dependencia_id') ? '' : 'selected' }}>Seleccione dependencia...</option>
-                                @foreach($dependencias as $dep)
-                                    <option value="{{ $dep->id }}" {{ old('dependencia_id') == $dep->id ? 'selected' : '' }}>
-                                        {{ $dep->nombre }}
-                                    </option>
-                                @endforeach
-                            </select>
-
-                            @error('dependencia_id')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-2">Responsable de la Dependencia</label>
-                            <div id="responsable_display"
-                                class="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 italic text-sm flex items-center h-[50px]">
-                                Seleccione una dependencia...
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Sección 2: Identificación del Bien --}}
-                <div class="space-y-4">
-                    <h2 class="text-lg font-bold text-gray-800 border-b border-gray-200 pb-2 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
-                        </svg>
-                        Identificación Técnica
-                    </h2>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {{-- Código del Bien con Sugerencia --}}
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Código del Bien</label>
-                        <div class="flex items-center gap-1">
-                            <input type="text" id="prefijo_bien" value="" readonly
-                                class="w-24 px-3 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 font-mono text-center cursor-not-allowed">
-                            <span class="text-gray-400 font-bold">-</span>
-                            <input type="text" name="codigo_secuencial" id="codigo_secuencial"
-                                value="" maxlength="4" inputmode="numeric" pattern="\d{4}"
-                                placeholder="0000"
-                                class="w-24 px-3 py-3 border border-gray-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 outline-none transition uppercase text-center" required>
-
-                            <input type="hidden" name="codigo" id="codigo_completo" value="{{ old('codigo') }}">
-                        </div>
-
-                        @error('codigo_secuencial')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-
-                        <div id="sugerencia-container" class="mt-1 hidden">
-                            <button type="button" id="btn-sugerencia"
-                                class="text-[10px] text-blue-600 hover:underline font-bold italic">
-                                💡 ¿Usar código sugerido: <span id="span-sugerencia"></span>?
-                            </button>
-                        </div>
-
-                        <p class="text-[10px] text-gray-500 mt-1">Solo edite el secuencial del bien (últimos 4 dígitos). Formato: <span class="font-mono">XXXXXX-XXXX</span></p>
-                    </div>
-
-                        {{-- Tipo de Bien --}}
-                        <div>
-                            <label for="tipo_bien" class="block text-sm font-bold text-gray-700 mb-2">Tipo de Bien</label>
-                            <select name="tipo_bien" id="tipo_bien" required
-                                class="w-full px-4 py-3 border @error('tipo_bien') border-red-500 @else border-gray-300 @enderror focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-gray-900">
-                                <option value="">Seleccione tipo...</option>
-                                @foreach($tiposBien as $value => $label)
-                                    <option value="{{ $value }}" {{ old('tipo_bien') == $value ? 'selected' : '' }}>{{ $label }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('tipo_bien')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- Estado --}}
-                        <div>
-                            <label for="estado" class="block text-sm font-bold text-gray-700 mb-2">Estado Físico</label>
-                            <select name="estado" id="estado" required
-                                class="w-full px-4 py-3 border @error('estado') border-red-500 @else border-gray-300 @enderror focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-gray-900">
-                                <option value="">Seleccione estado...</option>
-                                @foreach(\App\Enums\EstadoBien::cases() as $estado)
-                                    <option value="{{ $estado->value }}" {{ old('estado') == $estado->value ? 'selected' : '' }}>
-                                        {{ $estado->label() }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('estado')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-
-                    {{-- Descripción con Límite de 255 --}}
-                    <div>
-                        <div class="flex justify-between items-center mb-2">
-                            <label for="descripcion" class="block text-sm font-bold text-gray-700">Descripción General</label>
-                            <span id="char-count" class="text-[10px] font-bold text-gray-400">0 / 255</span>
-                        </div>
-                        <textarea name="descripcion" id="descripcion" rows="2" required maxlength="255"
-                            placeholder="Indique nombre, marca, modelo..."
-                            class="w-full px-4 py-3 border @error('descripcion') border-red-500 @else border-gray-300 @enderror focus:ring-2 focus:ring-blue-500 outline-none transition bg-white text-gray-900">{{ old('descripcion') }}</textarea>
-                        @error('descripcion')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-
-                {{-- Sección 3: Valores y Archivos --}}
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Precio (Bs.)</label>
-                        <input type="text" inputmode="numeric" name="precio" id="precio"
-                               value="{{ old('precio', '0.00') }}"
-                               placeholder="Ej: 1500,00"
-                               class="w-full px-4 py-3 border @error('precio') border-red-500 @else border-gray-300 @enderror focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-900">
-                        @error('precio')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                        <p class="text-[10px] text-gray-500 mt-1">Use punto o coma para decimales. Ej: 2500 o 2500,50</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Adquisición</label>
-                        <input type="date" name="fecha_registro" id="fecha_registro" required
-                            min="2000-01-01" max="{{ now()->format('Y-m-d') }}"
-                            value="{{ old('fecha_registro', now()->format('Y-m-d')) }}"
-                            class="w-full px-4 py-3 border @error('fecha_registro') border-red-500 @else border-gray-300 @enderror focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-900">
-                        @error('fecha_registro')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Fotografía</label>
-                        <input type="file" name="fotografia" id="fotografia" accept="image/*"
-                            class="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                        <p id="foto-error" class="text-xs text-red-600 mt-1 hidden">La fotografía debe ser una imagen jpeg, png, jpg, gif o webp de máximo 2 MB.</p>
-                    </div>
-                </div>
-
-                {{-- Sección Donación --}}
-                <div class="border border-amber-200 bg-amber-50/60 rounded-xl p-5 space-y-4">
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" name="es_donacion" id="es_donacion" value="1"
-                               class="w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                               {{ old('es_donacion') ? 'checked' : '' }}>
-                        <label for="es_donacion" class="text-sm font-bold text-gray-800">Registrar como bien donado</label>
-                    </div>
-
-                    <div id="campos-donacion" class="grid grid-cols-1 md:grid-cols-2 gap-4 {{ old('es_donacion') ? '' : 'hidden' }}">
-                        <div>
-                            <label class="block text-xs font-bold text-amber-800 mb-1">Tipo de Donante</label>
-                            <select name="tipo_donante" id="tipo_donante"
-                                    class="w-full px-4 py-2.5 border @error('tipo_donante') border-red-500 @else border-amber-200 @enderror rounded-lg bg-white text-sm">
-                                <option value="">Seleccione...</option>
-                                <option value="PERSONA" {{ old('tipo_donante') == 'PERSONA' ? 'selected' : '' }}>Persona Natural</option>
-                                <option value="INSTITUCION" {{ old('tipo_donante') == 'INSTITUCION' ? 'selected' : '' }}>Institución / Empresa</option>
-                            </select>
-                            @error('tipo_donante')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-amber-800 mb-1">Nombre del Donante <span class="text-red-500">*</span></label>
-                            <input type="text" name="donante_nombre" id="donante_nombre" value="{{ old('donante_nombre') }}"
-                                   class="w-full px-4 py-2.5 border @error('donante_nombre') border-red-500 @else border-amber-200 @enderror rounded-lg bg-white text-sm">
-                            @error('donante_nombre')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-amber-800 mb-1">Cédula / RIF</label>
-                            <input type="text" name="donante_documento" id="donante_documento" value="{{ old('donante_documento') }}"
-                                   maxlength="11"
-                                   placeholder="Ej: V-12345678 o J-123456789"
-                                   class="w-full px-4 py-2.5 border @error('donante_documento') border-red-500 @else border-amber-200 @enderror rounded-lg bg-white text-sm">
-                            @error('donante_documento')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-amber-800 mb-1">Dirección <span class="text-red-500">*</span></label>
-                            <input type="text" name="donante_direccion" id="donante_direccion" value="{{ old('donante_direccion') }}"
-                                   class="w-full px-4 py-2.5 border @error('donante_direccion') border-red-500 @else border-amber-200 @enderror rounded-lg bg-white text-sm">
-                            @error('donante_direccion')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
-
-                <div id="campos-tipo-bien" class="transition-all duration-300"></div>
-
-                <div class="flex justify-end gap-4 pt-8 border-t border-gray-200">
-                    <a href="{{ route('bienes.index') }}"
-                        class="px-6 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</a>
-                    <button type="submit"
-                        class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition">Guardar Activo</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-<script type="application/json" id="dependencias-data">
-    @json($dependencias->mapWithKeys(function ($d) {
-        return [
-            $d->id => $d->responsable ? $d->responsable->nombre : 'Sin responsable asignado'
-        ];
-    }))
-</script>
-
-@endsection
-
-@push('scripts')
-    <script>
         document.addEventListener('DOMContentLoaded', function() {
             /* 1. Lógica de Responsable */
-            const dependenciasDataElement = document.getElementById('dependencias-data');
-            const dependenciasData = dependenciasDataElement
-                ? JSON.parse(dependenciasDataElement.textContent || '{}')
-                : {};
+            const dependenciasData = {
+                
+            };
+
             const depSelect = document.getElementById('dependencia_id');
             const respDisplay = document.getElementById('responsable_display');
 
@@ -307,16 +34,15 @@
             const spanSugerencia = document.getElementById('span-sugerencia');
             const btnSugerencia = document.getElementById('btn-sugerencia');
 
-            const baseUrl = "{{ url('bienes') }}";
+            const baseUrl = "BLADE_EXPR";
             let codigoSugeridoDependencia = null;
-            const oldValues = @json(old());
 
             function actualizarSugerencia(codigo) {
                 codigoSugeridoDependencia = codigo;
                 prefijoInput.value = codigo.substring(0, 6);
-                secuencialInput.value = codigo.substring(6);
+                spanSugerencia.textContent = codigo;
+                sugerenciaContainer.classList.remove('hidden');
                 actualizarCodigoCompleto();
-                sugerenciaContainer.classList.add('hidden');
             }
 
             function ocultarSugerencia() {
@@ -375,13 +101,6 @@
                 ocultarSugerencia();
                 if (depId) obtenerSugerencia(depId);
             });
-
-            if (codigoCompletoInput && codigoCompletoInput.value) {
-                prefijoInput.value = codigoCompletoInput.value.substring(0, 6);
-                secuencialInput.value = codigoCompletoInput.value.substring(6);
-            } else if (depSelect && depSelect.value) {
-                obtenerSugerencia(depSelect.value);
-            }
 
             if (secuencialInput) {
                 secuencialInput.addEventListener('input', function (e) {
@@ -452,53 +171,44 @@
                     },
                     fields: [
                         { name: 'subtipo', label: 'Subtipo', type: 'select', options: ['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR', 'LAPTOP', 'TABLET', 'OTRO'], required: true },
-                        { name: 'serial', label: 'Número de Serie', type: 'text', required: true, maxlength: 18, inputmode: 'numeric', pattern: '\d*' },
-                        { name: 'modelo', label: 'Modelo', type: 'text', maxlength: 30 },
-                        { name: 'procesador', label: 'Procesador', type: 'text', maxlength: 30 },
-                        { name: 'memoria', label: 'RAM/Memoria', type: 'text', maxlength: 30 },
-                        { name: 'almacenamiento', label: 'Almacenamiento', type: 'text', maxlength: 30 },
-                        { name: 'pantalla', label: 'Pulgadas de Pantalla', type: 'text', maxlength: 30 }
+                        { name: 'serial', label: 'Número de Serie', type: 'text', required: true, maxlength: 50, inputmode: 'numeric', pattern: '\\d*' },
+                        { name: 'modelo', label: 'Modelo', type: 'text' },
+                        { name: 'procesador', label: 'Procesador', type: 'text' },
+                        { name: 'memoria', label: 'RAM/Memoria', type: 'text' },
+                        { name: 'almacenamiento', label: 'Almacenamiento', type: 'text' },
+                        { name: 'pantalla', label: 'Pulgadas de Pantalla', type: 'text' }
                     ]
                 },
                 'VEHICULO': {
                     fields: [
-                        { name: 'placa', label: 'Número de Placa', type: 'text', required: true, maxlength: 30 },
-                        { name: 'marca', label: 'Marca', type: 'text', required: true, maxlength: 30 },
-                        { name: 'modelo', label: 'Modelo', type: 'text', required: true, maxlength: 30 },
-                        { name: 'motor', label: 'Serial de Motor', type: 'text', maxlength: 30 },
-                        { name: 'chasis', label: 'Serial de Carrocería', type: 'text', maxlength: 30 }
+                        { name: 'placa', label: 'Número de Placa', type: 'text', required: true, maxlength: 20 },
+                        { name: 'marca', label: 'Marca', type: 'text', required: true, maxlength: 100 },
+                        { name: 'modelo', label: 'Modelo', type: 'text', required: true, maxlength: 100 },
+                        { name: 'motor', label: 'Serial de Motor', type: 'text', maxlength: 100 },
+                        { name: 'chasis', label: 'Serial de Carrocería', type: 'text', maxlength: 100 }
                     ]
                 },
                 'MOBILIARIO': {
                     fields: [
-                        { name: 'material', label: 'Material', type: 'text', maxlength: 30 },
-                        { name: 'color', label: 'Color', type: 'text', maxlength: 30 },
-                        { name: 'dimensiones', label: 'Dimensiones', type: 'text', maxlength: 30 }
+                        { name: 'material', label: 'Material', type: 'text' },
+                        { name: 'color', label: 'Color', type: 'text' },
+                        { name: 'dimensiones', label: 'Dimensiones', type: 'text' }
                     ]
                 },
                 'OTROS': {
                     fields: [
-                        { name: 'especificaciones', label: 'Especificaciones Extra', type: 'textarea', maxlength: 30 }
+                        { name: 'especificaciones', label: 'Especificaciones Extra', type: 'textarea' }
                     ]
                 }
             };
 
             const validacionesCampo = {
-                'subtipo': { required: true, maxlength: 50, label: 'Subtipo' },
-                'serial': { required: true, maxlength: 18, label: 'Número de Serie', pattern: /^\d+$/ },
-                'modelo': { required: false, maxlength: 30, label: 'Modelo' },
-                'procesador': { required: false, maxlength: 30, label: 'Procesador' },
-                'memoria': { required: false, maxlength: 30, label: 'RAM/Memoria' },
-                'almacenamiento': { required: false, maxlength: 30, label: 'Almacenamiento' },
-                'pantalla': { required: false, maxlength: 30, label: 'Pulgadas de Pantalla' },
-                'placa': { required: true, maxlength: 30, label: 'Número de Placa' },
-                'marca': { required: true, maxlength: 30, label: 'Marca' },
-                'motor': { required: false, maxlength: 30, label: 'Serial de Motor' },
-                'chasis': { required: false, maxlength: 30, label: 'Serial de Carrocería' },
-                'material': { required: false, maxlength: 30, label: 'Material' },
-                'color': { required: false, maxlength: 30, label: 'Color' },
-                'dimensiones': { required: false, maxlength: 30, label: 'Dimensiones' },
-                'especificaciones': { required: false, maxlength: 30, label: 'Especificaciones Extra' }
+                'serial': { required: true, maxlength: 50, label: 'Número de Serie', pattern: /^\d+$/ },
+                'placa': { required: true, maxlength: 20, label: 'Número de Placa' },
+                'marca': { required: true, maxlength: 100, label: 'Marca' },
+                'modelo': { required: true, maxlength: 100, label: 'Modelo' },
+                'motor': { required: false, maxlength: 100, label: 'Serial de Motor' },
+                'chasis': { required: false, maxlength: 100, label: 'Serial de Carrocería' }
             };
 
             const tipoBienSelect = document.getElementById('tipo_bien');
@@ -527,40 +237,31 @@
                                         <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label} ${campo.required ? '<span class="text-red-500">*</span>' : ''}</label>
                                         <select name="${campo.name}" id="subtipo_selector" ${campo.required ? 'required' : ''} class="w-full px-4 py-2 border border-blue-200 rounded-lg outline-none bg-white">
                                             <option value="">Seleccione...</option>
-                                            ${campo.options.map(opt => `<option value="${opt}" ${oldValues[campo.name] === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                                            ${campo.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
                                         </select>
                                     </div>`;
                         } else if (campo.type === 'textarea') {
-                            const textareaMaxlength = campo.maxlength ? `maxlength="${campo.maxlength}"` : '';
                             html += `<div class="md:col-span-2">
                                         <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label}</label>
-                                        <textarea name="${campo.name}" data-field="${campo.name}" class="dynamic-field w-full px-4 py-2 border border-blue-200 rounded-lg bg-white" rows="2" ${textareaMaxlength}>${oldValues[campo.name] || ''}</textarea>
+                                        <textarea name="${campo.name}" data-field="${campo.name}" class="dynamic-field w-full px-4 py-2 border border-blue-200 rounded-lg bg-white" rows="2"></textarea>
                                     </div>`;
                         } else {
                             const isReadonly = config.isParent ? 'readonly' : '';
                             const bgClass = config.isParent ? 'bg-gray-100' : 'bg-white';
-                            const defaultValue = oldValues[campo.name] !== undefined ? oldValues[campo.name] : (config.isParent ? 'S/N' : '');
+                            const defaultValue = config.isParent ? 'S/N' : '';
                             const maxlengthAttr = campo.maxlength ? `maxlength="${campo.maxlength}"` : '';
-                            const numericAttr = campo.name === 'serial' ? 'inputmode="numeric" pattern="\\d*"' : '';
 
                             html += `<div>
                                         <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label} ${campo.required ? '<span class="text-red-500">*</span>' : ''}</label>
                                         <input type="text" name="${campo.name}" data-field="${campo.name}"
                                             class="dynamic-field w-full px-4 py-2 border border-blue-200 rounded-lg ${bgClass}"
-                                            ${isReadonly} value="${defaultValue}" ${maxlengthAttr} ${numericAttr}>
+                                            ${isReadonly} value="${defaultValue}" ${maxlengthAttr}>
                                     </div>`;
                         }
                     });
 
                     html += `</div></div>`;
                     container.innerHTML = html;
-
-                    const serialInput = container.querySelector('input[name="serial"]');
-                    if (serialInput) {
-                        serialInput.addEventListener('input', function () {
-                            this.value = this.value.replace(/\D/g, '');
-                        });
-                    }
 
                     if (config.isParent) {
                         const selector = document.getElementById('subtipo_selector');
@@ -575,7 +276,7 @@
                                         input.classList.remove('bg-gray-100');
                                         input.classList.add('bg-white');
                                         input.removeAttribute('readonly');
-                                        if (input.value === 'S/N') input.value = '';
+                                        if(input.value === 'S/N') input.value = '';
                                     } else {
                                         input.classList.add('bg-gray-100');
                                         input.classList.remove('bg-white');
@@ -584,10 +285,6 @@
                                     }
                                 });
                             });
-
-                            if (selector.value) {
-                                selector.dispatchEvent(new Event('change'));
-                            }
                         }
                     }
                 }
@@ -668,39 +365,22 @@
                 fotoInput.addEventListener('change', () => {
                     const file = fotoInput.files[0];
                     const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
-                    const maxSize = 2 * 1024 * 1024;
 
-                    if (file) {
-                        if (!validTypes.includes(file.type) || file.size > maxSize) {
-                            fotoError.textContent = 'La fotografía debe ser una imagen jpeg, png, jpg, gif o webp de máximo 2 MB.';
-                            fotoError.classList.remove('hidden');
-                            fotoInput.value = '';
-                        } else {
-                            fotoError.classList.add('hidden');
-                        }
+                    if (file && !validTypes.includes(file.type)) {
+                        fotoError.classList.remove('hidden');
+                        fotoInput.value = '';
+                    } else {
+                        fotoError.classList.add('hidden');
                     }
                 });
             }
 
             if (donacionCheckbox && camposDonacion && precioInput) {
-                const actualizarRequeridosDonacion = (activo) => {
-                    const tipoDonanteInput = document.getElementById('tipo_donante');
-                    const donanteNombre = document.getElementById('donante_nombre');
-                    const donanteDocumento = document.getElementById('donante_documento');
-                    const donanteDireccion = document.getElementById('donante_direccion');
-
-                    if (tipoDonanteInput) tipoDonanteInput.required = activo;
-                    if (donanteNombre) donanteNombre.required = activo;
-                    if (donanteDocumento) donanteDocumento.required = activo;
-                    if (donanteDireccion) donanteDireccion.required = activo;
-                };
-
                 const toggleDonacion = () => {
                     const activo = donacionCheckbox.checked;
                     camposDonacion.classList.toggle('hidden', !activo);
                     precioInput.value = activo ? '0.00' : precioInput.defaultValue || '';
                     precioInput.readOnly = activo;
-                    actualizarRequeridosDonacion(activo);
 
                     if (!activo && precioInput.readOnly) {
                         precioInput.readOnly = false;
@@ -763,10 +443,9 @@
                     if (fotoInputSubmit && fotoInputSubmit.files.length > 0) {
                         const file = fotoInputSubmit.files[0];
                         const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
-                        const maxSize = 2 * 1024 * 1024;
-                        if (!validTypes.includes(file.type) || file.size > maxSize) {
+                        if (!validTypes.includes(file.type)) {
                             e.preventDefault();
-                            alert('Solo se permiten imágenes jpeg, png, jpg, gif o webp de máximo 2 MB.');
+                            alert('Solo se permiten archivos de imagen (jpeg, png, jpg, gif, webp).');
                             fotoInputSubmit.focus();
                             return;
                         }
@@ -884,5 +563,4 @@
                 });
             }
         });
-    </script>
-@endpush
+    
