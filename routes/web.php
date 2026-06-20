@@ -15,6 +15,8 @@ use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\UnidadAdministradoraController;
 use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\ResponsableController;
+use App\Http\Controllers\Api\ResponsableController as ApiResponsableController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -143,6 +145,12 @@ Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () 
         ->name('usuarios.pdf');
     Route::post('usuarios/importar', [ApiUsuarioImportController::class, 'importarPorCedula'])
         ->name('usuarios.importar');
+
+    // Ruta AJAX/POST para buscar responsables por cédula (API local)
+    Route::post('responsables/buscar', [ApiResponsableController::class, 'buscar'])->name('responsables.buscar');
+
+    // Rutas para responsables (CRUD completo)
+    Route::resource('responsables', ResponsableController::class)->parameters(['responsables' => 'responsable']);
 
     Route::get('movimientos/reporte', [MovimientoController::class, 'generarReporte'])
         ->name('movimientos.reporte');
