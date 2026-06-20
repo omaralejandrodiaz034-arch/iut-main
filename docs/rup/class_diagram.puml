@@ -1,0 +1,427 @@
+@startuml
+' Diagrama de clases del Sistema de Gestión de Inventario de Bienes
+' Generado a partir de modelos Eloquent, migraciones y servicios del proyecto.
+
+' === ENUMS ===
+enum EstadoBien {
+  DANADO
+  ACTIVO
+  EN_MANTENIMIENTO
+  EN_CAMINO
+  EXTRAVIADO
+  DESINCORPORADO
+  label()
+  values()
+}
+
+enum TipoBien {
+  ELECTRONICO
+  MOBILIARIO
+  VEHICULO
+  OTROS
+  label()
+  valores()
+  camposEspecificos()
+}
+
+' === TRAITS ===
+trait AuditableTrait {
+  bootAuditableTrait()
+  {abstract} registraOperacion()
+  {abstract} scopeSinEliminados()
+}
+
+trait GeneratesMovimiento {
+  bootGeneratesMovimiento()
+  {abstract} creaMovimientoAutomatico()
+}
+
+' === SERVICIOS ===
+class CodigoJerarquicoService {
+  +LONG_ORGANISMO = 1
+  +LONG_UNIDAD = 2
+  +LONG_DEPENDENCIA = 3
+  +LONG_BIEN = 4
+  +LONG_PREFIJO_BIEN = 6
+  +TOTAL_BIEN = 10
+  +generarCodigoOrganismo(): string
+  +generarCodigoUnidad(int): string
+  +generarCodigoDependencia(int): string
+  +generarCodigoBien(int): string
+  +decodificarCodigo(string): array
+  +validarJerarquia(string, string): bool
+  +obtenerCodigoPadre(string): ?string
+  +codigoExiste(string): bool
+  +codigoExisteOrganismo(string): bool
+  +codigoExisteUnidad(string, int): bool
+  +codigoExisteDependencia(string, int): bool
+  +codigoExisteBien(string): bool
+  +obtenerEstadisticas(string|int, string): array
+  +recomendarSiguienteBien(int): array
+  +recomendarSiguienteCodigoParaDependencia(int): array
+  +formatearCodigoLegible(string): string
+  +buildPrefijoBien(Dependencia): string
+  +isSecuencialDisponibleEnDependencia(int, string): bool
+  +getSiguienteSecuencialDisponible(int): int
+}
+
+class BienTypeService {
+  +sync(Bien, string, array): void
+}
+
+class ActaDonacionService {
+  +generar(Bien, array, Usuario): string
+  +descargar(Bien, array, Usuario): void
+}
+
+class ActaDesincorporacionService {
+  +generar(Bien, string, Usuario): void
+  +descargar(Bien, string, Usuario): void
+}
+
+class ActaTrasladoService {
+  +generar(Bien, string, Usuario, Dependencia, Dependencia, ?string): void
+  +descargar(Bien, string, Usuario, Dependencia, Dependencia): void
+}
+
+class MovimientoService {
+  +registrarMovimiento(object, string, ?string, ?int): void
+}
+
+class FpdfReportService {
+  +__construct(string, string, string, string, string)
+  +Header(): void
+  +Footer(): void
+  +Cell(string, int, string, int, int, string, bool, string): void
+  +MultiCell(string, int, string, int, string, bool): void
+  +Write(int, string, string): void
+  +downloadBienesListado(): void
+  +generarPorDependencia(...): void
+  +generarPorUnidad(...): void
+  +generarPorOrganismo(...): void
+  +generarPorTipo(...): void
+  +generarPorEstado(...): void
+  +downloadDependenciasListado(): void
+  +generarDependenciasPorUnidad(...): void
+  +generarDependenciasPorResponsable(...): void
+  +downloadUnidadesListado(): void
+  +downloadOrganismosListado(): void
+  +generarUnidadesPorOrganismo(...): void
+  +downloadMovimientosListado(): void
+  +generarMovimientosPorTipo(...): void
+  +generarMovimientosPorUsuario(...): void
+  +generarPorFecha(string, string, string, string, iterable): void
+}
+
+class EliminadosService {
+  +archiveModel(Model, ?int): Eliminado
+  +restoreEliminado(Eliminado): bool
+}
+
+' === MODELOS PRINCIPALES ===
+class Organismo {
+  +id: bigint
+  +codigo: string "50, UK"
+  +nombre: string "150"
+  +code_min: int
+  +code_max: int
+  +unidadesAdministradoras(): HasMany
+}
+
+class UnidadAdministradora {
+  +id: bigint
+  +organismo_id: bigint
+  +codigo: string "50"
+  +nombre: string "150"
+  +code_min: int
+  +code_max: int
+  +scopeSearch(query, term): Builder
+  +organismo(): BelongsTo
+  +dependencias(): HasMany
+}
+
+class Dependencia {
+  +id: bigint
+  +unidad_administradora_id: bigint
+  +responsable_id: bigint "nullable"
+  +codigo: string "50"
+  +nombre: string "150"
+  +code_min: int
+  +code_max: int
+  +scopeSearch(query, term): Builder
+  +responsable(): BelongsTo
+  +unidadAdministradora(): BelongsTo
+  +bienes(): HasMany
+}
+
+class Responsable {
+  +id: bigint
+  +tipo_id: bigint
+  +cedula: string "20, UK"
+  +nombre: string "150"
+  +correo: string "150, nullable"
+  +telefono: string "50, nullable"
+  +getNombreCompletoAttribute(): string
+  +tipo(): BelongsTo
+  +bienes(): HasManyThrough
+  +dependencias(): HasMany
+}
+
+class TipoResponsable {
+  +id: bigint
+  +nombre: string "80, UK"
+  +responsables(): HasMany
+}
+
+class Usuario {
+  +id: bigint
+  +rol_id: bigint
+  +cedula: string "20, UK"
+  +nombre: string "150"
+  +apellido: string "150"
+  +foto_perfil: string "nullable"
+  +correo: string "150, UK"
+  +hash_password: string "255, nullable"
+  +activo: bool "default true"
+  +is_admin: bool
+  +normalizeCedula(?string): string
+  +getNombreCompletoAttribute(): string
+  +getAuthPassword(): string
+  +getAuthIdentifierName(): string
+  +rol(): BelongsTo
+  +reportes(): HasMany
+  +movimientos(): HasMany
+  +isAdmin(): bool
+  +canDeleteData(): bool
+  +canDeleteUser(Usuario): bool
+}
+
+class Rol {
+  +id: bigint
+  +nombre: string "80, UK"
+  +permisos: json "nullable"
+  +usuarios(): HasMany
+}
+
+' === MODELOS BIEN ===
+class Bien {
+  +id: bigint
+  +dependencia_id: bigint
+  +codigo: string "50, UK"
+  +descripcion: string "255"
+  +precio: decimal "15,2 default 0"
+  +fotografia: string "nullable"
+  +ubicacion: string "nullable"
+  +estado: EstadoBien "default ACTIVO"
+  +fecha_registro: date "nullable"
+  +tipo_bien: TipoBien "default OTROS"
+  +caracteristicas: json "nullable"
+  +es_donacion: bool "default false"
+  +tipo_donante: string "nullable"
+  +donante_nombre: string "nullable"
+  +donante_documento: string "nullable"
+  +donante_direccion: string "nullable"
+  +acta_donacion: string "nullable"
+  +scopeSearch(query, term): Builder
+  +dependencia(): BelongsTo
+  +movimientos(): HasMany
+  +electronico(): HasOne
+  +mobiliario(): HasOne
+  +vehiculo(): HasOne
+  +otro(): HasOne
+  +desincorporado(): HasOne
+}
+
+class BienElectronico {
+  +id: bigint
+  +bien_id: bigint "unique"
+  +subtipo: string "20, nullable"
+  +procesador: string "nullable"
+  +memoria: string "nullable"
+  +almacenamiento: string "nullable"
+  +pantalla: string "nullable"
+  +serial: string "nullable"
+  +garantia: date "nullable"
+  +bien(): BelongsTo
+}
+
+class BienMobiliario {
+  +id: bigint
+  +bien_id: bigint "unique"
+  +material: string "nullable"
+  +dimensiones: string "nullable"
+  +color: string "nullable"
+  +capacidad: string "nullable"
+  +cantidad_piezas: int "nullable"
+  +acabado: string "nullable"
+  +bien(): BelongsTo
+}
+
+class BienVehiculo {
+  +id: bigint
+  +bien_id: bigint "unique"
+  +marca: string "nullable"
+  +modelo: string "nullable"
+  +anio: string "nullable"
+  +placa: string "nullable"
+  +motor: string "nullable"
+  +chasis: string "nullable"
+  +combustible: string "nullable"
+  +kilometraje: string "nullable"
+  +bien(): BelongsTo
+}
+
+class BienOtro {
+  +id: bigint
+  +bien_id: bigint "unique"
+  +especificaciones: text "nullable"
+  +cantidad: int "nullable"
+  +presentacion: string "nullable"
+  +bien(): BelongsTo
+}
+
+class BienDesincorporado {
+  +id: bigint
+  +bien_id: bigint "unique"
+  +dependencia_id: bigint "nullable"
+  +responsable_id: bigint "nullable"
+  +codigo: string
+  +descripcion: string
+  +precio: decimal "default 0"
+  +fotografia: string "nullable"
+  +ubicacion: string "nullable"
+  +estado: string "default ACTIVO"
+  +fecha_registro: date "nullable"
+  +tipo_bien: string "nullable"
+  +caracteristicas: json "nullable"
+  +motivo_desincorporacion: string
+  +acta_desincorporacion: string "nullable"
+  +fecha_desincorporacion: timestamp
+  +bien(): BelongsTo
+  +dependencia(): BelongsTo
+  +responsable(): BelongsTo
+}
+
+' === MODELOS DE SOPORTE ===
+class Movimiento {
+  +id: bigint
+  +bien_id: bigint "nullable, nullOnDelete"
+  +subject_type: string "polimórfico"
+  +subject_id: bigint "polimórfico"
+  +tipo: string "80"
+  +fecha: timestamp "useCurrent"
+  +observaciones: text "nullable"
+  +usuario_id: bigint "nullable, nullOnDelete"
+  +descripcion: string
+  +acta_path: string
+  +bien(): BelongsTo
+  +usuario(): BelongsTo
+  +historialMovimientos(): HasMany
+  +subject(): MorphTo
+}
+
+class HistorialMovimiento {
+  +id: bigint
+  +movimiento_id: bigint
+  +fecha: timestamp
+  +detalle: text
+  +movimiento(): BelongsTo
+}
+
+class Reporte {
+  +id: bigint
+  +usuario_id: bigint "nullable"
+  +tipo: string "80"
+  +fecha_generado: timestamp
+  +archivo_pdf_path: string "nullable"
+  +usuario(): BelongsTo
+}
+
+class Auditoria {
+  +id: bigint
+  +usuario_id: bigint "nullable"
+  +tabla: string "100"
+  +registro_id: bigint
+  +operacion: enum "CREATE|UPDATE|DELETE"
+  +valores_anteriores: json "nullable"
+  +valores_nuevos: json "nullable"
+  +descripcion: text "nullable"
+  +ip_address: string "45, nullable"
+  +user_agent: text "nullable"
+  +created_at: timestamp
+  +usuario(): BelongsTo
+  +registrar(tabla, registro_id, operacion, valores_anteriores, valores_nuevos, descripcion, ip_address, user_agent): static
+}
+
+class Eliminado {
+  +id: bigint
+  +model_type: string
+  +model_id: bigint "nullable"
+  +data: json "nullable"
+  +deleted_by: bigint "nullable"
+  +deleted_at: timestamp "nullable"
+}
+
+' === RELACIONES HERENCIA / TIPOS ===
+Bien <|-- BienElectronico : "tipo ELECTRONICO"
+Bien <|-- BienMobiliario : "tipo MOBILIARIO"
+Bien <|-- BienVehiculo : "tipo VEHICULO"
+Bien <|-- BienOtro : "tipo OTROS"
+Bien <|-- BienDesincorporado : "estado DESINCORPORADO"
+
+' === RELACIONES PRINCIPALES ===
+Organismo ||--o{ UnidadAdministradora : "contiene"
+UnidadAdministradora ||--o{ Dependencia : "contiene"
+Dependencia ||--o{ Bien : "registra"
+TipoResponsable ||--o{ Responsable : "clasifica"
+Responsable }|--o{ Dependencia : "asignado_a"
+Responsable ||--o{ Bien : "tiene_hasManyThrough"
+Rol ||--o{ Usuario : "asigna"
+Usuario ||--o{ Bien : "registra_no (via Dependencia)"
+Usuario ||--o{ Movimiento : "ejecuta"
+Usuario ||--o{ Reporte : "genera"
+Usuario ||--o{ Auditoria : "genera"
+Bien ||--o{ Movimiento : "tiene"
+Bien ||--o{ BienElectronico : "1:1"
+Bien ||--o{ BienMobiliario : "1:1"
+Bien ||--o{ BienVehiculo : "1:1"
+Bien ||--o{ BienOtro : "1:1"
+Bien ||--o{ BienDesincorporado : "1:1"
+Movimiento ||--o{ HistorialMovimiento : "tiene"
+
+' === POLIMORFISMO ===
+Movimiento ..> Responsable : "subject_type"
+Movimiento ..> Dependencia : "subject_type"
+Movimiento ..> Bien : "subject_type"
+Movimiento ..> Usuario : "subject_type"
+Movimiento ..> Organismo : "subject_type"
+Movimiento ..> UnidadAdministradora : "subject_type"
+
+' === USO DE TRAITS POR MODELOS ===
+Bien ..> AuditableTrait
+Movimiento ..> AuditableTrait
+Usuario ..> AuditableTrait
+Usuario ..> GeneratesMovimiento
+Bien ..> GeneratesMovimiento
+
+' === USO DE ENUMS POR MODELOS ===
+Bien ..> EstadoBien
+Bien ..> TipoBien
+
+' === DEPENDENCIA DE SERVICIOS ===
+BienController ..> CodigoJerarquicoService
+BienController ..> BienTypeService
+BienController ..> FpdfReportService
+BienController ..> ActaDonacionService
+BienController ..> ActaDesincorporacionService
+BienController ..> ActaTrasladoService
+BienController ..> MovimientoService
+BienController ..> EliminadosService
+CodigoJerarquicoService ..> Organismo
+CodigoJerarquicoService ..> UnidadAdministradora
+CodigoJerarquicoService ..> Dependencia
+CodigoJerarquicoService ..> Bien
+GeneratesMovimiento ..> MovimientoService
+AuditableTrait ..> Auditoria
+BienTypeService ..> Bien
+@enduml

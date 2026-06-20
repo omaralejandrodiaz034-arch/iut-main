@@ -148,8 +148,8 @@ use Illuminate\Support\Str;
                         @endif
                     </p>
                 </div>
-                <a href="{{ Storage::disk('public')->url($bien->acta_donacion) }}" target="_blank"
-                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-lg hover:bg-amber-700 transition focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1">
+                <a href="{{ asset('storage/'.$bien->acta_donacion) }}" target="_blank"
+                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-md shadow-sm hover:bg-amber-700 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">
                     <x-heroicon-o-document-text class="w-5 h-5 mr-2" />
                     Ver Acta de Donación
                 </a>

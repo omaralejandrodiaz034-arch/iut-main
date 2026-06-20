@@ -57,6 +57,12 @@
                 <p id="error-codigo" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ Solo se permiten números.</p>
                 <p id="error-ceros" class="text-red-500 text-[10px] mt-1 hidden font-bold italic">⚠️ El código no puede ser solo ceros; debe tener un valor real.</p>
 
+                @if(! empty($codigoLegible))
+                    <p class="text-slate-500 text-[11px] mt-2 italic">
+                        Código sugerido automáticamente: <span class="font-mono text-slate-800">{{ $codigoLegible }}</span>
+                    </p>
+                @endif
+
                 <p class="text-blue-500 text-[11px] mt-2 italic font-medium">Campo obligatorio de 10 dígitos numéricos.</p>
             </div>
 

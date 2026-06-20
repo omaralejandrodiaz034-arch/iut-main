@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 
 class BienController extends Controller
 {
@@ -1540,7 +1541,7 @@ class BienController extends Controller
                 'required_if:es_donacion,1',
                 'string',
                 'max:50',
-                Rule::regex('/^(?:[VEP]-\d{7,8}|[JGP]-\d{8,9})$/'),
+                'regex:/^(?:[VEP]-\d{7,8}|[JGP]-\d{8,9})$/',
             ],
             'donante_direccion' => ['nullable', 'required_if:es_donacion,1', 'string', 'max:500'],
             'acta_donacion' => ['nullable', 'string', 'max:255'],
@@ -1589,7 +1590,7 @@ class BienController extends Controller
                 'required_if:es_donacion,1',
                 'string',
                 'max:50',
-                Rule::regex('/^(?:[VEP]-\d{7,8}|[JGP]-\d{8,9})$/'),
+                'regex:/^(?:[VEP]-\d{7,8}|[JGP]-\d{8,9})$/',
             ],
             'donante_direccion' => ['nullable', 'required_if:es_donacion,1', 'string', 'max:500'],
             'acta_donacion' => ['nullable', 'string', 'max:255'],
@@ -1682,7 +1683,7 @@ class BienController extends Controller
         ];
     }
 
-    private function uniqueFor(?Bien $bien, string $table, string $column): Rule
+    private function uniqueFor(?Bien $bien, string $table, string $column): Unique
     {
         $rule = Rule::unique($table, $column);
 

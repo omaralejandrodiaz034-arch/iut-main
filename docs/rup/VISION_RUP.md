@@ -83,8 +83,7 @@ A diferencia de hojas de cálculo o registros en papel, el sistema ofrece trazab
 | Administradores del sistema | Gestionan usuarios, roles, configuración y auditoría | Control operativo y seguridad del sistema. |
 | Usuarios normales | Registran, actualizan y consultan bienes | Acceso ágil a operaciones patrimoniales. |
 | Responsables patrimoniales | Cuidan bienes asignados a dependencias | Claridad sobre bienes bajo su responsabilidad. |
-| Auditores internos o externos | Verifican información patrimonial | Reportes, historiales y evidencias verificables. |
-| Autoridades institucionales | Toman decisiones estratégicas | Información consolidada para planificación y control. |
+
 
 ### 3.2 Stakeholders secundarios
 

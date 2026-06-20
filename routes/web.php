@@ -110,6 +110,10 @@ Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () 
         // Transferencia entre dependencias
         Route::get('{bien}/transferir', [BienController::class, 'showTransferirForm'])->name('transferir.form');
         Route::patch('{bien}/transferir', [BienController::class, 'transferir'])->name('transferir');
+
+        // Sugerencia de código para nuevo bien
+        Route::get('{dependencia}/recomendar-codigo', [BienController::class, 'recomendarCodigo'])
+            ->name('recomendar-codigo');
     });
 
     // Resource completo para bienes (índex, create, store, show, edit, update, destroy)
