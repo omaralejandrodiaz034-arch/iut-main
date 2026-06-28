@@ -1567,7 +1567,7 @@ class BienController extends Controller
                 },
             ],
             'descripcion' => ['sometimes', 'string', 'max:255'],
-            'precio' => ['sometimes', 'numeric', 'min:0', 'max:999999999.99', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) use ($bien, $request) {
+            'precio' => ['required', 'numeric', 'min:0', 'max:999999999.99', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) use ($bien, $request) {
                 $esDonacion = filter_var($request->input('es_donacion') ?? (bool) ($bien->es_donacion ?? false), FILTER_VALIDATE_BOOLEAN);
 
                 if ($esDonacion && (float) $value !== 0.0) {
@@ -1638,6 +1638,7 @@ class BienController extends Controller
             'subtipo.in' => 'El subtipo seleccionado no es válido.',
             'serial.required_if' => 'El número de serie es obligatorio para bienes electrónicos.',
             'serial.required' => 'El número de serie es obligatorio para bienes electrónicos.',
+            'serial.min' => 'El número de serie debe tener al menos 3 dígitos.',
             'serial.max' => 'El número de serie no debe exceder 50 caracteres.',
             'serial.regex' => 'El número de serie solo puede contener dígitos.',
             'serial.unique' => 'El número de serie ya está registrado.',
@@ -1697,7 +1698,7 @@ class BienController extends Controller
         return match ($tipo) {
             'ELECTRONICO' => [
                 'subtipo' => ['required_if:tipo_bien,ELECTRONICO', 'string', 'max:50', Rule::in(['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR', 'LAPTOP', 'TABLET', 'OTRO'])],
-                'serial' => ['required_if:tipo_bien,ELECTRONICO', 'string', 'max:50', 'regex:/^[0-9]+$/', $this->uniqueFor($bien, 'bienes_electronicos', 'serial')],
+                'serial' => ['required_if:tipo_bien,ELECTRONICO', 'string', 'min:3', 'max:50', 'regex:/^[0-9]+$/', $this->uniqueFor($bien, 'bienes_electronicos', 'serial')],
                 'modelo' => ['nullable', 'string', 'max:255'],
                 'procesador' => ['nullable', 'string', 'max:255'],
                 'memoria' => ['nullable', 'string', 'max:255'],

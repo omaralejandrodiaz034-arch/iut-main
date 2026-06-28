@@ -452,7 +452,7 @@
                     },
                     fields: [
                         { name: 'subtipo', label: 'Subtipo', type: 'select', options: ['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR', 'LAPTOP', 'TABLET', 'OTRO'], required: true },
-                        { name: 'serial', label: 'Número de Serie', type: 'text', required: true, maxlength: 18, inputmode: 'numeric', pattern: '\d*' },
+                        { name: 'serial', label: 'Número de Serie', type: 'text', required: true, maxlength: 18, minlength: 3, inputmode: 'numeric', pattern: '\d*' },
                         { name: 'modelo', label: 'Modelo', type: 'text', maxlength: 30 },
                         { name: 'procesador', label: 'Procesador', type: 'text', maxlength: 30 },
                         { name: 'memoria', label: 'RAM/Memoria', type: 'text', maxlength: 30 },
@@ -465,6 +465,9 @@
                         { name: 'placa', label: 'Número de Placa', type: 'text', required: true, maxlength: 30 },
                         { name: 'marca', label: 'Marca', type: 'text', required: true, maxlength: 30 },
                         { name: 'modelo', label: 'Modelo', type: 'text', required: true, maxlength: 30 },
+                        { name: 'anio', label: 'Año', type: 'text', required: true, maxlength: 4, inputmode: 'numeric', pattern: '\\d{4}' },
+                        { name: 'combustible', label: 'Combustible', type: 'select', options: ['GASOLINA', 'DIESEL', 'ELECTRICO', 'HIBRIDO', 'GNV'], required: false },
+                        { name: 'kilometraje', label: 'Kilometraje', type: 'text', required: false, maxlength: 10, inputmode: 'numeric' },
                         { name: 'motor', label: 'Serial de Motor', type: 'text', maxlength: 30 },
                         { name: 'chasis', label: 'Serial de Carrocería', type: 'text', maxlength: 30 }
                     ]
@@ -485,7 +488,7 @@
 
             const validacionesCampo = {
                 'subtipo': { required: true, maxlength: 50, label: 'Subtipo' },
-                'serial': { required: true, maxlength: 18, label: 'Número de Serie', pattern: /^\d+$/ },
+                'serial': { required: true, maxlength: 18, minlength: 3, label: 'Número de Serie', pattern: /^[0-9]+$/ },
                 'modelo': { required: false, maxlength: 30, label: 'Modelo' },
                 'procesador': { required: false, maxlength: 30, label: 'Procesador' },
                 'memoria': { required: false, maxlength: 30, label: 'RAM/Memoria' },
@@ -493,6 +496,10 @@
                 'pantalla': { required: false, maxlength: 30, label: 'Pulgadas de Pantalla' },
                 'placa': { required: true, maxlength: 30, label: 'Número de Placa' },
                 'marca': { required: true, maxlength: 30, label: 'Marca' },
+                'modelo': { required: true, maxlength: 30, label: 'Modelo' },
+                'anio': { required: true, maxlength: 4, label: 'Año', pattern: /^19\d{2}|20\d{2}$/ },
+                'combustible': { required: false, maxlength: 20, label: 'Combustible', in: ['GASOLINA', 'DIESEL', 'ELECTRICO', 'HIBRIDO', 'GNV'] },
+                'kilometraje': { required: false, maxlength: 10, label: 'Kilometraje', pattern: /^\d+$/ },
                 'motor': { required: false, maxlength: 30, label: 'Serial de Motor' },
                 'chasis': { required: false, maxlength: 30, label: 'Serial de Carrocería' },
                 'material': { required: false, maxlength: 30, label: 'Material' },
@@ -541,13 +548,15 @@
                             const bgClass = config.isParent ? 'bg-gray-100' : 'bg-white';
                             const defaultValue = oldValues[campo.name] !== undefined ? oldValues[campo.name] : (config.isParent ? 'S/N' : '');
                             const maxlengthAttr = campo.maxlength ? `maxlength="${campo.maxlength}"` : '';
-                            const numericAttr = campo.name === 'serial' ? 'inputmode="numeric" pattern="\\d*"' : '';
+                            const minlengthAttr = campo.minlength ? `minlength="${campo.minlength}"` : '';
+                            const patternAttr = campo.pattern ? `pattern="${campo.pattern}"` : '';
+                            const numericAttr = ['serial', 'anio', 'kilometraje', 'placa', 'codigo_secuencial'].includes(campo.name) ? 'inputmode="numeric"' : '';
 
                             html += `<div>
                                         <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label} ${campo.required ? '<span class="text-red-500">*</span>' : ''}</label>
                                         <input type="text" name="${campo.name}" data-field="${campo.name}"
                                             class="dynamic-field w-full px-4 py-2 border border-blue-200 rounded-lg ${bgClass}"
-                                            ${isReadonly} value="${defaultValue}" ${maxlengthAttr} ${numericAttr}>
+                                            ${isReadonly} value="${defaultValue}" ${maxlengthAttr} ${minlengthAttr} ${patternAttr} ${numericAttr}>
                                     </div>`;
                         }
                     });
@@ -781,6 +790,10 @@
                         const val = input.value.trim();
                         const validacion = validacionesCampo[fieldName];
 
+                        if (validacion && !validacion.required && val === '') {
+                            input.removeAttribute('name');
+                        }
+
                         if (validacion) {
                             if (validacion.required && !val) {
                                 camposDinamicosValidos = false;
@@ -792,9 +805,19 @@
                                 camposDinamicosErrores.push(`El campo "${validacion.label}" no debe exceder ${validacion.maxlength} caracteres.`);
                                 input.classList.add('border-red-500');
                                 input.classList.remove('border-blue-200');
+                            } else if (validacion.minlength && val.length < validacion.minlength) {
+                                camposDinamicosValidos = false;
+                                camposDinamicosErrores.push(`El campo "${validacion.label}" debe tener al menos ${validacion.minlength} caracteres.`);
+                                input.classList.add('border-red-500');
+                                input.classList.remove('border-blue-200');
                             } else if (validacion.pattern && val && !validacion.pattern.test(val)) {
                                 camposDinamicosValidos = false;
                                 camposDinamicosErrores.push(`El campo "${validacion.label}" solo puede contener dígitos.`);
+                                input.classList.add('border-red-500');
+                                input.classList.remove('border-blue-200');
+                            } else if (validacion.in && val && !validacion.in.includes(val)) {
+                                camposDinamicosValidos = false;
+                                camposDinamicosErrores.push(`El campo "${validacion.label}" tiene un valor no válido.`);
                                 input.classList.add('border-red-500');
                                 input.classList.remove('border-blue-200');
                             } else {

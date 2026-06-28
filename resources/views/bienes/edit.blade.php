@@ -278,11 +278,14 @@
                 'MONITOR': ['serial', 'pantalla'],
                 'PC': ['serial', 'procesador', 'memoria', 'almacenamiento'],
                 'IMPRESORA': ['serial', 'modelo'],
-                'TELEVISOR': ['serial', 'pantalla', 'modelo']
+                'TELEVISOR': ['serial', 'pantalla', 'modelo'],
+                'LAPTOP': ['serial', 'procesador', 'memoria', 'almacenamiento', 'pantalla', 'modelo'],
+                'TABLET': ['serial', 'modelo', 'pantalla'],
+                'OTRO': ['serial', 'modelo']
             },
             fields: [
-                { name: 'subtipo', label: 'Subtipo', type: 'select', options: ['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR'], required: true },
-                { name: 'serial', label: 'Número de Serie', type: 'text' },
+                { name: 'subtipo', label: 'Subtipo', type: 'select', options: ['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR', 'LAPTOP', 'TABLET', 'OTRO'], required: true },
+                 { name: 'serial', label: 'Número de Serie', type: 'text', required: true, maxlength: 18, minlength: 3, inputmode: 'numeric', pattern: '\d*' },
                 { name: 'modelo', label: 'Modelo', type: 'text' },
                 { name: 'procesador', label: 'Procesador', type: 'text' },
                 { name: 'memoria', label: 'RAM/Memoria', type: 'text' },
@@ -292,10 +295,14 @@
         },
         'VEHICULO': {
             fields: [
-                { name: 'placa', label: 'Número de Placa', type: 'text' },
-                { name: 'marca', label: 'Marca', type: 'text' },
-                { name: 'motor', label: 'Serial de Motor', type: 'text' },
-                { name: 'chasis', label: 'Serial de Carrocería', type: 'text' }
+                { name: 'placa', label: 'Número de Placa', type: 'text', required: true, maxlength: 30 },
+                { name: 'marca', label: 'Marca', type: 'text', required: true, maxlength: 30 },
+                { name: 'modelo', label: 'Modelo', type: 'text', required: true, maxlength: 30 },
+                { name: 'anio', label: 'Año', type: 'text', required: true, maxlength: 4, inputmode: 'numeric', pattern: '\\d{4}' },
+                { name: 'combustible', label: 'Combustible', type: 'select', options: ['GASOLINA', 'DIESEL', 'ELECTRICO', 'HIBRIDO', 'GNV'], required: true },
+                { name: 'kilometraje', label: 'Kilometraje', type: 'text', required: true, maxlength: 10, inputmode: 'numeric' },
+                { name: 'motor', label: 'Serial de Motor', type: 'text', maxlength: 30 },
+                { name: 'chasis', label: 'Serial de Carrocería', type: 'text', maxlength: 30 }
             ]
         },
         'MOBILIARIO': {
@@ -312,12 +319,48 @@
         }
     };
 
+    const validacionesCampo = {
+        'subtipo': { required: true, maxlength: 50, label: 'Subtipo' },
+        'serial': { required: true, maxlength: 18, minlength: 3, label: 'Número de Serie', pattern: /^[0-9]+$/ },
+        'modelo': { required: true, maxlength: 30, label: 'Modelo' },
+        'procesador': { required: false, maxlength: 30, label: 'Procesador' },
+        'memoria': { required: false, maxlength: 30, label: 'RAM/Memoria' },
+        'almacenamiento': { required: false, maxlength: 30, label: 'Almacenamiento' },
+        'pantalla': { required: false, maxlength: 30, label: 'Pulgadas de Pantalla' },
+        'placa': { required: true, maxlength: 30, label: 'Número de Placa' },
+        'marca': { required: true, maxlength: 30, label: 'Marca' },
+        'anio': { required: true, maxlength: 4, label: 'Año', pattern: /^19\d{2}|20\d{2}$/ },
+        'combustible': { required: true, maxlength: 20, label: 'Combustible', in: ['GASOLINA', 'DIESEL', 'ELECTRICO', 'HIBRIDO', 'GNV'] },
+        'kilometraje': { required: true, maxlength: 10, label: 'Kilometraje', pattern: /^\d+$/ },
+        'motor': { required: false, maxlength: 30, label: 'Serial de Motor' },
+        'chasis': { required: false, maxlength: 30, label: 'Serial de Carrocería' },
+        'material': { required: false, maxlength: 30, label: 'Material' },
+        'color': { required: false, maxlength: 30, label: 'Color' },
+        'dimensiones': { required: false, maxlength: 30, label: 'Dimensiones' },
+        'especificaciones': { required: false, maxlength: 30, label: 'Especificaciones Extra' }
+    };
+
     const tipoBienSelect = document.getElementById('tipo_bien');
     const container = document.getElementById('campos-tipo-bien');
     const valoresExistentes = @json($subtipoData ?? []);
     const oldValues = @json(old());
 
     if (tipoBienSelect && container) {
+        const refrescarCampos = (config, subtipo) => {
+            const camposVisibles = config.subtipos[subtipo] || [];
+            document.querySelectorAll('.dynamic-field').forEach(input => {
+                const fieldName = input.getAttribute('data-field');
+                if (camposVisibles.includes(fieldName)) {
+                    input.classList.replace('bg-gray-100', 'bg-white');
+                    input.removeAttribute('readonly');
+                } else {
+                    input.classList.replace('bg-white', 'bg-gray-100');
+                    input.setAttribute('readonly', true);
+                    input.value = 'S/N';
+                }
+            });
+        };
+
         tipoBienSelect.addEventListener('change', function () {
             const tipo = this.value;
             container.innerHTML = '';
@@ -340,15 +383,19 @@
                                     `).join('')}
                                 </select>
                             </div>`;
-                } else {
+                 } else {
                     const isReadonly = config.isParent ? 'readonly' : '';
                     const bgClass = config.isParent ? 'bg-gray-100' : 'bg-white';
+                    const maxlengthAttr = campo.maxlength ? `maxlength="${campo.maxlength}"` : '';
+                    const minlengthAttr = campo.minlength ? `minlength="${campo.minlength}"` : '';
+                    const patternAttr = campo.pattern ? `pattern="${campo.pattern}"` : '';
+                    const numericAttr = ['serial', 'anio', 'kilometraje', 'placa', 'codigo_secuencial'].includes(campo.name) ? 'inputmode="numeric"' : '';
 
                     html += `<div>
-                                <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label}</label>
+                                <label class="block text-xs font-bold text-blue-700 mb-1">${campo.label} ${campo.required ? '<span class="text-red-500">*</span>' : ''}</label>
                                 <input type="text" name="${campo.name}" data-field="${campo.name}"
                                     class="dynamic-field w-full px-4 py-2 border border-blue-200 rounded-lg ${bgClass}"
-                                    ${isReadonly} value="${valorCargado}">
+                                    ${isReadonly} value="${valorCargado}" ${maxlengthAttr} ${minlengthAttr} ${patternAttr} ${numericAttr}>
                             </div>`;
                 }
             });
@@ -356,25 +403,18 @@
             html += `</div></div>`;
             container.innerHTML = html;
 
+            const serialInput = container.querySelector('input[name="serial"]');
+            if (serialInput) {
+                serialInput.addEventListener('input', function () {
+                    this.value = this.value.replace(/\D/g, '');
+                });
+            }
+
             if (tipo === 'ELECTRONICO') {
                 const selector = document.getElementById('subtipo_selector');
-                const refrescarCampos = (subtipo) => {
-                    const camposVisibles = config.subtipos[subtipo] || [];
-                    document.querySelectorAll('.dynamic-field').forEach(input => {
-                        const fieldName = input.getAttribute('data-field');
-                        if (camposVisibles.includes(fieldName)) {
-                            input.classList.replace('bg-gray-100', 'bg-white');
-                            input.removeAttribute('readonly');
-                        } else {
-                            input.classList.replace('bg-white', 'bg-gray-100');
-                            input.setAttribute('readonly', true);
-                            input.value = 'S/N';
-                        }
-                    });
-                };
                 if (selector) {
-                    selector.addEventListener('change', (e) => refrescarCampos(e.target.value));
-                    if (selector.value) refrescarCampos(selector.value);
+                    selector.addEventListener('change', (e) => refrescarCampos(config, e.target.value));
+                    if (selector.value) refrescarCampos(config, selector.value);
                 }
             }
         });
@@ -453,9 +493,9 @@
                 }
             }
 
-            if (!codigo || codigo.length !== 10) {
+            if (!codigo || codigo.length !== 10 || !/^\d{10}$/.test(codigo)) {
                 e.preventDefault();
-                alert('El código debe contener exactamente 10 dígitos.');
+                alert('El código debe contener exactamente 10 dígitos numéricos.');
                 return;
             }
             if (!descripcion) {
@@ -471,6 +511,58 @@
             if (!estado) {
                 e.preventDefault();
                 alert('Debe seleccionar el estado del bien.');
+                return;
+            }
+
+            const dynamicFields = document.querySelectorAll('.dynamic-field');
+            let camposDinamicosValidos = true;
+            let camposDinamicosErrores = [];
+
+            dynamicFields.forEach(input => {
+                const fieldName = input.getAttribute('data-field');
+                const val = input.value.trim();
+                const validacion = validacionesCampo[fieldName];
+
+                if (validacion && !validacion.required && val === '') {
+                    input.removeAttribute('name');
+                }
+
+                if (validacion) {
+                    if (validacion.required && !val) {
+                        camposDinamicosValidos = false;
+                        camposDinamicosErrores.push(`El campo "${validacion.label}" es obligatorio.`);
+                        input.classList.add('border-red-500');
+                        input.classList.remove('border-blue-200');
+                    } else if (validacion.maxlength && val.length > validacion.maxlength) {
+                        camposDinamicosValidos = false;
+                        camposDinamicosErrores.push(`El campo "${validacion.label}" no debe exceder ${validacion.maxlength} caracteres.`);
+                        input.classList.add('border-red-500');
+                        input.classList.remove('border-blue-200');
+                    } else if (validacion.minlength && val.length < validacion.minlength) {
+                        camposDinamicosValidos = false;
+                        camposDinamicosErrores.push(`El campo "${validacion.label}" debe tener al menos ${validacion.minlength} caracteres.`);
+                        input.classList.add('border-red-500');
+                        input.classList.remove('border-blue-200');
+                    } else if (validacion.pattern && val && !validacion.pattern.test(val)) {
+                        camposDinamicosValidos = false;
+                        camposDinamicosErrores.push(`El campo "${validacion.label}" solo puede contener dígitos.`);
+                        input.classList.add('border-red-500');
+                        input.classList.remove('border-blue-200');
+                    } else if (validacion.in && val && !validacion.in.includes(val)) {
+                        camposDinamicosValidos = false;
+                        camposDinamicosErrores.push(`El campo "${validacion.label}" tiene un valor no válido.`);
+                        input.classList.add('border-red-500');
+                        input.classList.remove('border-blue-200');
+                    } else {
+                        input.classList.remove('border-red-500');
+                        input.classList.add('border-blue-200');
+                    }
+                }
+            });
+
+            if (!camposDinamicosValidos) {
+                e.preventDefault();
+                alert(camposDinamicosErrores.join('\n'));
                 return;
             }
         });

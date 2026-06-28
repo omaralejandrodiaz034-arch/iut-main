@@ -61,7 +61,8 @@ class BienesTypeCreationTest extends TestCase
             'estado' => 'ACTIVO',
             'tipo_bien' => 'ELECTRONICO',
             'fecha_registro' => now()->format('Y-m-d'),
-            'serial' => 'SN12345',
+            'subtipo' => 'PC',
+            'serial' => '12345',
             'procesador' => 'i7',
             'memoria' => '8GB',
         ];
@@ -71,7 +72,7 @@ class BienesTypeCreationTest extends TestCase
 
         $this->assertDatabaseHas('bienes', ['codigo' => '1001010001', 'descripcion' => 'Test Electronico']);
         $bien = Bien::where('codigo', '1001010001')->first();
-        $this->assertDatabaseHas('bienes_electronicos', ['bien_id' => $bien->id, 'serial' => 'SN12345']);
+        $this->assertDatabaseHas('bienes_electronicos', ['bien_id' => $bien->id, 'serial' => '12345']);
     }
 
     public function test_create_vehiculo_creates_related_record(): void
