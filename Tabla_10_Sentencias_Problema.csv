@@ -1,0 +1,19 @@
+Categoría,Sentencia
+Problema,Gestión y control del inventario de bienes patrimoniales institucionales sin un sistema estructurado que permita registrar, rastrear y auditar activos físicos de manera eficiente.
+Afecta - Organización,- Ministerio del Poder Popular para la Educación Universitaria.
+Afecta - Unidad,- UPTOS "Clodosbaldo Russian".
+Afecta - Dependencia,- Todas las dependencias y responsables patrimoniales.
+Afecta - Usuario,- Personal administrativo y usuarios del sistema.
+Impacto,Optimizar el proceso de registro, movimiento y control de bienes patrimoniales mediante un sistema digital que garantice la trazabilidad completa y evite pérdidas de información.
+Solución,Desarrollo de Sistema de Gestión de Inventario de Bienes que permita registrar activos, realizar movimientos, generar reportes de auditoría y mantener historial completo.
+Necesidad,Llevar control jerárquico de Organismo > Unidad Administradora > Dependencia > Bien con responsables asignados y usuarios que gestionan el inventario.
+Objetivo General,Implementar un sistema de información que gestione el inventario de bienes patrimoniales con trazabilidad, auditoría y control de acceso basado en roles.
+Objetivo Específico 1,Automatizar el registro de bienes con códigos únicos jerárquicos por dependencia.
+Objetivo Específico 2,Implementar seguimiento de movimientos (cambios de ubicación/estado) con historial.
+Objetivo Específico 3,Generar reportes por organización, unidad, dependencia y fechas.
+Objetivo Específico 4,Permite exportar inventario a formatos Excel para auditoría.
+Problema Técnico,Falta de generación automática de códigos únicos y validación de datos.
+Problema Organizacional,Procesos manuales propensos a errores en el registro de activos.
+Problema de Información,Pérdida de histórico de movimientos y falta de trazabilidad.
+Problema de Auditoría,Imposibilidad de generar reportes completos para auditoría institucional.
+Problema de Seguridad,Manejo de usuarios con roles sin permisos diferenciados ni control de eliminación.

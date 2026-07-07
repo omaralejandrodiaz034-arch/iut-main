@@ -102,14 +102,26 @@
                     {{-- Estado --}}
                     <div>
                         <label for="estado" class="block text-sm font-bold text-gray-700 mb-2">Estado Físico</label>
-                        <select name="estado" id="estado" required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">
+                        <select name="estado" id="estado" @if($bien->estado === \App\Enums\EstadoBien::DESINCORPORADO) disabled @else required @endif
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white {{ $bien->estado === \App\Enums\EstadoBien::DESINCORPORADO ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : '' }}">
                             @foreach($estados as $value => $label)
-                                <option value="{{ $value }}" {{ old('estado', $bien->estado->value ?? '') == $value ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
+                                @if($bien->estado === \App\Enums\EstadoBien::DESINCORPORADO || $value !== \App\Enums\EstadoBien::DESINCORPORADO->value)
+                                    <option value="{{ $value }}" {{ old('estado', $bien->estado->value ?? '') == $value ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endif
                             @endforeach
                         </select>
+
+                        @if($bien->estado === \App\Enums\EstadoBien::DESINCORPORADO)
+                            <p class="text-xs text-red-600 mt-2">
+                                El estado no puede cambiarse desde esta pantalla porque el bien ya está desincorporado.
+                            </p>
+                        @else
+                            <p class="text-xs text-gray-500 mt-2">
+                                Para marcar como desincorporado, use el proceso de desincorporación formal.
+                            </p>
+                        @endif
                     </div>
                 </div>
 
@@ -285,7 +297,7 @@
             },
             fields: [
                 { name: 'subtipo', label: 'Subtipo', type: 'select', options: ['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR', 'LAPTOP', 'TABLET', 'OTRO'], required: true },
-                 { name: 'serial', label: 'Número de Serie', type: 'text', required: true, maxlength: 18, minlength: 3, inputmode: 'numeric', pattern: '\d*' },
+                { name: 'serial', label: 'Número de Serie', type: 'text', required: true, maxlength: 50, minlength: 3, pattern: '^[A-Za-z0-9\-]{3,50}$' },
                 { name: 'modelo', label: 'Modelo', type: 'text' },
                 { name: 'procesador', label: 'Procesador', type: 'text' },
                 { name: 'memoria', label: 'RAM/Memoria', type: 'text' },
@@ -321,7 +333,7 @@
 
     const validacionesCampo = {
         'subtipo': { required: true, maxlength: 50, label: 'Subtipo' },
-        'serial': { required: true, maxlength: 18, minlength: 3, label: 'Número de Serie', pattern: /^[0-9]+$/ },
+        'serial': { required: true, maxlength: 50, minlength: 3, label: 'Número de Serie', pattern: /^[A-Za-z0-9\-]{3,50}$/ },
         'modelo': { required: true, maxlength: 30, label: 'Modelo' },
         'procesador': { required: false, maxlength: 30, label: 'Procesador' },
         'memoria': { required: false, maxlength: 30, label: 'RAM/Memoria' },
@@ -384,8 +396,8 @@
                                 </select>
                             </div>`;
                  } else {
-                    const isReadonly = config.isParent ? 'readonly' : '';
-                    const bgClass = config.isParent ? 'bg-gray-100' : 'bg-white';
+                    const isReadonly = (config.isParent && campo.name !== 'serial') ? 'readonly' : '';
+                    const bgClass = (config.isParent && campo.name !== 'serial') ? 'bg-gray-100' : 'bg-white';
                     const maxlengthAttr = campo.maxlength ? `maxlength="${campo.maxlength}"` : '';
                     const minlengthAttr = campo.minlength ? `minlength="${campo.minlength}"` : '';
                     const patternAttr = campo.pattern ? `pattern="${campo.pattern}"` : '';
@@ -406,7 +418,7 @@
             const serialInput = container.querySelector('input[name="serial"]');
             if (serialInput) {
                 serialInput.addEventListener('input', function () {
-                    this.value = this.value.replace(/\D/g, '');
+                    this.value = this.value.replace(/[^A-Za-z0-9\-]/g, '');
                 });
             }
 

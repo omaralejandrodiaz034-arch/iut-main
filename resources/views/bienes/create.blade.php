@@ -452,7 +452,7 @@
                     },
                     fields: [
                         { name: 'subtipo', label: 'Subtipo', type: 'select', options: ['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR', 'LAPTOP', 'TABLET', 'OTRO'], required: true },
-                        { name: 'serial', label: 'Número de Serie', type: 'text', required: true, maxlength: 18, minlength: 3, inputmode: 'numeric', pattern: '\d*' },
+                        { name: 'serial', label: 'Número de Serie', type: 'text', required: true, maxlength: 50, minlength: 3, pattern: '^[A-Za-z0-9\-]{3,50}$' },
                         { name: 'modelo', label: 'Modelo', type: 'text', maxlength: 30 },
                         { name: 'procesador', label: 'Procesador', type: 'text', maxlength: 30 },
                         { name: 'memoria', label: 'RAM/Memoria', type: 'text', maxlength: 30 },
@@ -488,7 +488,7 @@
 
             const validacionesCampo = {
                 'subtipo': { required: true, maxlength: 50, label: 'Subtipo' },
-                'serial': { required: true, maxlength: 18, minlength: 3, label: 'Número de Serie', pattern: /^[0-9]+$/ },
+                'serial': { required: true, maxlength: 50, minlength: 3, label: 'Número de Serie', pattern: /^[A-Za-z0-9\-]{3,50}$/ },
                 'modelo': { required: false, maxlength: 30, label: 'Modelo' },
                 'procesador': { required: false, maxlength: 30, label: 'Procesador' },
                 'memoria': { required: false, maxlength: 30, label: 'RAM/Memoria' },
@@ -544,9 +544,9 @@
                                         <textarea name="${campo.name}" data-field="${campo.name}" class="dynamic-field w-full px-4 py-2 border border-blue-200 rounded-lg bg-white" rows="2" ${textareaMaxlength}>${oldValues[campo.name] || ''}</textarea>
                                     </div>`;
                         } else {
-                            const isReadonly = config.isParent ? 'readonly' : '';
-                            const bgClass = config.isParent ? 'bg-gray-100' : 'bg-white';
-                            const defaultValue = oldValues[campo.name] !== undefined ? oldValues[campo.name] : (config.isParent ? 'S/N' : '');
+                            const isReadonly = (config.isParent && campo.name !== 'serial') ? 'readonly' : '';
+                            const bgClass = (config.isParent && campo.name !== 'serial') ? 'bg-gray-100' : 'bg-white';
+                            const defaultValue = oldValues[campo.name] !== undefined ? oldValues[campo.name] : (config.isParent ? (campo.name === 'serial' ? '' : 'S/N') : '');
                             const maxlengthAttr = campo.maxlength ? `maxlength="${campo.maxlength}"` : '';
                             const minlengthAttr = campo.minlength ? `minlength="${campo.minlength}"` : '';
                             const patternAttr = campo.pattern ? `pattern="${campo.pattern}"` : '';
@@ -567,7 +567,7 @@
                     const serialInput = container.querySelector('input[name="serial"]');
                     if (serialInput) {
                         serialInput.addEventListener('input', function () {
-                            this.value = this.value.replace(/\D/g, '');
+                            this.value = this.value.replace(/[^A-Za-z0-9\-]/g, '');
                         });
                     }
 

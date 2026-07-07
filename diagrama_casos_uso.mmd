@@ -1,0 +1,167 @@
+usecaseDiagram
+    title Sistema de Gestión de Inventario de Bienes
+
+    actor "Visitante" as VIS
+    actor "Usuario Autenticado" as UA
+    actor "Usuario Normal" as UN
+    actor "Administrador" as ADMIN
+    actor "Responsable Patrimonial" as RP
+    actor "API de Personas" as API
+
+    UN --|> UA
+    ADMIN --|> UA
+    RP --|> UA
+
+    package "Acceso público" {
+        usecase "Consultar página de inicio" as UC01
+        usecase "Descargar manual de usuario" as UC02
+        usecase "Iniciar sesión" as UC03
+        usecase "Configurar contraseña inicial" as UC04
+    }
+
+    VIS --> UC01
+    VIS --> UC02
+    VIS --> UC03
+    VIS --> UC04
+
+    package "Autenticación y perfil" {
+        usecase "Cerrar sesión" as UC05
+        usecase "Gestionar perfil" as UC06
+        usecase "Cambiar contraseña" as UC07
+        usecase "Actualizar foto de perfil" as UC08
+        usecase "Buscar globalmente" as UC09
+    }
+
+    UA --> UC05
+    UA --> UC06
+    UA --> UC09
+    UC06 ..> UC07 : <<include>>
+    UC06 ..> UC08 : <<include>>
+
+    package "Estructura institucional" {
+        usecase "Gestionar organismos" as UC10
+        usecase "Gestionar unidades administradoras" as UC11
+        usecase "Gestionar dependencias" as UC12
+        usecase "Asignar responsable a dependencia" as UC13
+    }
+
+    ADMIN --> UC10
+    ADMIN --> UC11
+    ADMIN --> UC12
+    UC12 ..> UC13 : <<include>>
+
+    package "Responsables patrimoniales" {
+        usecase "Gestionar responsables" as UC14
+        usecase "Gestionar tipos de responsables" as UC15
+        usecase "Consultar responsables y bienes asignados" as UC16
+    }
+
+    ADMIN --> UC14
+    ADMIN --> UC15
+    UA --> UC16
+    RP --> UC16
+
+    package "Gestión patrimonial de bienes" {
+        usecase "Registrar bien" as UC17
+        usecase "Consultar y filtrar bienes" as UC18
+        usecase "Ver detalle de bien" as UC19
+        usecase "Editar bien" as UC20
+        usecase "Eliminar bien" as UC21
+        usecase "Subir fotografía de bien" as UC22
+        usecase "Transferir bien entre dependencias" as UC23
+        usecase "Desincorporar bien" as UC24
+        usecase "Reincorporar bien" as UC25
+        usecase "Importar bienes desde Excel" as UC26
+        usecase "Exportar bienes a Excel" as UC27
+        usecase "Generar ficha PDF del bien" as UC28
+    }
+
+    UA --> UC18
+    UA --> UC19
+    RP --> UC17
+    RP --> UC18
+    RP --> UC19
+    RP --> UC23
+    RP --> UC24
+    RP --> UC25
+    ADMIN --> UC17
+    ADMIN --> UC20
+    ADMIN --> UC21
+    ADMIN --> UC22
+    ADMIN --> UC23
+    ADMIN --> UC24
+    ADMIN --> UC25
+    ADMIN --> UC26
+    ADMIN --> UC27
+    ADMIN --> UC28
+
+    UC17 ..> UC13 : <<include>>
+    UC17 ..> UC22 : <<include>>
+    UC17 ..> "Registrar movimiento" : <<include>>
+    UC23 ..> "Registrar movimiento" : <<include>>
+    UC24 ..> "Registrar movimiento" : <<include>>
+    UC25 ..> "Registrar movimiento" : <<include>>
+    UC24 ..> UC28 : <<include>>
+
+    package "Movimientos y trazabilidad" {
+        usecase "Registrar movimiento" as UC29
+        usecase "Consultar movimientos" as UC30
+        usecase "Consultar historial de movimientos" as UC31
+        usecase "Restaurar movimiento eliminado" as UC32
+    }
+
+    UA --> UC30
+    UA --> UC31
+    RP --> UC29
+    RP --> UC30
+    RP --> UC31
+    ADMIN --> UC29
+    ADMIN --> UC30
+    ADMIN --> UC31
+    ADMIN --> UC32
+
+    package "Usuarios, roles y permisos" {
+        usecase "Gestionar usuarios" as UC33
+        usecase "Asignar roles" as UC34
+        usecase "Activar o desactivar usuario" as UC35
+        usecase "Importar usuario por cédula" as UC36
+        usecase "Gestionar roles" as UC37
+    }
+
+    ADMIN --> UC33
+    ADMIN --> UC34
+    ADMIN --> UC35
+    ADMIN --> UC36
+    ADMIN --> UC37
+    UC33 ..> UC34 : <<include>>
+    UC33 ..> UC35 : <<include>>
+    UC33 ..> UC36 : <<include>>
+    UC36 --> API
+
+    package "Reportes y tablero de control" {
+        usecase "Consultar reportes" as UC38
+        usecase "Generar reporte PDF" as UC39
+        usecase "Generar gráficas estadísticas" as UC40
+        usecase "Exportar gráficas a PDF" as UC41
+        usecase "Consultar dashboard" as UC42
+    }
+
+    UA --> UC38
+    UA --> UC40
+    ADMIN --> UC38
+    ADMIN --> UC39
+    ADMIN --> UC40
+    ADMIN --> UC41
+    ADMIN --> UC42
+    UC39 ..> UC38 : <<include>>
+    UC41 ..> UC40 : <<include>>
+
+    package "Auditoría y seguridad" {
+        usecase "Consultar auditoría del sistema" as UC43
+        usecase "Consultar registros eliminados" as UC44
+        usecase "Restaurar registros eliminados" as UC45
+    }
+
+    ADMIN --> UC43
+    ADMIN --> UC44
+    ADMIN --> UC45

@@ -1579,7 +1579,19 @@ class BienController extends Controller
                 }
             }],
             'fotografia' => ['nullable', 'image', 'max:2048', 'mimes:jpeg,png,jpg,gif,webp'],
-            'estado' => ['sometimes', Rule::enum(EstadoBien::class)],
+            'estado' => [
+                'sometimes',
+                Rule::enum(EstadoBien::class),
+                function ($attribute, $value, $fail) use ($bien) {
+                    if ($value === EstadoBien::DESINCORPORADO->value && $bien->estado !== EstadoBien::DESINCORPORADO) {
+                        $fail('Para desincorporar un bien debe usar el proceso formal de desincorporación, no la edición directa.');
+                    }
+
+                    if ($bien->estado === EstadoBien::DESINCORPORADO && $value !== EstadoBien::DESINCORPORADO->value) {
+                        $fail('No se puede cambiar el estado de un bien desincorporado desde esta pantalla.');
+                    }
+                },
+            ],
             'tipo_bien' => ['sometimes', Rule::enum(TipoBien::class)],
             'fecha_registro' => ['sometimes', 'date', 'before_or_equal:today', 'after:2000-01-01'],
             'es_donacion' => ['nullable', 'boolean'],
@@ -1640,7 +1652,7 @@ class BienController extends Controller
             'serial.required' => 'El número de serie es obligatorio para bienes electrónicos.',
             'serial.min' => 'El número de serie debe tener al menos 3 dígitos.',
             'serial.max' => 'El número de serie no debe exceder 50 caracteres.',
-            'serial.regex' => 'El número de serie solo puede contener dígitos.',
+            'serial.regex' => 'El número de serie solo puede contener letras, números y guiones.',
             'serial.unique' => 'El número de serie ya está registrado.',
             'modelo.required_if' => 'El modelo es obligatorio para este tipo de bien.',
             'modelo.max' => 'El modelo no puede exceder 255 caracteres.',
@@ -1698,7 +1710,7 @@ class BienController extends Controller
         return match ($tipo) {
             'ELECTRONICO' => [
                 'subtipo' => ['required_if:tipo_bien,ELECTRONICO', 'string', 'max:50', Rule::in(['MONITOR', 'PC', 'IMPRESORA', 'TELEVISOR', 'LAPTOP', 'TABLET', 'OTRO'])],
-                'serial' => ['required_if:tipo_bien,ELECTRONICO', 'string', 'min:3', 'max:50', 'regex:/^[0-9]+$/', $this->uniqueFor($bien, 'bienes_electronicos', 'serial')],
+                'serial' => ['required_if:tipo_bien,ELECTRONICO', 'string', 'min:3', 'max:50', 'regex:/^[A-Za-z0-9\-]{3,50}$/', $this->uniqueFor($bien, 'bienes_electronicos', 'serial')],
                 'modelo' => ['nullable', 'string', 'max:255'],
                 'procesador' => ['nullable', 'string', 'max:255'],
                 'memoria' => ['nullable', 'string', 'max:255'],
