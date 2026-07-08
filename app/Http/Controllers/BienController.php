@@ -367,6 +367,9 @@ class BienController extends Controller
         // Cargar datos específicos del tipo
         $this->cargarDatosEspecificos($bien);
 
+        // Regenerar acta de donación si el registro existe pero el archivo físico falta
+        $this->recrearActaDonacionSiFalta($bien);
+
         return view('bienes.show', compact('bien', 'codigoLegible', 'jerarquia'));
     }
 
@@ -1903,6 +1906,26 @@ class BienController extends Controller
             'OTROS' => $bien->load('otro'),
             default => null,
         };
+    }
+
+    private function recrearActaDonacionSiFalta(Bien $bien): void
+    {
+        if (! $bien->es_donacion || empty($bien->acta_donacion)) {
+            return;
+        }
+
+        if (Storage::disk('public')->exists($bien->acta_donacion)) {
+            return;
+        }
+
+        $actaPath = app(\App\Services\ActaDonacionService::class)->generar($bien, [
+            'tipo_donante' => $bien->tipo_donante,
+            'donante_nombre' => $bien->donante_nombre,
+            'donante_documento' => $bien->donante_documento,
+            'donante_direccion' => $bien->donante_direccion,
+        ], auth()->user());
+
+        $bien->update(['acta_donacion' => $actaPath]);
     }
 
     /**
