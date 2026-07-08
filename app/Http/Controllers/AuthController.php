@@ -29,8 +29,10 @@ class AuthController extends Controller
         // Normalizar cédula a solo dígitos para evitar fallos con formatos (V-xx.xxx.xxx)
         $cedula = $this->normalizeCedulaDigits($validated['cedula']);
 
-        // 1) Buscar usuario local por cédula y activo
-        $usuario = Usuario::where('cedula', $cedula)->where('activo', true)->first();
+        // 1) Buscar usuario local por cédula (comparando solo dígitos) y activo
+        $usuario = Usuario::whereRaw("REPLACE(REPLACE(REPLACE(LOWER(cedula), '.', ''), '-', ''), 'v', '') = ?", [$cedula])
+            ->where('activo', true)
+            ->first();
 
         // 2) Si no existe localmente, intentar obtenerlo del API (mock JSON) y redirigir a set password
         if (! $usuario) {
