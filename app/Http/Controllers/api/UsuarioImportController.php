@@ -16,8 +16,9 @@ class UsuarioImportController extends Controller
     {
         $request->validate(['cedula' => ['required', 'string']]);
 
-        // 1️⃣ Normalizar la cédula de entrada inmediatamente
+        // 1️⃣ Normalizar la cédula de entrada inmediatamente (forma legible) y obtener solo dígitos
         $cedulaInput = Usuario::normalizeCedula($request->cedula);
+        $cedulaDigits = preg_replace('/\D/', '', $request->cedula);
 
         try {
             $jsonPath = storage_path('app/respuesta.json');
@@ -56,13 +57,32 @@ class UsuarioImportController extends Controller
                 'is_admin' => $esAdmin,
             ];
 
-            // 5️⃣ Si el usuario no existe, le creamos una contraseña (su propia cédula sin puntos)
-            $usuarioExistente = Usuario::where('cedula', $cedulaInput)->first();
-            if (! $usuarioExistente) {
-                $datos['hash_password'] = Hash::make(preg_replace('/\D/', '', $cedulaInput));
+            // 5️⃣ Buscar usuario existente comparando sólo los dígitos de la cédula,
+            // para evitar problemas por formatos distintos (V-31.077.912 vs 31077912)
+            $usuarioExistente = Usuario::whereRaw("REPLACE(REPLACE(REPLACE(cedula, '.', ''), '-', ''), 'V', '') = ?", [$cedulaDigits])->first();
+
+            // Preparar correo único: si ya existe en otro usuario, generar alternativa
+            $baseCorreo = strtolower(Str::slug($persona['pin_str'] ?? $cedulaInput, '.')).'@externo.local';
+            $correoFinal = $baseCorreo;
+            $suffix = 1;
+            while (Usuario::where('correo', $correoFinal)
+                ->when($usuarioExistente, function ($q) use ($usuarioExistente) { return $q->where('id', '!=', $usuarioExistente->id); })
+                ->exists()) {
+                $correoFinal = strtolower(Str::slug($persona['pin_str'] ?? $cedulaInput, '.'))."+{$suffix}@externo.local";
+                $suffix++;
             }
 
-            $usuario = Usuario::updateOrCreate(['cedula' => $cedulaInput], $datos);
+            $datos['correo'] = $correoFinal;
+
+            if (! $usuarioExistente) {
+                // Si no existe, asignar contraseña por defecto (cédula limpia)
+                $datos['hash_password'] = Hash::make($cedulaDigits);
+                $usuario = Usuario::create(array_merge(['cedula' => $cedulaInput], $datos));
+            } else {
+                // Actualizar usuario existente
+                $usuarioExistente->update(array_merge($datos, ['cedula' => $cedulaInput]));
+                $usuario = $usuarioExistente;
+            }
 
             if ($request->expectsJson()) {
                 return response()->json(['status' => 'ok', 'usuario' => $usuario]);

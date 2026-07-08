@@ -43,8 +43,15 @@
 
                 {{-- Campo Cédula --}}
                 <div>
-                    <x-form-input name="cedula" id="cedula" label="Cédula (Formato: V-XX.XXX.XXX)" :value="old('cedula')"
-                        placeholder="V-12.345.678" maxlength="15" required />
+                    <div class="flex gap-2 items-end">
+                        <div class="flex-1">
+                            <x-form-input name="cedula" id="cedula" label="Cédula (Formato: V-XX.XXX.XXX)" :value="old('cedula')"
+                                placeholder="V-12.345.678" maxlength="15" required />
+                        </div>
+                        <div>
+                            <button type="button" id="buscarCedula" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Buscar</button>
+                        </div>
+                    </div>
                     @error('cedula')
                         <p class="text-red-600 text-sm mt-1 font-medium">{{ $message }}</p>
                     @enderror
@@ -212,6 +219,64 @@
                     document.getElementById('is_admin').value = (this.options[this.selectedIndex].text.trim() === 'Administrador') ? '1' : '0';
                 });
                 rolSelect.dispatchEvent(new Event('change'));
+            }
+
+            // 6. BÚSQUEDA POR CÉDULA (AJAX)
+            const buscarBtn = document.getElementById('buscarCedula');
+            const nombreInput = document.getElementById('nombre');
+            const apellidoInput = document.getElementById('apellido');
+
+            if (buscarBtn) {
+                buscarBtn.addEventListener('click', async function () {
+                    console.log('buscarCedula clicked');
+                    const ced = cedulaInput.value;
+                    if (!ced || ced.length < 3) {
+                        alert('Ingrese una cédula válida antes de buscar.');
+                        return;
+                    }
+
+                    buscarBtn.disabled = true;
+                    buscarBtn.textContent = 'Buscando...';
+
+                    try {
+                        const resp = await fetch("{{ route('usuarios.importar') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ cedula: ced }),
+                        });
+
+                        if (!resp.ok) {
+                            const err = await resp.json().catch(() => null);
+                            throw new Error(err?.message || 'No se encontraron datos.');
+                        }
+
+                        const payload = await resp.json();
+                        const usuario = payload.usuario ?? payload.usuario ?? payload;
+
+                        if (usuario) {
+                            nombreInput.value = usuario.nombre ?? '';
+                            apellidoInput.value = usuario.apellido ?? '';
+                            correoInput.value = usuario.correo ?? '';
+                            nombreInput.readOnly = true;
+                            apellidoInput.readOnly = true;
+                            correoInput.readOnly = true;
+                            alert('Datos encontrados. Asigne la contraseña y guarde el usuario.');
+                        } else {
+                            alert('No se encontraron datos para la cédula proporcionada.');
+                        }
+
+                    } catch (e) {
+                        console.error(e);
+                        alert('Error al buscar la cédula: ' + e.message);
+                    } finally {
+                        buscarBtn.disabled = false;
+                        buscarBtn.textContent = 'Buscar';
+                    }
+                });
             }
         });
     </script>

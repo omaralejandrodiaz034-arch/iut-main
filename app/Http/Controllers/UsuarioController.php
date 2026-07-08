@@ -297,18 +297,37 @@ class UsuarioController extends Controller
                 $rolId = $rolUser->id;
             }
 
-            $usuario = Usuario::updateOrCreate(
-                ['cedula' => $cedulaNormalizada],
-                [
-                    'rol_id' => $rolId,
-                    'nombre' => $persona['firstnames'] ?? 'Sin Nombre',
-                    'apellido' => $persona['lastnames'] ?? 'Sin Apellido',
-                    'correo' => strtolower(Str::slug($persona['pin_str'] ?? $request->cedula, '.')).'@sistema.local',
-                    'activo' => true,
-                    'is_admin' => false,
-                    'hash_password' => Hash::make(preg_replace('/\D/', '', $request->cedula)),
-                ]
-            );
+            $cedulaDigits = preg_replace('/\D/', '', $request->cedula);
+
+            // Buscar usuario por dígitos de la cédula (evitar problemas de formato)
+            $usuarioExistente = Usuario::whereRaw("REPLACE(REPLACE(REPLACE(cedula, '.', ''), '-', ''), 'V', '') = ?", [$cedulaDigits])->first();
+
+            $correoBase = strtolower(Str::slug($persona['pin_str'] ?? $request->cedula, '.')).'@sistema.local';
+            $correoFinal = $correoBase;
+            $suffix = 1;
+            while (Usuario::where('correo', $correoFinal)
+                ->when($usuarioExistente, function ($q) use ($usuarioExistente) { return $q->where('id', '!=', $usuarioExistente->id); })
+                ->exists()) {
+                $correoFinal = strtolower(Str::slug($persona['pin_str'] ?? $request->cedula, '.'))."+{$suffix}@sistema.local";
+                $suffix++;
+            }
+
+            $datos = [
+                'rol_id' => $rolId,
+                'nombre' => $persona['firstnames'] ?? 'Sin Nombre',
+                'apellido' => $persona['lastnames'] ?? 'Sin Apellido',
+                'correo' => $correoFinal,
+                'activo' => true,
+                'is_admin' => false,
+            ];
+
+            if (! $usuarioExistente) {
+                $datos['hash_password'] = Hash::make($cedulaDigits);
+                $usuario = Usuario::create(array_merge(['cedula' => $cedulaNormalizada], $datos));
+            } else {
+                $usuarioExistente->update(array_merge($datos, ['cedula' => $cedulaNormalizada]));
+                $usuario = $usuarioExistente;
+            }
 
             Log::info('Usuario procesado con éxito: '.$usuario->id);
 
