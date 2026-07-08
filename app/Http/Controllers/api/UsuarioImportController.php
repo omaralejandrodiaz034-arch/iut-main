@@ -88,7 +88,7 @@ class UsuarioImportController extends Controller
                 return response()->json(['status' => 'ok', 'usuario' => $usuario]);
             }
 
-            return redirect()->back()->with('success', 'Usuario actualizado correctamente');
+            return redirect()->route('usuarios.show', $usuario)->with('success', 'Usuario registrado/actualizado.');
 
         } catch (\Throwable $e) {
             Log::error('ERROR IMPORT:', ['cedula' => $cedulaInput, 'error' => $e->getMessage()]);

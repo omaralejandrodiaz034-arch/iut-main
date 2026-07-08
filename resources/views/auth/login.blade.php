@@ -142,14 +142,22 @@
                 cedula.addEventListener('input', function (e) {
                     let v = cedula.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
                     if (v.length === 0) { cedula.value = ''; return; }
-                    // Asegurar prefijo letra
-                    let letter = v.charAt(0);
-                    if (!/[VE]/.test(letter)) {
-                        // si no inicia con V/E, no forzar, pero permitir entrada
-                        letter = v.charAt(0);
+
+                    // Determinar la letra prefijo. Si el valor inicia con dígito asumimos 'V'.
+                    let first = v.charAt(0);
+                    let letter;
+                    if (/[VE]/.test(first)) {
+                        letter = first;
+                        v = v.slice(1); // quitar la letra de la cadena de trabajo
+                    } else if (/\d/.test(first)) {
+                        letter = 'V';
+                    } else {
+                        // fallback
+                        letter = 'V';
                     }
-                    let digits = v.slice(1).replace(/[^0-9]/g, '').slice(0,9);
-                    // Formato: X-00.000.000 (hasta 9 dígitos)
+
+                    let digits = v.replace(/[^0-9]/g, '').slice(0,8);
+                    // Formato: X-00.000.000 (hasta 8 dígitos)
                     let formatted = letter;
                     if (digits.length > 0) formatted += '-';
                     if (digits.length <= 2) formatted += digits;

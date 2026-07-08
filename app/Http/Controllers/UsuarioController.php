@@ -123,7 +123,7 @@ class UsuarioController extends Controller
 
         return $request->expectsJson()
             ? response()->json(['message' => 'Creado', 'usuario' => $usuario], 201)
-            : redirect()->route('usuarios.index')->with('success', 'Usuario registrado exitosamente.');
+            : redirect()->route('usuarios.show', $usuario)->with('success', 'Usuario registrado exitosamente.');
     }
 
     private function buscarPersonaEnApiPorCedula(string $cedula): ?array
