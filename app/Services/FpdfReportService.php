@@ -162,6 +162,17 @@ class FpdfReportService
         $pdf->Ln(4);
     }
 
+    protected function pdfResponse(
+        \FPDF $pdf,
+        string $fileName,
+        string $disposition = 'attachment'
+    ) {
+        return response($pdf->Output('S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => sprintf('%s; filename="%s"', $disposition, $fileName),
+        ]);
+    }
+
     /**
      * Genera el listado de bienes en formato vertical.
      */
