@@ -6,10 +6,11 @@ use App\Traits\AuditableTrait;
 use App\Traits\GeneratesMovimiento;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
 class Usuario extends Authenticatable
 {
-    use AuditableTrait, GeneratesMovimiento, HasFactory;
+    use AuditableTrait, GeneratesMovimiento, HasFactory, Notifiable;
 
     protected $table = 'usuarios';
 

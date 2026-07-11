@@ -1,6 +1,7 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
-$app = require_once __DIR__ . '/../bootstrap/app.php';
+
+require __DIR__.'/../vendor/autoload.php';
+$app = require_once __DIR__.'/../bootstrap/app.php';
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
 use Illuminate\Support\Facades\DB;
@@ -12,9 +13,9 @@ foreach ($deps as $d) {
         $toDelete = $count - 30;
         // eliminar los bienes más recientes para mantener los 30 más antiguos
         $ids = DB::table('bienes')->where('dependencia_id', $d->id)->orderBy('fecha_registro', 'desc')->limit($toDelete)->pluck('id')->toArray();
-        if (!empty($ids)) {
+        if (! empty($ids)) {
             DB::table('bienes')->whereIn('id', $ids)->delete();
-            echo "Dep {$d->codigo} (id {$d->id}): eliminados " . count($ids) . " bienes\n";
+            echo "Dep {$d->codigo} (id {$d->id}): eliminados ".count($ids)." bienes\n";
         }
     } else {
         echo "Dep {$d->codigo} (id {$d->id}): {$count} bienes (sin cambios)\n";

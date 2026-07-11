@@ -63,12 +63,10 @@
                 <x-heroicon-o-printer class="w-4 h-4 mr-2"/> Imprimir
             </button>
 
-            @if(method_exists($model, 'acta_desincorporacion') || isset($model->acta_desincorporacion))
-                @if($model->acta_desincorporacion)
-                    <a href="/storage/{{ $model->acta_desincorporacion }}" target="_blank" class="inline-flex items-center px-3 py-2 bg-green-50 text-green-700 rounded-md hover:bg-green-100">
-                        <x-heroicon-o-document-text class="w-4 h-4 mr-2"/> Ver Acta
-                    </a>
-                @endif
+            @if($model instanceof \App\Models\Bien && $model->desincorporado && $model->desincorporado->acta_desincorporacion)
+                <a href="/storage/{{ $model->desincorporado->acta_desincorporacion }}" target="_blank" class="inline-flex items-center px-3 py-2 bg-green-50 text-green-700 rounded-md hover:bg-green-100">
+                    <x-heroicon-o-document-text class="w-4 h-4 mr-2"/> Ver Acta de Desincorporación
+                </a>
             @endif
 
             @if($resource === 'movimientos' && $model->tipo === 'TRASLADO' && $model->acta_path)

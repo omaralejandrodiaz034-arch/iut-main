@@ -66,7 +66,9 @@ class UsuarioImportController extends Controller
             $correoFinal = $baseCorreo;
             $suffix = 1;
             while (Usuario::where('correo', $correoFinal)
-                ->when($usuarioExistente, function ($q) use ($usuarioExistente) { return $q->where('id', '!=', $usuarioExistente->id); })
+                ->when($usuarioExistente, function ($q) use ($usuarioExistente) {
+                    return $q->where('id', '!=', $usuarioExistente->id);
+                })
                 ->exists()) {
                 $correoFinal = strtolower(Str::slug($persona['pin_str'] ?? $cedulaInput, '.'))."+{$suffix}@externo.local";
                 $suffix++;

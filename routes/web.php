@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ActaController;
+use App\Http\Controllers\Api\ResponsableController as ApiResponsableController;
 use App\Http\Controllers\Api\UsuarioImportController as ApiUsuarioImportController;
 use App\Http\Controllers\AuditoriaController;
 use App\Http\Controllers\AuthController;
@@ -9,14 +11,14 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DependenciaController;
 use App\Http\Controllers\HistorialMovimientoController;
 use App\Http\Controllers\MovimientoController;
+use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\OrganismoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\UnidadAdministradoraController;
 use App\Http\Controllers\UsuarioController;
-use App\Http\Controllers\ResponsableController;
-use App\Http\Controllers\Api\ResponsableController as ApiResponsableController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -84,6 +86,14 @@ Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () 
     // ────────────────────────────────────────────────
     Route::get('/auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index');
 
+    Route::get('notificaciones', [NotificacionController::class, 'index'])->name('notificaciones.index');
+    Route::get('notificaciones/{notification}/ir', [NotificacionController::class, 'ir'])->name('notificaciones.ir');
+    Route::delete('notificaciones/{notification}', [NotificacionController::class, 'eliminar'])->name('notificaciones.eliminar');
+    Route::post('notificaciones/marcar-todas', [NotificacionController::class, 'marcarTodas'])->name('notificaciones.marcar-todas');
+    Route::get('notificaciones/contar', [NotificacionController::class, 'contar'])->name('notificaciones.contar');
+
+    Route::get('actas/pendientes', [ActaController::class, 'pendientes'])->name('actas.pendientes');
+
     // ────────────────────────────────────────────────
     // BIENES
     // ────────────────────────────────────────────────
@@ -110,6 +120,8 @@ Route::middleware(['auth', 'redirigir.rol', 'prevent-back'])->group(function () 
         // Transferencia entre dependencias
         Route::get('{bien}/transferir', [BienController::class, 'showTransferirForm'])->name('transferir.form');
         Route::patch('{bien}/transferir', [BienController::class, 'transferir'])->name('transferir');
+        Route::post('{bien}/acta-firmada', [BienController::class, 'subirActaFirmada'])->name('acta-firmada');
+        Route::post('{bien}/acta-rechazar', [BienController::class, 'rechazarActaFirmada'])->name('acta-rechazar');
 
         // Sugerencia de código para nuevo bien
         Route::get('{dependencia}/recomendar-codigo', [BienController::class, 'recomendarCodigo'])

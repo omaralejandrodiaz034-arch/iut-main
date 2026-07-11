@@ -66,23 +66,27 @@ class BienExcelController extends Controller
                     $codigo = trim($row[0]);
                     if (empty($codigo)) {
                         $errores[] = "Fila {$fila}: Código vacío";
+
                         continue;
                     }
 
-                    if (!preg_match('/^\d{10}$/', $codigo)) {
+                    if (! preg_match('/^\d{10}$/', $codigo)) {
                         $errores[] = "Fila {$fila}: Código debe tener exactamente 10 dígitos numéricos";
+
                         continue;
                     }
 
                     $secuencial = (int) substr($codigo, -4);
                     if ($secuencial < 1 || $secuencial > 9999) {
                         $errores[] = "Fila {$fila}: Número secuencial fuera de rango (1-9999)";
+
                         continue;
                     }
 
                     // Check duplicate code
                     if (Bien::where('codigo', $codigo)->exists()) {
                         $errores[] = "Fila {$fila}: El código {$codigo} ya existe";
+
                         continue;
                     }
 
@@ -92,6 +96,7 @@ class BienExcelController extends Controller
                         $dependencia = \App\Models\Dependencia::where('codigo', trim($row[5]))->first();
                         if (! $dependencia) {
                             $errores[] = "Fila {$fila}: Dependencia con código ".trim($row[5]).' no encontrada';
+
                             continue;
                         }
                         $dependenciaId = $dependencia->id;
@@ -103,6 +108,7 @@ class BienExcelController extends Controller
                         $responsable = \App\Models\Responsable::where('cedula', trim($row[6]))->first();
                         if (! $responsable) {
                             $errores[] = "Fila {$fila}: Responsable con cédula ".trim($row[6]).' no encontrado';
+
                             continue;
                         }
                         $responsableId = $responsable->id;
@@ -113,6 +119,7 @@ class BienExcelController extends Controller
                     $estado = ! empty($row[4]) ? trim($row[4]) : 'Activo';
                     if (! in_array($estado, $estadosValidos)) {
                         $errores[] = "Fila {$fila}: Estado '{$estado}' no válido";
+
                         continue;
                     }
 
@@ -120,6 +127,7 @@ class BienExcelController extends Controller
                     $precio = ! empty($row[2]) ? floatval($row[2]) : 0;
                     if ($precio < 0) {
                         $errores[] = "Fila {$fila}: Precio debe ser un número positivo";
+
                         continue;
                     }
 
@@ -127,18 +135,21 @@ class BienExcelController extends Controller
                     $descripcion = ! empty($row[1]) ? trim($row[1]) : '';
                     if (empty($descripcion)) {
                         $errores[] = "Fila {$fila}: La descripción es obligatoria";
+
                         continue;
                     }
 
                     if (strlen($descripcion) > 255) {
                         $errores[] = "Fila {$fila}: La descripción no puede exceder 255 caracteres";
+
                         continue;
                     }
 
                     // Validate fecha_registro (column 7)
                     $fechaRegistro = ! empty($row[7]) ? trim($row[7]) : date('Y-m-d');
-                    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaRegistro)) {
+                    if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaRegistro)) {
                         $errores[] = "Fila {$fila}: Formato de fecha inválido (debe ser YYYY-MM-DD)";
+
                         continue;
                     }
 
@@ -185,6 +196,7 @@ class BienExcelController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()->with('error', 'Error al importar: '.$e->getMessage());
         }
     }

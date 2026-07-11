@@ -1,10 +1,10 @@
 <?php
 
-use App\Models\Organismo;
-use App\Models\UnidadAdministradora;
-use App\Models\Dependencia;
 use App\Models\Bien;
 use App\Models\BienDesincorporado;
+use App\Models\Dependencia;
+use App\Models\Organismo;
+use App\Models\UnidadAdministradora;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -55,16 +55,16 @@ return new class extends Migration
 
     private function generateOrganismCode(int $sequence): string
     {
-        return str_pad((string) $sequence, 1, '0', STR_PAD_LEFT) . str_repeat('0', 9);
+        return str_pad((string) $sequence, 1, '0', STR_PAD_LEFT).str_repeat('0', 9);
     }
 
     private function temporaryCode(string $type, int $id, int $length = 50): string
     {
         if ($length === 10) {
-            return '9' . str_pad((string) $id, 9, '0', STR_PAD_LEFT);
+            return '9'.str_pad((string) $id, 9, '0', STR_PAD_LEFT);
         }
 
-        return 'TMP_' . $type . '_' . $id . '_' . md5(uniqid((string) $id, true));
+        return 'TMP_'.$type.'_'.$id.'_'.md5(uniqid((string) $id, true));
     }
 
     private function normalizarUnidades(): void
@@ -86,7 +86,7 @@ return new class extends Migration
                 ->pluck('id');
 
             $unitNumber = $existingUnits->search($unidad->id) + 1;
-            $newCode = $orgSegment . str_pad((string) $unitNumber, 2, '0', STR_PAD_LEFT) . str_repeat('0', 7);
+            $newCode = $orgSegment.str_pad((string) $unitNumber, 2, '0', STR_PAD_LEFT).str_repeat('0', 7);
 
             if ($unidad->codigo !== $newCode) {
                 $unidad->codigo = $this->temporaryCode('unidad', $unidad->id, 10);
@@ -125,7 +125,7 @@ return new class extends Migration
                 ->pluck('id');
 
             $depNumber = $existingDeps->search($dependencia->id) + 1;
-            $newCode = $prefijo . str_pad((string) $depNumber, 3, '0', STR_PAD_LEFT) . str_repeat('0', 4);
+            $newCode = $prefijo.str_pad((string) $depNumber, 3, '0', STR_PAD_LEFT).str_repeat('0', 4);
 
             if ($dependencia->codigo !== $newCode) {
                 $dependencia->codigo = $this->temporaryCode('dependencia', $dependencia->id, 10);
@@ -164,7 +164,7 @@ return new class extends Migration
                 ->pluck('id');
 
             $bienNumber = $existingBienes->search($bien->id) + 1;
-            $newCode = $prefijo . str_pad((string) $bienNumber, 4, '0', STR_PAD_LEFT);
+            $newCode = $prefijo.str_pad((string) $bienNumber, 4, '0', STR_PAD_LEFT);
 
             if ($bien->codigo !== $newCode) {
                 $bien->codigo = $this->temporaryCode('bien', $bien->id, 10);
@@ -201,7 +201,7 @@ return new class extends Migration
                 $bienNumber = $bien->id;
             }
 
-            $newCode = $prefijo . str_pad((string) $bienNumber, 4, '0', STR_PAD_LEFT);
+            $newCode = $prefijo.str_pad((string) $bienNumber, 4, '0', STR_PAD_LEFT);
 
             if ($bien->codigo !== $newCode) {
                 $bien->codigo = $newCode;

@@ -131,6 +131,11 @@
             {{-- Sección de Usuario / Acciones --}}
             <div class="flex items-center gap-2 whitespace-nowrap">
                 @auth
+                    {{-- Campana de notificaciones --}}
+                    <div class="hidden sm:block relative">
+                        <x-campana-notificaciones />
+                    </div>
+
                     {{-- Botón menú móvil --}}
                     <button id="mobile-menu-btn" type="button" 
                         class="lg:hidden p-1.5 sm:p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition">
@@ -263,8 +268,12 @@
             </a>
                 @endif
             <a href="{{ route('reportes.index') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition @if(request()->routeIs('reportes.*')) bg-slate-700 text-white @endif">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 7h6l4 4v6a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2zm3 5v4m3-2v2m3-4v4"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h6l4 4v6a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2zm3 5v4m3-2v2m3-4v4"/></svg>
                 <span>Reportes</span>
+            </a>
+            <a href="{{ route('actas.pendientes') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition @if(request()->routeIs('actas.pendientes')) bg-slate-700 text-white @endif">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                <span>Actas pendientes</span>
             </a>
             
             {{-- Sección de usuario móvil --}}

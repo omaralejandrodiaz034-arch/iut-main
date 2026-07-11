@@ -13,16 +13,16 @@ return new class extends Migration
     {
         Schema::table('bienes', function (Blueprint $table) {
             // Índices para mejorar rendimiento de filtros comunes en dashboard y reportes
-            if (!Schema::hasIndex('bienes', 'idx_bien_estado')) {
+            if (! Schema::hasIndex('bienes', 'idx_bien_estado')) {
                 $table->index('estado', 'idx_bien_estado');
             }
-            if (!Schema::hasIndex('bienes', 'idx_bien_tipo_bien')) {
+            if (! Schema::hasIndex('bienes', 'idx_bien_tipo_bien')) {
                 $table->index('tipo_bien', 'idx_bien_tipo_bien');
             }
-            if (!Schema::hasIndex('bienes', 'idx_bien_fecha_registro')) {
+            if (! Schema::hasIndex('bienes', 'idx_bien_fecha_registro')) {
                 $table->index('fecha_registro', 'idx_bien_fecha_registro');
             }
-            if (!Schema::hasIndex('bienes', 'idx_bien_dep_estado')) {
+            if (! Schema::hasIndex('bienes', 'idx_bien_dep_estado')) {
                 $table->index(['dependencia_id', 'estado'], 'idx_bien_dep_estado');
             }
         });

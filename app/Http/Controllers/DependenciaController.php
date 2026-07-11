@@ -7,6 +7,7 @@ use App\Models\Responsable;
 use App\Models\UnidadAdministradora;
 use App\Services\CodigoJerarquicoService;
 use App\Services\FpdfReportService;
+use App\Services\NotificacionService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -14,10 +15,12 @@ use Illuminate\Support\Str;
 class DependenciaController extends Controller
 {
     protected FpdfReportService $fpdf;
+    protected NotificacionService $notificacionService;
 
-    public function __construct(FpdfReportService $fpdf)
+    public function __construct(FpdfReportService $fpdf, NotificacionService $notificacionService)
     {
         $this->fpdf = $fpdf;
+        $this->notificacionService = $notificacionService;
     }
 
     /**
@@ -212,6 +215,13 @@ class DependenciaController extends Controller
         ]);
 
         $dependencia = Dependencia::create($validated);
+
+        if (empty($validated['responsable_id'])) {
+            $this->notificacionService->notificarDependenciaSinResponsable(
+                dependenciaNombre: $dependencia->nombre,
+                codigo: CodigoJerarquicoService::formatearCodigoLegible($dependencia->codigo),
+            );
+        }
 
         return redirect()
             ->route('dependencias.index')

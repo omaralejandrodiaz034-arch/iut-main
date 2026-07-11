@@ -114,11 +114,102 @@
                         <h2 class="text-lg font-bold text-gray-800">Acta de Desincorporación</h2>
                         <p class="text-sm text-gray-600 mt-1">Documento oficial de desincorporación del bien</p>
                     </div>
-                          <a href="/storage/{{ $movimiento->acta_path }}" target="_blank"
-                       class="inline-flex items-center px-4 py-2.5 bg-[#800020] text-white font-semibold rounded-lg hover:bg-[#9a0026] shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
+                           <a href="/storage/{{ $movimiento->acta_path }}" target="_blank"
+                        class="inline-flex items-center px-4 py-2.5 bg-[#800020] text-white font-semibold rounded-lg hover:bg-[#9a0026] shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
                         <x-heroicon-o-document-arrow-down class="w-5 h-5 mr-2"/>
                         Ver / Descargar Acta
                     </a>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'DESINCORPORACION' && $movimiento->acta_estado === 'PENDIENTE_FIRMA')
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div class="flex flex-col sm:flex-row gap-4 items-start justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">Acta pendiente de firma</h2>
+                            <p class="text-sm text-gray-600 mt-1">Debe adjuntar la acta firmada y autorizada antes del {{ $movimiento->fecha_limite_acta?->format('d/m/Y H:i') }} o la operación será cancelada.</p>
+                        </div>
+                        <form action="{{ route('bienes.acta-firmada', $movimiento->bien) }}" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-2 items-start">
+                            @csrf
+                            <input type="file" name="acta_firmada" accept="application/pdf,image/*" required class="text-sm" />
+                            <button type="submit" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-lg hover:bg-amber-700 transition">
+                                <x-heroicon-o-paper-clip class="w-5 h-5 mr-2" />
+                                Subir acta firmada
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'DESINCORPORACION' && $movimiento->acta_estado === 'FIRMADA' && $movimiento->acta_firmada_path)
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">Acta firmada y autorizada</h2>
+                        <p class="text-sm text-gray-600 mt-1">Documento oficial firmado y autorizado</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="{{ asset('storage/'.$movimiento->acta_firmada_path) }}" target="_blank"
+                           class="inline-flex items-center px-4 py-2.5 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
+                            <x-heroicon-o-document-arrow-down class="w-5 h-5 mr-2"/>
+                            Ver / Descargar Acta Firmada
+                        </a>
+                        @auth
+                            @if(auth()->user()?->isAdmin())
+                                <button type="button" onclick="document.getElementById('modal-rechazar-{{ $movimiento->id }}').showModal()"
+                                        class="inline-flex items-center px-4 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
+                                    <x-heroicon-o-x-circle class="w-5 h-5 mr-2"/>
+                                    Rechazar
+                                </button>
+                            @endif
+                        @endauth
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'DESINCORPORACION' && $movimiento->acta_estado === 'RECHAZADA')
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex flex-col sm:flex-row gap-4 items-start justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">Acta rechazada</h2>
+                            <p class="text-sm text-gray-600 mt-1">Motivo: {{ $movimiento->motivo_cancelacion_acta }}</p>
+                            <p class="text-sm text-red-600 mt-1">Debe adjuntar una nueva versión corregida antes del {{ $movimiento->fecha_limite_acta?->format('d/m/Y H:i') }} o la operación será cancelada.</p>
+                        </div>
+                        <form action="{{ route('bienes.acta-firmada', $movimiento->bien) }}" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-2 items-start">
+                            @csrf
+                            <input type="file" name="acta_firmada" accept="application/pdf,image/*" required class="text-sm" />
+                            <button type="submit" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 transition">
+                                <x-heroicon-o-paper-clip class="w-5 h-5 mr-2" />
+                                Subir acta corregida
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'DESINCORPORACION' && $movimiento->acta_estado === 'PENDIENTE_FIRMA')
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div class="flex flex-col sm:flex-row gap-4 items-start justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">Acta pendiente de firma</h2>
+                            <p class="text-sm text-gray-600 mt-1">Debe adjuntar la acta firmada y autorizada antes del {{ $movimiento->fecha_limite_acta?->format('d/m/Y H:i') }} o la operación será cancelada.</p>
+                        </div>
+                        <form action="{{ route('bienes.acta-firmada', $movimiento->bien) }}" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-2 items-start">
+                            @csrf
+                            <input type="file" name="acta_firmada" accept="application/pdf,image/*" required class="text-sm" />
+                            <button type="submit" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-lg hover:bg-amber-700 transition">
+                                <x-heroicon-o-paper-clip class="w-5 h-5 mr-2" />
+                                Subir acta firmada
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         @endif
@@ -136,6 +227,163 @@
                         <x-heroicon-o-document-arrow-down class="w-5 h-5 mr-2"/>
                         Ver / Descargar Acta
                     </a>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'TRASLADO' && $movimiento->acta_estado === 'PENDIENTE_FIRMA')
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div class="flex flex-col sm:flex-row gap-4 items-start justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">Acta pendiente de firma</h2>
+                            <p class="text-sm text-gray-600 mt-1">Debe adjuntar la acta firmada y autorizada antes del {{ $movimiento->fecha_limite_acta?->format('d/m/Y H:i') }} o la operación será cancelada.</p>
+                        </div>
+                        <form action="{{ route('bienes.acta-firmada', $movimiento->bien) }}" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-2 items-start">
+                            @csrf
+                            <input type="file" name="acta_firmada" accept="application/pdf,image/*" required class="text-sm" />
+                            <button type="submit" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-lg hover:bg-amber-700 transition">
+                                <x-heroicon-o-paper-clip class="w-5 h-5 mr-2" />
+                                Subir acta firmada
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'TRASLADO' && $movimiento->acta_estado === 'FIRMADA' && $movimiento->acta_firmada_path)
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">Acta firmada y autorizada</h2>
+                        <p class="text-sm text-gray-600 mt-1">Documento oficial firmado y autorizado</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="{{ asset('storage/'.$movimiento->acta_firmada_path) }}" target="_blank"
+                           class="inline-flex items-center px-4 py-2.5 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
+                            <x-heroicon-o-document-arrow-down class="w-5 h-5 mr-2"/>
+                            Ver / Descargar Acta Firmada
+                        </a>
+                        @auth
+                            @if(auth()->user()?->isAdmin())
+                                <button type="button" onclick="document.getElementById('modal-rechazar-{{ $movimiento->id }}').showModal()"
+                                        class="inline-flex items-center px-4 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
+                                    <x-heroicon-o-x-circle class="w-5 h-5 mr-2"/>
+                                    Rechazar
+                                </button>
+                            @endif
+                        @endauth
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'TRASLADO' && $movimiento->acta_estado === 'RECHAZADA')
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex flex-col sm:flex-row gap-4 items-start justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">Acta rechazada</h2>
+                            <p class="text-sm text-gray-600 mt-1">Motivo: {{ $movimiento->motivo_cancelacion_acta }}</p>
+                            <p class="text-sm text-red-600 mt-1">Debe adjuntar una nueva versión corregida antes del {{ $movimiento->fecha_limite_acta?->format('d/m/Y H:i') }} o la operación será cancelada.</p>
+                        </div>
+                        <form action="{{ route('bienes.acta-firmada', $movimiento->bien) }}" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-2 items-start">
+                            @csrf
+                            <input type="file" name="acta_firmada" accept="application/pdf,image/*" required class="text-sm" />
+                            <button type="submit" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 transition">
+                                <x-heroicon-o-paper-clip class="w-5 h-5 mr-2" />
+                                Subir acta corregida
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Acta de Donación -->
+        @if ($movimiento->tipo === 'DONACION' && $movimiento->acta_path)
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">Acta de Donación</h2>
+                        <p class="text-sm text-gray-600 mt-1">Documento oficial de donación del bien</p>
+                    </div>
+                    <a href="/storage/{{ $movimiento->acta_path }}" target="_blank"
+                       class="inline-flex items-center px-4 py-2.5 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
+                        <x-heroicon-o-document-arrow-down class="w-5 h-5 mr-2"/>
+                        Ver / Descargar Acta
+                    </a>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'DONACION' && $movimiento->acta_estado === 'PENDIENTE_FIRMA')
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div class="flex flex-col sm:flex-row gap-4 items-start justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">Acta pendiente de firma</h2>
+                            <p class="text-sm text-gray-600 mt-1">Debe adjuntar la acta firmada y autorizada antes del {{ $movimiento->fecha_limite_acta?->format('d/m/Y H:i') }} o la operación será cancelada.</p>
+                        </div>
+                        <form action="{{ route('bienes.acta-firmada', $movimiento->bien) }}" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-2 items-start">
+                            @csrf
+                            <input type="file" name="acta_firmada" accept="application/pdf,image/*" required class="text-sm" />
+                            <button type="submit" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-lg hover:bg-amber-700 transition">
+                                <x-heroicon-o-paper-clip class="w-5 h-5 mr-2" />
+                                Subir acta firmada
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'DONACION' && $movimiento->acta_estado === 'FIRMADA' && $movimiento->acta_firmada_path)
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">Acta firmada y autorizada</h2>
+                        <p class="text-sm text-gray-600 mt-1">Documento oficial firmado y autorizado</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="{{ asset('storage/'.$movimiento->acta_firmada_path) }}" target="_blank"
+                           class="inline-flex items-center px-4 py-2.5 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
+                            <x-heroicon-o-document-arrow-down class="w-5 h-5 mr-2"/>
+                            Ver / Descargar Acta Firmada
+                        </a>
+                        @auth
+                            @if(auth()->user()?->isAdmin())
+                                <button type="button" onclick="document.getElementById('modal-rechazar-{{ $movimiento->id }}').showModal()"
+                                        class="inline-flex items-center px-4 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
+                                    <x-heroicon-o-x-circle class="w-5 h-5 mr-2"/>
+                                    Rechazar
+                                </button>
+                            @endif
+                        @endauth
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'DONACION' && $movimiento->acta_estado === 'RECHAZADA')
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex flex-col sm:flex-row gap-4 items-start justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">Acta rechazada</h2>
+                            <p class="text-sm text-gray-600 mt-1">Motivo: {{ $movimiento->motivo_cancelacion_acta }}</p>
+                            <p class="text-sm text-red-600 mt-1">Debe adjuntar una nueva versión corregida antes del {{ $movimiento->fecha_limite_acta?->format('d/m/Y H:i') }} o la operación será cancelada.</p>
+                        </div>
+                        <form action="{{ route('bienes.acta-firmada', $movimiento->bien) }}" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-2 items-start">
+                            @csrf
+                            <input type="file" name="acta_firmada" accept="application/pdf,image/*" required class="text-sm" />
+                            <button type="submit" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 transition">
+                                <x-heroicon-o-paper-clip class="w-5 h-5 mr-2" />
+                                Subir acta corregida
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         @endif
@@ -158,6 +406,28 @@
         @endif
     </div>
 </div>
+
+@auth
+    @if(auth()->user()?->isAdmin())
+        <dialog id="modal-rechazar-{{ $movimiento->id }}" class="p-6 rounded-lg shadow-xl">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Rechazar acta firmada</h2>
+            <p class="text-sm text-gray-600 mb-4">Indique el motivo del rechazo para que el usuario pueda corregir el acta.</p>
+            <form action="{{ route('bienes.acta-rechazar', $movimiento->bien) }}" method="POST" class="space-y-4">
+                @csrf
+                <textarea name="motivo_rechazo" rows="3" required class="w-full border border-gray-300 rounded-lg p-2 text-sm"></textarea>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="document.getElementById('modal-rechazar-{{ $movimiento->id }}').close()"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 transition">
+                        Rechazar acta
+                    </button>
+                </div>
+            </form>
+        </dialog>
+    @endif
+@endauth
 @endsection
 
 

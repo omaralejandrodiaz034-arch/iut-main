@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Rol;
 use App\Models\Usuario;
 use App\Services\FpdfReportService;
+use App\Services\NotificacionService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,10 +18,12 @@ use Illuminate\Validation\Rule;
 class UsuarioController extends Controller
 {
     protected FpdfReportService $fpdf;
+    protected NotificacionService $notificacionService;
 
-    public function __construct(FpdfReportService $fpdf)
+    public function __construct(FpdfReportService $fpdf, NotificacionService $notificacionService)
     {
         $this->fpdf = $fpdf;
+        $this->notificacionService = $notificacionService;
     }
 
     public function index(Request $request)
@@ -120,6 +123,12 @@ class UsuarioController extends Controller
         $validated['hash_password'] = Hash::make($validated['hash_password']);
 
         $usuario = Usuario::create($validated);
+
+        $this->notificacionService->notificarAccionUsuario(
+            accion: 'Usuario creado',
+            detalle: "Se creó el usuario {$usuario->nombre_completo} ({$usuario->correo}).",
+            usuarioId: auth()->id(),
+        );
 
         return $request->expectsJson()
             ? response()->json(['message' => 'Creado', 'usuario' => $usuario], 201)
@@ -306,7 +315,9 @@ class UsuarioController extends Controller
             $correoFinal = $correoBase;
             $suffix = 1;
             while (Usuario::where('correo', $correoFinal)
-                ->when($usuarioExistente, function ($q) use ($usuarioExistente) { return $q->where('id', '!=', $usuarioExistente->id); })
+                ->when($usuarioExistente, function ($q) use ($usuarioExistente) {
+                    return $q->where('id', '!=', $usuarioExistente->id);
+                })
                 ->exists()) {
                 $correoFinal = strtolower(Str::slug($persona['pin_str'] ?? $request->cedula, '.'))."+{$suffix}@sistema.local";
                 $suffix++;

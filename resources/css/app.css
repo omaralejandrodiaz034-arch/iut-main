@@ -66,3 +66,5 @@ body {
     opacity: 1;
     transform: translateY(0);
 }
+
+[x-cloak] { display: none !important; }

@@ -251,7 +251,7 @@ class DatosDemoSeeder extends Seeder
         // 7.b Generar actas de donación cuando sea posible
         if (class_exists(ActaDonacionService::class) && $adminUser) {
             $donados = DB::table('bienes')->where('es_donacion', true)->get();
-            $service = new ActaDonacionService();
+            $service = new ActaDonacionService;
 
             foreach ($donados as $bien) {
                 try {

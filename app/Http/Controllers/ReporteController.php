@@ -12,6 +12,7 @@ use App\Models\Responsable;
 use App\Models\UnidadAdministradora;
 use App\Models\Usuario;
 use App\Services\FpdfReportService;
+use App\Services\NotificacionService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -21,6 +22,7 @@ class ReporteController extends Controller
 {
     public function __construct(
         private FpdfReportService $fpdf,
+        private NotificacionService $notificacionService,
     ) {}
 
     /**
@@ -867,7 +869,31 @@ class ReporteController extends Controller
     {
         $now = Carbon::now();
 
-        return match ($tipo) {
+        $titulo = match ($tipo) {
+            'inventario_general_bienes' => 'Inventario general de bienes',
+            'bienes_por_estado' => 'Bienes por estado',
+            'bienes_con_fotografia' => 'Bienes con fotografía',
+            'bienes_sin_movimientos' => 'Bienes sin movimientos',
+            'bienes_por_dependencia' => 'Bienes por dependencia',
+            'bienes_por_unidad' => 'Bienes por unidad administradora',
+            'bienes_por_organismo' => 'Bienes por organismo',
+            'resumen_bienes_por_estado' => 'Resumen de bienes por estado',
+            'resumen_bienes_por_dependencia' => 'Resumen de bienes por dependencia',
+            'resumen_bienes_por_tipo' => 'Resumen de bienes por tipo',
+            'movimientos_ultimos_30_dias' => 'Movimientos últimos 30 días',
+            'movimientos_por_tipo' => 'Movimientos por tipo',
+            'movimientos_por_usuario' => 'Movimientos por usuario',
+            'movimientos_de_bienes_desincorporados' => 'Movimientos de bienes desincorporados',
+            'organismos_y_unidades' => 'Organismos y unidades',
+            'unidades_y_dependencias' => 'Unidades y dependencias',
+            'dependencias_y_responsables' => 'Dependencias y responsables',
+            'responsables_y_bienes' => 'Responsables y bienes',
+            'usuarios_y_roles' => 'Usuarios y roles',
+            'registros_eliminados' => 'Registros eliminados',
+            default => 'Reporte',
+        };
+
+        $respuesta = match ($tipo) {
             'inventario_general_bienes' => $this->pdfInventarioGeneralBienes($now),
             'bienes_por_estado' => $this->pdfBienesPorEstado($now),
             'bienes_con_fotografia' => $this->pdfBienesConFotografia($now),
@@ -878,23 +904,25 @@ class ReporteController extends Controller
             'resumen_bienes_por_estado' => $this->pdfResumenBienesPorEstado($now),
             'resumen_bienes_por_dependencia' => $this->pdfResumenBienesPorDependencia($now),
             'resumen_bienes_por_tipo' => $this->pdfResumenBienesPorTipo($now),
-
             'movimientos_ultimos_30_dias' => $this->pdfMovimientosUltimos30Dias($now),
             'movimientos_por_tipo' => $this->pdfMovimientosPorTipo($now),
             'movimientos_por_usuario' => $this->pdfMovimientosPorUsuario($now),
             'movimientos_de_bienes_desincorporados' => $this->pdfMovimientosDeBienesDesincorporados($now),
-
             'organismos_y_unidades' => $this->pdfOrganismosYUnidades($now),
             'unidades_y_dependencias' => $this->pdfUnidadesYDependencias($now),
             'dependencias_y_responsables' => $this->pdfDependenciasYResponsables($now),
-
             'responsables_y_bienes' => $this->pdfResponsablesYBienes($now),
             'usuarios_y_roles' => $this->pdfUsuariosYRoles($now),
-
             'registros_eliminados' => $this->pdfRegistrosEliminados($now),
-
             default => abort(404, 'Tipo de reporte no definido.'),
         };
+
+        $this->notificacionService->notificarReporteGenerado(
+            tipoReporte: $titulo,
+            usuarioId: auth()->id(),
+        );
+
+        return $respuesta;
     }
 
     /* =========================

@@ -14,9 +14,14 @@ class Movimiento extends Model
     public $timestamps = false;
 
     // Allow storing a polymorphic subject (organismo, unidad, dependencia, bien, usuario, ...)
-    protected $fillable = ['bien_id', 'subject_type', 'subject_id', 'tipo', 'fecha', 'observaciones', 'usuario_id', 'descripcion', 'acta_path'];
+    protected $fillable = ['bien_id', 'subject_type', 'subject_id', 'tipo', 'fecha', 'observaciones', 'usuario_id', 'descripcion', 'acta_path', 'acta_estado', 'fecha_limite_acta', 'acta_firmada_path', 'motivo_cancelacion_acta', 'fecha_cancelacion_acta', 'metadata'];
 
-    protected $casts = ['fecha' => 'datetime'];
+    protected $casts = [
+        'fecha' => 'datetime',
+        'fecha_limite_acta' => 'datetime',
+        'fecha_cancelacion_acta' => 'datetime',
+        'metadata' => 'array',
+    ];
 
     public function bien()
     {

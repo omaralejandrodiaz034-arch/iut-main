@@ -8,8 +8,10 @@ use App\Models\Bien;
 use App\Models\Dependencia;
 use App\Models\Organismo;
 use App\Models\UnidadAdministradora;
+use App\Services\ActaNotificacionService;
 use App\Services\BienTypeService;
 use App\Services\CodigoJerarquicoService;
+use App\Services\NotificacionService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,11 +23,23 @@ use Illuminate\Validation\Rules\Unique;
 
 class BienController extends Controller
 {
+    private const ACTA_ESTADO_PENDIENTE = 'PENDIENTE_FIRMA';
+
+    private const ACTA_ESTADO_FIRMADA = 'FIRMADA';
+
+    private const ACTA_ESTADO_CANCELADA = 'CANCELADA';
+
+    private const ACTA_ESTADO_RECHAZADA = 'RECHAZADA';
+
+    private const PLAZO_ACTA_DIAS = 2;
+
     private BienTypeService $bienTypeService;
 
-    public function __construct(BienTypeService $bienTypeService)
+    public function __construct(BienTypeService $bienTypeService, ActaNotificacionService $actaNotificacionService, NotificacionService $notificacionService)
     {
         $this->bienTypeService = $bienTypeService;
+        $this->actaNotificacionService = $actaNotificacionService;
+        $this->notificacionService = $notificacionService;
     }
 
     /**
@@ -304,6 +318,22 @@ class BienController extends Controller
                 ], auth()->user());
 
                 $bien->update(['acta_donacion' => $actaPath]);
+
+                $movimientoDonacion = \App\Models\Movimiento::create([
+                    'bien_id' => $bien->id,
+                    'usuario_id' => auth()->id(),
+                    'tipo' => 'DONACION',
+                    'observaciones' => 'Acta de donación generada. Se requiere adjuntar la versión firmada dentro de 2 días.',
+                    'fecha' => now(),
+                    'acta_path' => $actaPath,
+                    'acta_estado' => self::ACTA_ESTADO_PENDIENTE,
+                    'fecha_limite_acta' => now()->addDays(self::PLAZO_ACTA_DIAS),
+                    'metadata' => [
+                        'es_donacion' => true,
+                    ],
+                ]);
+
+                $this->actaNotificacionService->notificarActaPendiente($movimientoDonacion);
             }
 
             DB::commit();
@@ -315,6 +345,12 @@ class BienController extends Controller
             ]);
 
             $codigoLegible = CodigoJerarquicoService::formatearCodigoLegible($bien->codigo);
+
+            $this->notificacionService->notificarCreacionBien(
+                codigo: $codigoLegible,
+                descripcion: $bien->descripcion,
+                usuarioId: auth()->id(),
+            );
 
             $mensaje = sprintf(
                 '✅ Bien "%s" (Código: %s) ha sido registrado exitosamente.',
@@ -369,6 +405,7 @@ class BienController extends Controller
 
         // Regenerar acta de donación si el registro existe pero el archivo físico falta
         $this->recrearActaDonacionSiFalta($bien);
+        $this->procesarActasPendientesParaBien($bien);
 
         return view('bienes.show', compact('bien', 'codigoLegible', 'jerarquia'));
     }
@@ -582,18 +619,26 @@ class BienController extends Controller
             ]);
 
             // Registrar movimiento
-            \App\Models\Movimiento::create([
+            $estadoAnterior = $bien->estado?->value;
+            $movimiento = \App\Models\Movimiento::create([
                 'bien_id' => $bien->id,
                 'usuario_id' => auth()->id(),
                 'tipo' => 'DESINCORPORACION',
                 'observaciones' => $request->motivo,
                 'fecha' => now(),
                 'acta_path' => $actaPath,
+                'acta_estado' => self::ACTA_ESTADO_PENDIENTE,
+                'fecha_limite_acta' => now()->addDays(self::PLAZO_ACTA_DIAS),
+                'metadata' => [
+                    'estado_anterior' => $estadoAnterior,
+                ],
             ]);
 
             // Marcar el bien como desincorporado sin eliminarlo
             $bien->estado = EstadoBien::DESINCORPORADO;
             $bien->save();
+
+            $this->actaNotificacionService->notificarActaPendiente($movimiento);
 
             DB::commit();
 
@@ -605,7 +650,7 @@ class BienController extends Controller
 
             return redirect()->route('bienes.index')->with(
                 'success',
-                '✅ Bien desincorporado exitosamente. El acta ha sido generada y guardada.'
+                '✅ Bien desincorporado exitosamente. Debe adjuntar la acta firmada y autorizada dentro de 2 días o la acción será cancelada.'
             );
 
         } catch (\Exception $e) {
@@ -1477,7 +1522,23 @@ class BienController extends Controller
                 ),
                 'fecha' => now(),
                 'acta_path' => $actaPath,
+                'acta_estado' => self::ACTA_ESTADO_PENDIENTE,
+                'fecha_limite_acta' => now()->addDays(self::PLAZO_ACTA_DIAS),
+                'metadata' => [
+                    'codigo_anterior' => $codigoAnterior,
+                    'dependencia_id_anterior' => $dependenciaAnterior->id,
+                    'codigo_nuevo' => $nuevoCodigo,
+                    'dependencia_id_nueva' => $dependenciaNueva->id,
+                ],
             ]);
+
+            $this->actaNotificacionService->notificarActaPendiente($movimiento);
+
+            $this->notificacionService->notificarTraslado(
+                codigo: CodigoJerarquicoService::formatearCodigoLegible($nuevoCodigo),
+                dependenciaNombre: $dependenciaNueva->nombre,
+                usuarioId: auth()->id(),
+            );
 
             DB::commit();
 
@@ -1509,6 +1570,119 @@ class BienController extends Controller
     }
 
     // ==================== MÉTODOS PRIVADOS ====================
+
+    public function subirActaFirmada(Request $request, Bien $bien)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403, 'Solo los administradores pueden adjuntar actas firmadas.');
+
+        $request->validate([
+            'acta_firmada' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:8192'],
+        ], [
+            'acta_firmada.required' => 'Debe adjuntar la acta firmada y autorizada.',
+            'acta_firmada.mimes' => 'La acta firmada debe ser un PDF o una imagen válida.',
+        ]);
+
+        $this->procesarActasPendientesParaBien($bien);
+
+        $movimiento = $bien->movimientos()
+            ->whereIn('tipo', ['DESINCORPORACION', 'TRASLADO', 'DONACION'])
+            ->where('acta_estado', self::ACTA_ESTADO_PENDIENTE)
+            ->latest('fecha')
+            ->first();
+
+        if (! $movimiento) {
+            return back()->withErrors(['error' => 'No existe un acta pendiente de firma para este bien.']);
+        }
+
+        if ($movimiento->fecha_limite_acta && now()->gt($movimiento->fecha_limite_acta)) {
+            $this->cancelarActaPendiente($movimiento, 'Se venció el plazo de 2 días para adjuntar la acta firmada.');
+
+            return back()->withErrors(['error' => 'El plazo para adjuntar la acta firmada venció y la acción asociada fue cancelada.']);
+        }
+
+        $path = $request->file('acta_firmada')->store('actas_firmadas', 'public');
+        $movimiento->update([
+            'acta_estado' => self::ACTA_ESTADO_FIRMADA,
+            'acta_firmada_path' => $path,
+        ]);
+
+        $this->actaNotificacionService->resolverPendientesDe($movimiento);
+
+        $this->notificacionService->notificarSubidaActaFirmada(
+            codigo: $bien->codigo,
+            tipo: $movimiento->tipo,
+            usuarioId: auth()->id(),
+        );
+
+        return back()->with('success', '✅ La acta firmada y autorizada fue adjuntada correctamente.');
+    }
+
+    public function rechazarActaFirmada(Request $request, Bien $bien)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403, 'Solo los administradores pueden rechazar actas firmadas.');
+
+        $request->validate([
+            'motivo_rechazo' => ['required', 'string', 'max:1000'],
+        ], [
+            'motivo_rechazo.required' => 'Debe indicar el motivo del rechazo.',
+            'motivo_rechazo.max' => 'El motivo del rechazo no puede exceder los 1000 caracteres.',
+        ]);
+
+        $this->procesarActasPendientesParaBien($bien);
+
+        $movimiento = $bien->movimientos()
+            ->whereIn('tipo', ['DESINCORPORACION', 'TRASLADO', 'DONACION'])
+            ->where('acta_estado', self::ACTA_ESTADO_FIRMADA)
+            ->latest('fecha')
+            ->first();
+
+        if (! $movimiento) {
+            return back()->withErrors(['error' => 'No existe un acta firmada para rechazar en este bien.']);
+        }
+
+        $movimiento->update([
+            'acta_estado' => self::ACTA_ESTADO_RECHAZADA,
+            'motivo_cancelacion_acta' => $request->input('motivo_rechazo'),
+            'fecha_cancelacion_acta' => now(),
+        ]);
+
+        app(\App\Services\ActaRegressionService::class)->rechazarActaFirmada($movimiento, $request->input('motivo_rechazo'));
+
+        $this->actaNotificacionService->notificarActaRechazada($movimiento);
+
+        $this->notificacionService->notificarAccionUsuario(
+            accion: 'Acta rechazada',
+            detalle: "El acta de {$movimiento->tipo} del bien {$bien->codigo} fue rechazada. Motivo: {$request->input('motivo_rechazo')}.",
+            usuarioId: $movimiento->usuario_id,
+        );
+
+        return back()->with('success', '✅ El acta fue rechazada. Debe ser corregida y vuelta a subir.');
+    }
+
+    private function procesarActasPendientesParaBien(Bien $bien): void
+    {
+        $movimientos = $bien->movimientos()
+            ->where('acta_estado', self::ACTA_ESTADO_PENDIENTE)
+            ->whereNotNull('fecha_limite_acta')
+            ->where('fecha_limite_acta', '<=', now())
+            ->get();
+
+        $service = app(\App\Services\ActaRegressionService::class);
+
+        foreach ($movimientos as $movimiento) {
+            $service->cancelarActaPendiente(
+                $movimiento,
+                'Se venció el plazo de 2 días para adjuntar la acta firmada y autorizada.'
+            );
+        }
+    }
+
+    private function cancelarActaPendiente(\App\Models\Movimiento $movimiento, string $motivo): void
+    {
+        app(\App\Services\ActaRegressionService::class)->cancelarActaPendiente($movimiento, $motivo);
+
+        session()->flash('error', 'La acción asociada fue cancelada. '.$motivo);
+    }
 
     /**
      * Reglas de validación base.
