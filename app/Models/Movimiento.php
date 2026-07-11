@@ -42,4 +42,22 @@ class Movimiento extends Model
     {
         return $this->morphTo(null, 'subject_type', 'subject_id');
     }
+
+    public function actaPathExists(): bool
+    {
+        if (empty($this->acta_path)) {
+            return false;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->exists($this->acta_path);
+    }
+
+    public function actaFirmadaPathExists(): bool
+    {
+        if (empty($this->acta_firmada_path)) {
+            return false;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->exists($this->acta_firmada_path);
+    }
 }

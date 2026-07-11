@@ -1586,12 +1586,12 @@ class BienController extends Controller
 
         $movimiento = $bien->movimientos()
             ->whereIn('tipo', ['DESINCORPORACION', 'TRASLADO', 'DONACION'])
-            ->where('acta_estado', self::ACTA_ESTADO_PENDIENTE)
+            ->whereIn('acta_estado', [self::ACTA_ESTADO_PENDIENTE, self::ACTA_ESTADO_RECHAZADA])
             ->latest('fecha')
             ->first();
 
         if (! $movimiento) {
-            return back()->withErrors(['error' => 'No existe un acta pendiente de firma para este bien.']);
+            return back()->withErrors(['error' => 'No existe un acta pendiente o rechazada para este bien.']);
         }
 
         if ($movimiento->fecha_limite_acta && now()->gt($movimiento->fecha_limite_acta)) {
@@ -1604,6 +1604,8 @@ class BienController extends Controller
         $movimiento->update([
             'acta_estado' => self::ACTA_ESTADO_FIRMADA,
             'acta_firmada_path' => $path,
+            'motivo_cancelacion_acta' => null,
+            'fecha_cancelacion_acta' => null,
         ]);
 
         $this->actaNotificacionService->resolverPendientesDe($movimiento);

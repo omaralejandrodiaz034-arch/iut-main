@@ -107,18 +107,26 @@
         </div>
 
         <!-- Acta de Desincorporación -->
-        @if ($movimiento->tipo === 'DESINCORPORACION' && $movimiento->acta_path)
+        @if ($movimiento->tipo === 'DESINCORPORACION' && $movimiento->acta_path && $movimiento->actaPathExists())
             <div class="col-span-1 md:col-span-2">
                 <div class="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
                     <div>
                         <h2 class="text-lg font-bold text-gray-800">Acta de Desincorporación</h2>
                         <p class="text-sm text-gray-600 mt-1">Documento oficial de desincorporación del bien</p>
                     </div>
-                           <a href="/storage/{{ $movimiento->acta_path }}" target="_blank"
-                        class="inline-flex items-center px-4 py-2.5 bg-[#800020] text-white font-semibold rounded-lg hover:bg-[#9a0026] shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
+                           <a href="{{ asset('storage/'.$movimiento->acta_path) }}" target="_blank"
+                         class="inline-flex items-center px-4 py-2.5 bg-[#800020] text-white font-semibold rounded-lg hover:bg-[#9a0026] shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
                         <x-heroicon-o-document-arrow-down class="w-5 h-5 mr-2"/>
                         Ver / Descargar Acta
                     </a>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'DESINCORPORACION' && $movimiento->acta_path && ! $movimiento->actaPathExists())
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p class="text-sm text-red-700">El archivo del acta de desincorporación no se encuentra disponible en este momento.</p>
                 </div>
             </div>
         @endif
@@ -215,18 +223,26 @@
         @endif
 
         <!-- Acta de Traslado -->
-        @if ($movimiento->tipo === 'TRASLADO' && $movimiento->acta_path)
+        @if ($movimiento->tipo === 'TRASLADO' && $movimiento->acta_path && $movimiento->actaPathExists())
             <div class="col-span-1 md:col-span-2">
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
                     <div>
                         <h2 class="text-lg font-bold text-gray-800">Acta de Traslado</h2>
                         <p class="text-sm text-gray-600 mt-1">Documento oficial de traslado del bien</p>
                     </div>
-                                        <a href="/storage/{{ $movimiento->acta_path }}" target="_blank"
+                    <a href="{{ asset('storage/'.$movimiento->acta_path) }}" target="_blank"
                        class="inline-flex items-center px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
                         <x-heroicon-o-document-arrow-down class="w-5 h-5 mr-2"/>
                         Ver / Descargar Acta
                     </a>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'TRASLADO' && $movimiento->acta_path && ! $movimiento->actaPathExists())
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p class="text-sm text-red-700">El archivo del acta de traslado no se encuentra disponible en este momento.</p>
                 </div>
             </div>
         @endif
@@ -302,18 +318,26 @@
         @endif
 
         <!-- Acta de Donación -->
-        @if ($movimiento->tipo === 'DONACION' && $movimiento->acta_path)
+        @if ($movimiento->tipo === 'DONACION' && $movimiento->acta_path && $movimiento->actaPathExists())
             <div class="col-span-1 md:col-span-2">
                 <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between">
                     <div>
                         <h2 class="text-lg font-bold text-gray-800">Acta de Donación</h2>
                         <p class="text-sm text-gray-600 mt-1">Documento oficial de donación del bien</p>
                     </div>
-                    <a href="/storage/{{ $movimiento->acta_path }}" target="_blank"
+                    <a href="{{ asset('storage/'.$movimiento->acta_path) }}" target="_blank"
                        class="inline-flex items-center px-4 py-2.5 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
                         <x-heroicon-o-document-arrow-down class="w-5 h-5 mr-2"/>
                         Ver / Descargar Acta
                     </a>
+                </div>
+            </div>
+        @endif
+
+        @if ($movimiento->tipo === 'DONACION' && $movimiento->acta_path && ! $movimiento->actaPathExists())
+            <div class="col-span-1 md:col-span-2">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p class="text-sm text-red-700">El archivo del acta de donación no se encuentra disponible en este momento.</p>
                 </div>
             </div>
         @endif

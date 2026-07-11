@@ -63,14 +63,14 @@
                 <x-heroicon-o-printer class="w-4 h-4 mr-2"/> Imprimir
             </button>
 
-            @if($model instanceof \App\Models\Bien && $model->desincorporado && $model->desincorporado->acta_desincorporacion)
-                <a href="/storage/{{ $model->desincorporado->acta_desincorporacion }}" target="_blank" class="inline-flex items-center px-3 py-2 bg-green-50 text-green-700 rounded-md hover:bg-green-100">
+            @if($model instanceof \App\Models\Bien && $model->desincorporado && $model->desincorporado->acta_desincorporacion && \Illuminate\Support\Facades\Storage::disk('public')->exists($model->desincorporado->acta_desincorporacion))
+                <a href="{{ asset('storage/'.$model->desincorporado->acta_desincorporacion) }}" target="_blank" class="inline-flex items-center px-3 py-2 bg-green-50 text-green-700 rounded-md hover:bg-green-100">
                     <x-heroicon-o-document-text class="w-4 h-4 mr-2"/> Ver Acta de Desincorporación
                 </a>
             @endif
 
-            @if($resource === 'movimientos' && $model->tipo === 'TRASLADO' && $model->acta_path)
-                <a href="/storage/{{ $model->acta_path }}" target="_blank" class="inline-flex items-center px-3 py-2 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100">
+            @if($resource === 'movimientos' && $model->tipo === 'TRASLADO' && $model->acta_path && $model->actaPathExists())
+                <a href="{{ asset('storage/'.$model->acta_path) }}" target="_blank" class="inline-flex items-center px-3 py-2 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100">
                     <x-heroicon-o-document-text class="w-4 h-4 mr-2"/> Ver Acta de Traslado
                 </a>
             @endif

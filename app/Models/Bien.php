@@ -17,6 +17,8 @@ class Bien extends Model
 {
     use AuditableTrait, HasFactory;
 
+    public $routeKeyName = 'codigo';
+
     // Tabla asociada
     protected $table = 'bienes';
 
@@ -98,5 +100,14 @@ class Bien extends Model
     public function desincorporado()
     {
         return $this->hasOne(\App\Models\BienDesincorporado::class, 'bien_id');
+    }
+
+    public function actaDonacionExists(): bool
+    {
+        if (empty($this->acta_donacion)) {
+            return false;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->exists($this->acta_donacion);
     }
 }

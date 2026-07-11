@@ -106,11 +106,15 @@
                                             Subir acta
                                         </button>
                                     </form>
-                                @elseif($movimiento->acta_estado === 'FIRMADA' && $movimiento->acta_firmada_path)
+                                @elseif($movimiento->acta_estado === 'FIRMADA' && $movimiento->acta_firmada_path && $movimiento->actaFirmadaPathExists())
                                     <a href="{{ asset('storage/'.$movimiento->acta_firmada_path) }}" target="_blank"
                                        class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition">
                                         Ver acta firmada
                                     </a>
+                                @elseif($movimiento->acta_estado === 'FIRMADA' && $movimiento->acta_firmada_path)
+                                    <span class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-gray-500 rounded-lg">
+                                        Archivo no disponible
+                                    </span>
                                 @endif
                             </td>
                         </tr>

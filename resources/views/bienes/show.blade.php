@@ -147,7 +147,7 @@ use Illuminate\Support\Str;
         @endif
 
         {{-- Acta de Donación --}}
-        @if($bien->es_donacion && $bien->acta_donacion)
+        @if($bien->es_donacion && $bien->acta_donacion && $bien->actaDonacionExists())
         <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
             <div class="flex items-center justify-between">
                 <div>
@@ -166,6 +166,10 @@ use Illuminate\Support\Str;
                 </a>
             </div>
         </div>
+        @elseif($bien->es_donacion && $bien->acta_donacion)
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p class="text-sm text-red-700">El archivo del acta de donación no se encuentra disponible en este momento.</p>
+            </div>
         @endif
 
         @php
@@ -223,44 +227,49 @@ use Illuminate\Support\Str;
         </div>
         @endif
 
-        @if($movimientoActaFirmada && $movimientoActaFirmada->acta_firmada_path)
-        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="text-lg font-semibold text-green-800">Acta firmada y autorizada</h3>
-                    <p class="text-sm text-green-600">
-                        @php
-                            $tipoLabel = match($movimientoActaFirmada->tipo) {
-                                'DESINCORPORACION' => 'Acta de desincorporación firmada y autorizada',
-                                'TRASLADO' => 'Acta de traslado firmada y autorizada',
-                                'DONACION' => 'Acta de donación firmada y autorizada',
-                                default => 'Acta firmada y autorizada',
-                            };
-                        @endphp
-                        {{ $tipoLabel }} — {{ $movimientoActaFirmada->fecha?->format('d/m/Y H:i') }}
-                    </p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <a href="{{ asset('storage/'.$movimientoActaFirmada->acta_firmada_path) }}" target="_blank"
-                       class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 transition focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1">
-                        <x-heroicon-o-document-text class="w-5 h-5 mr-2" />
-                        Ver Acta Firmada
-                    </a>
-                    @auth
-                        @if(auth()->user()?->isAdmin())
-                            <button type="button" onclick="document.getElementById('modal-rechazar-{{ $movimientoActaFirmada->id }}').showModal()"
-                                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 transition focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1">
-                                <x-heroicon-o-x-circle class="w-5 h-5 mr-2" />
-                                Rechazar
-                            </button>
-                        @endif
-                    @endauth
+        @if($movimientoActaFirmada && $movimientoActaFirmada->acta_firmada_path && $movimientoActaFirmada->actaFirmadaPathExists())
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-green-800">Acta firmada y autorizada</h3>
+                        <p class="text-sm text-green-600">
+                            @php
+                                $tipoLabel = match($movimientoActaFirmada->tipo) {
+                                    'DESINCORPORACION' => 'Acta de desincorporación firmada y autorizada',
+                                    'TRASLADO' => 'Acta de traslado firmada y autorizada',
+                                    'DONACION' => 'Acta de donación firmada y autorizada',
+                                    default => 'Acta firmada y autorizada',
+                                };
+                            @endphp
+                            {{ $tipoLabel }} — {{ $movimientoActaFirmada->fecha?->format('d/m/Y H:i') }}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="{{ asset('storage/'.$movimientoActaFirmada->acta_firmada_path) }}" target="_blank"
+                           class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 transition focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1">
+                            <x-heroicon-o-document-text class="w-5 h-5 mr-2" />
+                            Ver Acta Firmada
+                        </a>
+                        @auth
+                            @if(auth()->user()?->isAdmin())
+                                <button type="button" onclick="document.getElementById('modal-rechazar-{{ $movimientoActaFirmada->id }}').showModal()"
+                                        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 transition focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1">
+                                    <x-heroicon-o-x-circle class="w-5 h-5 mr-2" />
+                                    Rechazar
+                                </button>
+                            @endif
+                        @endauth
+                    </div>
                 </div>
             </div>
-        </div>
+        @elseif($movimientoActaFirmada && $movimientoActaFirmada->acta_firmada_path)
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p class="text-sm text-red-700">El archivo del acta firmada no se encuentra disponible en este momento.</p>
+            </div>
+        @endif
 
         @auth
-            @if(auth()->user()?->isAdmin())
+            @if(auth()->user()?->isAdmin() && $movimientoActaFirmada)
                 <dialog id="modal-rechazar-{{ $movimientoActaFirmada->id }}" class="p-6 rounded-lg shadow-xl">
                     <h2 class="text-lg font-bold text-gray-800 mb-4">Rechazar acta firmada</h2>
                     <p class="text-sm text-gray-600 mb-4">Indique el motivo del rechazo para que el usuario pueda corregir el acta.</p>
@@ -280,7 +289,6 @@ use Illuminate\Support\Str;
                 </dialog>
             @endif
         @endauth
-        @endif
 
         {{-- Último Acta de Traslado --}}
         @if($ultimoTraslado && $ultimoTraslado->acta_path)
@@ -292,14 +300,14 @@ use Illuminate\Support\Str;
                         Generada el {{ $ultimoTraslado->fecha?->format('d/m/Y') }}
                     </p>
                 </div>
-                     <a href="/storage/{{ $ultimoTraslado->acta_path }}" target="_blank"
-                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
-                    <x-heroicon-o-document-text class="w-5 h-5 mr-2" />
-                    Ver Acta
-                </a>
-            </div>
-        </div>
-        @endif
+                     <a href="{{ asset('storage/'.$ultimoTraslado->acta_path) }}" target="_blank"
+                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
+                     <x-heroicon-o-document-text class="w-5 h-5 mr-2" />
+                     Ver Acta
+                 </a>
+             </div>
+         </div>
+     @endif
 
         <!-- Fotografía -->
         <div class="grid grid-cols-1 gap-6">
