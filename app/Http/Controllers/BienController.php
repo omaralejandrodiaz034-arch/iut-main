@@ -1614,6 +1614,8 @@ class BienController extends Controller
             codigo: $bien->codigo,
             tipo: $movimiento->tipo,
             usuarioId: auth()->id(),
+            movimientoId: $movimiento->id,
+            actaFirmadaPath: $path,
         );
 
         return back()->with('success', '✅ La acta firmada y autorizada fue adjuntada correctamente.');
