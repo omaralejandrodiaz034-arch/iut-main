@@ -41,14 +41,20 @@ class NotificacionService
         );
     }
 
-    public function notificarSubidaActaFirmada(string $codigo, string $tipo, ?int $usuarioId = null): void
+    public function notificarSubidaActaFirmada(string $codigo, string $tipo, ?int $usuarioId = null, ?int $movimientoId = null, ?string $actaFirmadaPath = null): void
     {
         $this->notificarAdmins(
             titulo: 'Acta firmada cargada',
             mensaje: "Se adjuntó el acta firmada de {$tipo} para el bien {$codigo}.",
             action_url: route('bienes.show', ['bien' => $codigo]),
             icono: '📄',
-            meta: ['tipo' => 'acta_firmada', 'codigo' => $codigo, 'usuario_id' => $usuarioId],
+            meta: [
+                'tipo' => 'acta_firmada',
+                'codigo' => $codigo,
+                'usuario_id' => $usuarioId,
+                'movimiento_id' => $movimientoId,
+                'acta_firmada_path' => $actaFirmadaPath,
+            ],
         );
     }
 

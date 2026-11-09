@@ -83,9 +83,7 @@ Para cerrar sesión de manera segura:
 El sistema está organizado de forma jerárquica:
 
 ```
-Organismo (UPTOS "Clodosbaldo Russián")
-    │
-    └─► Unidad (Departamentos: Informática, Administración, etc.)
+
             │
             └─► Dependencia (Salones, Laboratorios, Oficinas)
                     │

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Movimiento;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\Storage;
 
 class NotificacionController extends Controller
 {
@@ -23,6 +25,15 @@ class NotificacionController extends Controller
         abort_unless($user->notifications()->where('id', $notification->id)->exists(), 404);
 
         $notification->markAsRead();
+
+        $meta = $notification->data['meta'] ?? [];
+
+        if (($meta['tipo'] ?? null) === 'acta_firmada' && !empty($meta['movimiento_id'])) {
+            $movimiento = Movimiento::find($meta['movimiento_id']);
+            $ruta = $movimiento?->acta_firmada_path ?? 'No disponible';
+
+            return view('notificaciones.acta-firmada', compact('ruta', 'meta'));
+        }
 
         $actionUrl = $notification->data['action_url'] ?? $notification->data['url'] ?? route('notificaciones.index');
 
