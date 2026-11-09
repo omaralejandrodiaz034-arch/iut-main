@@ -65,17 +65,17 @@
     </style>
 </head>
 
-<body class="bg-[#fcfcfc] text-slate-900 antialiased font-sans overflow-x-hidden">
+<body class="bg-[#fcfcfc] text-slate-900 antialiased font-sans overflow-x-hidden lg:pl-64">
 
+    @include('layouts.head')
     {{-- Banner Institucional --}}
-    <header class="w-full bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+    <header class="relative z-30 w-full bg-white/80 shadow-sm lg:sticky lg:top-0">
         {{-- Imagen banner contenida --}}
         <div class="max-w-7xl mx-auto px-4 py-2">
             <img src="{{ asset('images/baner.jpeg') }}"
                  class="w-full max-w-4xl h-auto object-contain mx-auto"
                  alt="Banner Institucional">
         </div>
-        @include('layouts.head')
     </header>
 
     {{-- Hero Section con Rotación de Frases --}}
