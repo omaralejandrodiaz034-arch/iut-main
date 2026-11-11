@@ -29,6 +29,16 @@
     </button>
 
     <div x-show="open" x-transition x-cloak class="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+        <div class="px-3 py-2 border-b border-gray-100 bg-slate-50">
+            <div class="space-y-1.5">
+                <a href="{{ route('notificaciones.index') }}" class="block rounded-lg px-2.5 py-2 text-xs font-medium text-slate-700 transition hover:bg-white hover:text-[#510817]">
+                    Todas las notificaciones no leídas
+                </a>
+                <a href="{{ route('actas.pendientes') }}" class="block rounded-lg px-2.5 py-2 text-xs font-medium text-slate-700 transition hover:bg-white hover:text-[#510817]">
+                    Actas pendientes
+                </a>
+            </div>
+        </div>
         <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <h3 class="text-sm font-semibold text-gray-800">Notificaciones</h3>
             <form method="POST" action="{{ route('notificaciones.marcar-todas') }}" class="m-0">

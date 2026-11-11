@@ -7,167 +7,78 @@
 <x-breadcrumbs :items="[['label' => 'Dashboard']]" />
 @endpush
 
-{{-- ── Encabezado ──────────────────────────────────────────────────── --}}
-<div class="flex items-center justify-between mb-8">
-    <div>
-        <h1 class="text-3xl font-bold text-gray-900">Panel de Control</h1>
-        <p class="text-gray-500 text-sm mt-1">Resumen del inventario de bienes patrimoniales</p>
+<div class="rounded-[28px] border border-slate-200 bg-white shadow-sm">
+    <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+        <div>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.26em] text-slate-400">Sistema</p>
+            <h1 class="mt-1 text-3xl font-black tracking-tight text-slate-800">Panel de Control</h1>
+        </div>
+        <span class="text-xs font-medium text-slate-500">Actualizado: {{ now()->format('d/m/Y H:i') }}</span>
     </div>
-    <span class="text-xs text-gray-400 font-medium">Actualizado: {{ now()->format('d/m/Y H:i') }}</span>
-</div>
 
-{{-- ── KPIs principales ────────────────────────────────────────────── --}}
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-    @php
-    $kpis = [
-        ['label' => 'Total Bienes',    'value' => number_format($totalBienes),        'icon' => '📦', 'color' => 'bg-blue-50 border-blue-200',     'text' => 'text-blue-700',  'href' => route('bienes.index')],
-        ['label' => 'Activos',         'value' => number_format($totalActivos),        'icon' => '✅', 'color' => 'bg-green-50 border-green-200',   'text' => 'text-green-700', 'href' => route('bienes.index', ['estado[]' => 'ACTIVO'])],
-        ['label' => 'En Mantenimiento','value' => number_format($totalMantenimiento), 'icon' => '🔧', 'color' => 'bg-yellow-50 border-yellow-200', 'text' => 'text-yellow-700','href' => route('bienes.index', ['estado[]' => 'EN_MANTENIMIENTO'])],
-        ['label' => 'Extraviados',     'value' => number_format($totalExtraviados),   'icon' => '⚠️', 'color' => 'bg-red-50 border-red-200',       'text' => 'text-red-700',   'href' => route('bienes.index', ['estado[]' => 'EXTRAVIADO'])],
-    ];
-    @endphp
-    @foreach($kpis as $kpi)
-    <a href="{{ $kpi['href'] }}" class="block border rounded-xl p-5 {{ $kpi['color'] }} hover:shadow-md transition-shadow">
-        <div class="text-2xl mb-2">{{ $kpi['icon'] }}</div>
-        <div class="text-2xl font-black {{ $kpi['text'] }}">{{ $kpi['value'] }}</div>
-        <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-1">{{ $kpi['label'] }}</div>
-    </a>
-    @endforeach
-</div>
-
-{{-- ── Segunda fila de KPIs ────────────────────────────────────────── --}}
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-    @php
-    $kpis2 = [
-        ['label' => 'Organismos',   'value' => $totalOrganismos,   'icon' => '🏛️', 'href' => route('organismos.index')],
-        ['label' => 'Unidades',     'value' => $totalUnidades,     'icon' => '🏢', 'href' => route('unidades.index')],
-        ['label' => 'Dependencias', 'value' => $totalDependencias, 'icon' => '📂', 'href' => route('dependencias.index')],
-        ['label' => 'Usuarios',     'value' => $totalUsuarios,     'icon' => '👥', 'href' => route('usuarios.index')],
-    ];
-    @endphp
-    @foreach($kpis2 as $k)
-    <a href="{{ $k['href'] }}" class="block border border-gray-200 rounded-xl p-5 bg-white hover:shadow-md transition-shadow">
-        <div class="text-2xl mb-2">{{ $k['icon'] }}</div>
-        <div class="text-2xl font-black text-gray-800">{{ $k['value'] }}</div>
-        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-1">{{ $k['label'] }}</div>
-    </a>
-    @endforeach
-</div>
-
-{{-- ── Valor del inventario ─────────────────────────────────────────── --}}
-<div class="bg-gradient-to-r from-[#800020] to-[#5a0016] rounded-2xl p-6 mb-8 text-white">
-    <p class="text-sm font-semibold opacity-80 uppercase tracking-widest mb-1">Valor Total del Inventario Activo</p>
-    <p class="text-4xl font-black">Bs. {{ number_format($valorTotal, 2, ',', '.') }}</p>
-    <p class="text-xs opacity-60 mt-2">Excluye bienes desincorporados</p>
-</div>
-
-{{-- ── Gráficas y Tablas ───────────────────────────────────────────── --}}
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-
-    {{-- Por Estado --}}
-    <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-        <h3 class="text-base font-bold text-gray-800 mb-4">Distribución por Estado</h3>
-        <div class="space-y-3">
+    <div class="space-y-6 p-6">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             @php
-            $coloresEstado = ['Activo' => '#22c55e', 'Dañado' => '#f97316', 'En mantenimiento' => '#eab308', 'En camino' => '#3b82f6', 'Extraviado' => '#ef4444', 'Desincorporado' => '#6b7280'];
+                $kpis = [
+                    ['label' => 'ACTIVOS', 'value' => number_format($totalActivos), 'icon' => '✓', 'bg' => 'bg-[#e9f9ef]', 'border' => 'border-[#bfead0]', 'color' => 'text-[#166534]', 'href' => route('bienes.index', ['estado[]' => 'ACTIVO'])],
+                    ['label' => 'EN MANTENIMIENTO', 'value' => number_format($totalMantenimiento), 'icon' => '🛠', 'bg' => 'bg-[#fdf7d9]', 'border' => 'border-[#f0e29a]', 'color' => 'text-[#8a6a00]', 'href' => route('bienes.index', ['estado[]' => 'EN_MANTENIMIENTO'])],
+                    ['label' => 'EXTRAVIADOS', 'value' => number_format($totalExtraviados), 'icon' => '⚠', 'bg' => 'bg-[#fdecec]', 'border' => 'border-[#f3c3c3]', 'color' => 'text-[#9e1c1c]', 'href' => route('bienes.index', ['estado[]' => 'EXTRAVIADO'])],
+                    ['label' => 'TOTAL BIENES', 'value' => number_format($totalBienes), 'icon' => '▣', 'bg' => 'bg-[#eef3ff]', 'border' => 'border-[#c9d8ff]', 'color' => 'text-[#29428d]', 'href' => route('bienes.index')],
+                ];
             @endphp
-            @foreach($porEstado as $label => $count)
-            @php $pct = $totalBienes > 0 ? round($count / $totalBienes * 100) : 0; $color = $coloresEstado[$label] ?? '#800020'; @endphp
-            <div>
-                <div class="flex justify-between text-sm mb-1">
-                    <span class="font-medium text-gray-700">{{ $label }}</span>
-                    <span class="text-gray-500 font-mono">{{ $count }} <span class="text-gray-400">({{ $pct }}%)</span></span>
-                </div>
-                <div class="w-full bg-gray-100 rounded-full h-2">
-                    <div class="h-2 rounded-full transition-all duration-500" style="width: {{ $pct }}%; background-color: {{ $color }};"></div>
-                </div>
-            </div>
+
+            @foreach($kpis as $kpi)
+                <a href="{{ $kpi['href'] }}" class="group block rounded-[20px] border {{ $kpi['border'] }} {{ $kpi['bg'] }} p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                    <div class="flex items-center justify-between">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200/70 bg-white/70 text-2xl shadow-sm">{{ $kpi['icon'] }}</div>
+                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{{ $kpi['label'] }}</span>
+                    </div>
+                    <div class="mt-6 text-4xl font-black {{ $kpi['color'] }}">{{ $kpi['value'] }}</div>
+                </a>
             @endforeach
         </div>
-    </div>
 
-    {{-- Por Tipo --}}
-    <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-        <h3 class="text-base font-bold text-gray-800 mb-4">Distribución por Tipo de Bien</h3>
-        <div class="space-y-3">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             @php
-            $coloresTipo = ['Electrónico' => '#6366f1', 'Mobiliario' => '#f59e0b', 'Vehículo' => '#10b981', 'Inmueble' => '#8b5cf6', 'Otros' => '#64748b'];
+                $kpis2 = [
+                    ['label' => 'ORGANISMOS', 'value' => $totalOrganismos, 'icon' => '🏛', 'href' => route('organismos.index')],
+                    ['label' => 'UNIDADES', 'value' => $totalUnidades, 'icon' => '🏢', 'href' => route('unidades.index')],
+                    ['label' => 'DEPENDENCIAS', 'value' => $totalDependencias, 'icon' => '📁', 'href' => route('dependencias.index')],
+                    ['label' => 'USUARIOS', 'value' => $totalUsuarios, 'icon' => '👥', 'href' => route('usuarios.index')],
+                ];
             @endphp
-            @foreach($porTipo as $label => $count)
-            @php $pct = $totalBienes > 0 ? round($count / $totalBienes * 100) : 0; $color = $coloresTipo[$label] ?? '#800020'; @endphp
-            <div>
-                <div class="flex justify-between text-sm mb-1">
-                    <span class="font-medium text-gray-700">{{ $label }}</span>
-                    <span class="text-gray-500 font-mono">{{ $count }} <span class="text-gray-400">({{ $pct }}%)</span></span>
-                </div>
-                <div class="w-full bg-gray-100 rounded-full h-2">
-                    <div class="h-2 rounded-full transition-all duration-500" style="width: {{ $pct }}%; background-color: {{ $color }};"></div>
-                </div>
-            </div>
+
+            @foreach($kpis2 as $k)
+                <a href="{{ $k['href'] }}" class="group block rounded-[20px] border border-slate-200 bg-slate-50 p-5 text-center transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-sm">
+                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-2xl shadow-sm">{{ $k['icon'] }}</div>
+                    <div class="mt-4 text-4xl font-black text-slate-800">{{ $k['value'] }}</div>
+                    <div class="mt-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">{{ $k['label'] }}</div>
+                </a>
             @endforeach
         </div>
-    </div>
-</div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-
-    {{-- Top dependencias --}}
-    <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-        <h3 class="text-base font-bold text-gray-800 mb-4">Top 5 Dependencias con más Bienes</h3>
-        @forelse($topDependencias as $dep)
-        <div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-            <div>
-                <p class="text-sm font-semibold text-gray-800">{{ $dep->nombre }}</p>
-                <p class="text-xs text-gray-400">{{ optional($dep->unidadAdministradora)->nombre ?? '—' }}</p>
-            </div>
-            <span class="text-lg font-black text-[#800020]">{{ $dep->bienes_count }}</span>
-        </div>
-        @empty
-        <p class="text-gray-400 text-sm text-center py-4">Sin datos</p>
-        @endforelse
-    </div>
-
-    {{-- Últimos movimientos --}}
-    <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-bold text-gray-800">Últimos Movimientos</h3>
-            <a href="{{ route('movimientos.index') }}" class="text-xs text-[#800020] font-semibold hover:underline">Ver todos →</a>
-        </div>
-        <div class="space-y-3">
-            @forelse($ultimosMovimientos as $mov)
-            <div class="flex items-start gap-3 py-1">
-                <span class="text-lg flex-shrink-0">📄</span>
-                <div class="flex-1 min-w-0">
-                    <p class="text-xs font-semibold text-gray-700 truncate">{{ $mov->tipo }}</p>
-                    <p class="text-xs text-gray-400 truncate">
-                        {{ optional($mov->bien)->codigo }} • {{ optional($mov->usuario)->nombre }}
-                    </p>
-                </div>
-                <span class="text-[11px] text-gray-400 flex-shrink-0">{{ optional($mov->fecha)->diffForHumans() }}</span>
-            </div>
-            @empty
-            <p class="text-gray-400 text-sm text-center py-4">Sin movimientos recientes</p>
-            @endforelse
+        <div class="rounded-[20px] bg-gradient-to-r from-[#7a081d] to-[#510817] px-6 py-5 text-white shadow-lg shadow-[#510817]/20">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-red-100/80">Valor total del inventario activo</p>
+            <p class="mt-2 text-3xl font-black tracking-tight">Bs. {{ number_format($valorTotal, 2, ',', '.') }}</p>
         </div>
     </div>
 </div>
 
-{{-- ── Bienes registrados por mes ──────────────────────────────────── --}}
 @if($bienesPorMes->isNotEmpty())
-<div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm mb-8">
-    <h3 class="text-base font-bold text-gray-800 mb-6">Bienes Registrados (últimos 12 meses)</h3>
-    @php $maxVal = $bienesPorMes->max() ?: 1; @endphp
-    <div class="flex items-end gap-2 h-32">
-        @foreach($bienesPorMes as $mes => $total)
-        @php $pct = round($total / $maxVal * 100); @endphp
-        <div class="flex-1 flex flex-col items-center gap-1 group">
-            <span class="text-[10px] text-gray-500 font-mono opacity-0 group-hover:opacity-100 transition-opacity">{{ $total }}</span>
-            <div class="w-full rounded-t-lg bg-[#800020] transition-all duration-300 hover:bg-[#5a0016]" style="height: {{ max($pct, 4) }}%;"></div>
-            <span class="text-[9px] text-gray-400 font-mono">{{ substr($mes, 5) }}</span>
+    <div class="mt-6 rounded-[22px] border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 class="text-base font-bold text-slate-800">Bienes Registrados (últimos 12 meses)</h3>
+        @php $maxVal = $bienesPorMes->max() ?: 1; @endphp
+        <div class="mt-6 flex h-32 items-end gap-2">
+            @foreach($bienesPorMes as $mes => $total)
+                @php $pct = round($total / $maxVal * 100); @endphp
+                <div class="group flex flex-1 flex-col items-center gap-2">
+                    <span class="text-[10px] text-slate-500 opacity-0 transition-opacity group-hover:opacity-100">{{ $total }}</span>
+                    <div class="w-full rounded-t-xl bg-[#800020] transition-all duration-300 hover:bg-[#5a0016]" style="height: {{ max($pct, 8) }}%;"></div>
+                    <span class="text-[9px] text-slate-400 font-medium">{{ substr($mes, 5) }}</span>
+                </div>
+            @endforeach
         </div>
-        @endforeach
     </div>
-</div>
 @endif
 
 @endsection
