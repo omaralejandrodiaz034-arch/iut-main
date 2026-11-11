@@ -1,61 +1,160 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistema de Gestión de Inventario de Bienes (IUT)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplicación web desarrollada con Laravel 12 para gestionar el inventario institucional.
+Este documento explica cómo iniciar el entorno Docker que ya está configurado en el
+repositorio.
 
-## About Laravel
+## Requisitos
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Docker Desktop (Windows/macOS) o Docker Engine (Linux), con Docker Compose v2.
+- Node.js y npm para instalar y compilar los recursos del frontend.
+- Git para obtener el proyecto.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+No es necesario instalar PHP, Composer ni MySQL en el equipo anfitrión: PHP y MySQL
+se ejecutan en contenedores.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Servicios Docker
 
-## Learning Laravel
+La configuración de `docker-compose.yml` inicia estos servicios:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Servicio | Función | Acceso |
+| --- | --- | --- |
+| `app` | PHP 8.3-FPM y comandos de Laravel | Interno de Docker, puerto 9000 |
+| `web` | Nginx | [http://localhost:8080](http://localhost:8080) |
+| `db` | MySQL 8.0 | Puerto 3306 del equipo |
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+MySQL guarda sus datos en el volumen persistente `dbdata`. La aplicación debe
+conectarse al host `db` (nombre del servicio de Compose), no a `localhost`.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Primer inicio
 
-## Laravel Sponsors
+Ejecuta los comandos desde la carpeta raíz del proyecto.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 1. Crear el archivo `.env`
 
-### Premium Partners
+El repositorio no incluye un `.env.example`. Crea un archivo llamado `.env` en la
+raíz con esta configuración mínima para desarrollo local:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```dotenv
+APP_NAME="Sistema IUT"
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://localhost:8080
 
-## Contributing
+DB_CONNECTION=mysql
+DB_HOST=db
+DB_PORT=3306
+DB_DATABASE=iut
+DB_USERNAME=laravel
+DB_PASSWORD=secret
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+SESSION_DRIVER=file
+CACHE_STORE=file
+QUEUE_CONNECTION=database
+```
 
-## Code of Conduct
+Los valores de base de datos deben coincidir con los que Compose entrega al
+contenedor MySQL. Cambia `DB_PASSWORD` antes de usar el entorno fuera de desarrollo.
+El archivo `.env` no debe subirse al repositorio.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 2. Construir e iniciar los contenedores
 
-## Security Vulnerabilities
+```bash
+docker compose up -d --build
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+La primera construcción puede tardar varios minutos. Comprueba el estado con:
 
-## License
+```bash
+docker compose ps
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 3. Instalar dependencias PHP y generar la clave
+
+El contenedor incluye Composer, pero la imagen no instala por sí misma las
+dependencias del proyecto. Ejecuta:
+
+```bash
+docker compose exec app composer install
+docker compose exec app php artisan key:generate
+```
+
+### 4. Preparar la base de datos
+
+Espera a que MySQL termine de iniciar y aplica las migraciones:
+
+```bash
+docker compose exec app php artisan migrate
+```
+
+Opcionalmente, para cargar los datos de demostración en una base local vacía:
+
+```bash
+docker compose exec app php artisan db:seed
+```
+
+No ejecutes el seeder en una base con datos reales: carga datos de demostración.
+
+### 5. Compilar los recursos del frontend
+
+El contenedor no incluye Node.js ni un servicio Vite. En la terminal del equipo,
+desde la raíz del proyecto, ejecuta:
+
+```bash
+npm ci
+npm run build
+```
+
+Después abre [http://localhost:8080](http://localhost:8080).
+
+## Uso diario
+
+Iniciar o reconstruir los servicios:
+
+```bash
+docker compose up -d
+```
+
+Ver los servicios y seguir los registros:
+
+```bash
+docker compose ps
+docker compose logs -f
+```
+
+Ejecutar comandos de Laravel dentro del contenedor:
+
+```bash
+docker compose exec app php artisan migrate
+docker compose exec app php artisan <comando>
+```
+
+Detener los contenedores sin borrar la base de datos:
+
+```bash
+docker compose down
+```
+
+`docker compose down -v` también elimina el volumen `dbdata` y, por tanto, los
+datos guardados en la base MySQL. Úsalo solo si quieres borrar esos datos.
+
+## Notas y solución de problemas
+
+- Si los puertos 8080 o 3306 ya están ocupados, libera esos puertos o cambia las
+  asignaciones en `docker-compose.yml`.
+- Compose inicia MySQL antes que la aplicación, pero no espera a que MySQL esté
+  listo para aceptar conexiones. Si la primera migración falla por conexión,
+  revisa `docker compose logs db`, espera a que MySQL termine de iniciar y repite
+  `docker compose exec app php artisan migrate`.
+- Si cambias las variables de conexión después de iniciar los contenedores,
+  recréalos para que MySQL reciba la nueva configuración:
+  `docker compose up -d --force-recreate db app`.
+- En el equipo anfitrión debe existir Node.js/npm solo para compilar el frontend;
+  la configuración actual no ofrece recarga en caliente de Vite mediante Docker.
+- Aunque la aplicación usa una conexión MySQL en Docker, el archivo
+  `database.sqlite` del equipo no se importa automáticamente. Si tienes datos
+  existentes en SQLite, debes migrarlos por separado.
+- Compose no inicia un trabajador de colas ni el planificador de Laravel.
+  `QUEUE_CONNECTION=database` solo configura el backend de la cola; los trabajos
+  y tareas programadas requieren procesos adicionales si la aplicación los usa.
